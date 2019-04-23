@@ -10,7 +10,7 @@ description:
     your entire digital ecosystem to innovate and deliver great customer experiences,
     foster internal collaboration and support dynamic business needs for sustainable
     growth.
-baseUrl: https://raw.githubusercontent.com/Jahia/paas_jelastic_dx
+  baseUrl: https://github.com/Jahia/paas_jelastic_dx/raw/master
 globals:
   db_user: jahia-db-${fn.random}
   db_pass: ${fn.password(20)}
