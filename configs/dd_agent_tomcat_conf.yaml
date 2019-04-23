@@ -10,8 +10,8 @@ instances:
         port: 7199
         name: tomcat_instance
         tags: 
-          - 'env:dev' 
           - 'role:server'
+          - 'provide:tomcat'
 
 init_config:
   conf:

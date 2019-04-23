@@ -251,7 +251,7 @@ actions:
             echo " - provide:${_PROVIDE}" >> /etc/datadog-agent/datadog.yaml
             echo " - role:${_ROLE}" >> /etc/datadog-agent/datadog.yaml
             echo " - envmode:${jahia_cfg_operatingMode}" >> /etc/datadog-agent/datadog.yaml
-            wget -O /etc/datadog-agent/conf.d/tomcat.d/conf.yaml ${baseUrl}/conf.yaml
+            wget -O /etc/datadog-agent/conf.d/tomcat.d/conf.yaml ${baseUrl}/configs/dd_agent_tomcat_conf.yaml
             wget -O /usr/local/bin/set_dd_tags.sh ${baseUrl}/scripts/set_dd_tags.sh
             wget -O /etc/cron.d/set_dd_tags_cron ${baseUrl}/configs/set_dd_tags_cron
             chmod u+x /usr/local/bin/set_dd_tags.sh
@@ -276,7 +276,6 @@ actions:
             echo " - provide:${_PROVIDE}" >> /etc/datadog-agent/datadog.yaml
             echo " - role:${_ROLE}" >> /etc/datadog-agent/datadog.yaml
             echo " - envmode:${jahia_cfg_operatingMode}" >> /etc/datadog-agent/datadog.yaml
-            wget -O /etc/datadog-agent/conf.d/mysql.d/conf.yaml ${baseUrl}/conf.yaml
             chmod 755 /var/log/mysql/mysqld.log -R
             echo "---" > /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "logs:" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
@@ -295,7 +294,6 @@ actions:
             echo "options:" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "   replication: 0" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "   galera_cluster: 1" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
-            wget -O /etc/datadog-agent/conf.d/tomcat.d/conf.yaml ${baseUrl}/conf.yaml
             wget -O /usr/local/bin/set_dd_tags.sh ${baseUrl}/scripts/set_dd_tags.sh
             wget -O /etc/cron.d/set_dd_tags_cron ${baseUrl}/configs/set_dd_tags_cron
             chmod u+x /usr/local/bin/set_dd_tags.sh
@@ -317,9 +315,8 @@ actions:
             echo " - provide:${_PROVIDE}" >> /etc/datadog-agent/datadog.yaml
             echo " - role:${_ROLE}" >> /etc/datadog-agent/datadog.yaml
             echo " - envmode:${jahia_cfg_operatingMode}" >> /etc/datadog-agent/datadog.yaml
-            wget -O /etc/datadog-agent/conf.d/tomcat.d/conf.yaml ${baseUrl}/conf.yaml
+            wget -O /etc/datadog-agent/conf.d/tomcat.d/conf.yaml ${baseUrl}/configs/dd_agent_tomcat_conf.yaml
             chmod 755 /opt/tomcat/logs/catalina.out -R
-            wget -O /etc/datadog-agent/conf.d/tomcat.d/conf.yaml ${baseUrl}/conf.yaml
             wget -O /usr/local/bin/set_dd_tags.sh ${baseUrl}/scripts/set_dd_tags.sh
             wget -O /etc/cron.d/set_dd_tags_cron ${baseUrl}/configs/set_dd_tags_cron
             chmod u+x /usr/local/bin/set_dd_tags.sh
