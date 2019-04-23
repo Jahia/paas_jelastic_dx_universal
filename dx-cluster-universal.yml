@@ -1,0 +1,373 @@
+---
+type: install
+version: 1.5
+name: Jahia - Digital Experience Manager
+logo: /images/jahia-logo-70x70.png
+id: jahia-dem-7302
+description:
+  short: Jahia - Digital Experience Manager
+  text: Digital Experience Manager gives you an agile customizable platform that manages
+    your entire digital ecosystem to innovate and deliver great customer experiences,
+    foster internal collaboration and support dynamic business needs for sustainable
+    growth.
+baseUrl: https://raw.githubusercontent.com/Jahia/paas_jelastic_dx
+globals:
+  db_user: jahia-db-${fn.random}
+  db_pass: ${fn.password(20)}
+  db_user_datadog: ${fn.password(20)}  
+  redis_pass: ${fn.password(20)}
+  mngr_user: manager
+  mngr_pass: ${settings.toolspwd}
+  su_pass: ${settings.rootpwd}
+  dx_version: ${settings.dxVersion}
+  package_type: dev
+  operating_mode: ${settings.mode}
+  datadog_key: ${settings.ddogApikey}
+  xms: 256M
+  xmx: 3584M 
+  java_opts:
+    -DDB_USER=${DB_USER}
+    -DDB_PASSWORD=${DB_PASSWORD}
+    -DREDIS_PASSWORD=${REDIS_PASSWORD}
+    -DMANAGER_USER=${MANAGER_USER}
+    -DMANAGER_PASSWORD=${MANAGER_PASSWORD}
+    -DSUPER_USER_PASSWORD=${SUPER_USER_PASSWORD}
+    -DHOST_NAME=$(hostname)
+    -Dcom.sun.management.jmxremote
+    -Dcom.sun.management.jmxremote.port=7199
+    -Dcom.sun.management.jmxremote.ssl=false
+    -Dcom.sun.management.jmxremote.authenticate=false
+    -XX:MaxPermSize=512m
+    -XX:+HeapDumpOnOutOfMemoryError 
+    -XX:+PrintConcurrentLocks  
+    -XX:+UseParallelGC 
+ssl: true
+skipNodeEmails: true
+nodes:  
+  - image: jahiadev/browsing:${globals.dx_version}
+    displayName: Browsing
+    count: ${settings.browsingCount}
+    cloudlets: 40
+    nodeGroup: cp
+    links: sqldb:mysqldb
+    startServiceOnCreation: false
+    env: 
+      DB_USER: ${globals.db_user}
+      DB_PASSWORD: ${globals.db_pass}
+      MANAGER_USER: ${globals.mngr_user}
+      MANAGER_PASSWORD: ${globals.mngr_pass}
+      SUPER_USER_PASSWORD: ${globals.su_pass}
+      REDIS_PASSWORD: ${globals.redis_pass}
+      XMS: ${globals.xms}
+      XMX: ${globals.xmx}
+      _JAVA_OPTIONS: ${globals.java_opts}
+      DATADOGAPIKEY: ${globals.datadog_key}
+      DX_VERSION: ${globals.dx_version}
+      PACKAGE_TYPE: ${globals.package_type}
+      jahia_cfg_operatingMode: ${globals.operating_mode}
+      _PROVIDE: DX
+      _ROLE: Browsing
+    
+  - image: jahiadev/processing:${globals.dx_version}
+    displayName: Processing
+    count: 1
+    cloudlets: 40
+    nodeGroup: proc
+    links: 
+      - sqldb:mysqldb
+      - nosqldb:redis
+    startServiceOnCreation: false
+    env: 
+      DB_USER: ${globals.db_user}
+      DB_PASSWORD: ${globals.db_pass}
+      MANAGER_USER: ${globals.mngr_user}
+      MANAGER_PASSWORD: ${globals.mngr_pass}
+      SUPER_USER_PASSWORD: ${globals.su_pass}
+      REDIS_PASSWORD: ${globals.redis_pass}
+      XMS: ${globals.xms}
+      XMX: ${globals.xmx}
+      _JAVA_OPTIONS: ${globals.java_opts}
+      DATADOGAPIKEY: ${globals.datadog_key}
+      DX_VERSION: ${globals.dx_version}
+      PACKAGE_TYPE: ${globals.package_type}
+      jahia_cfg_operatingMode: ${globals.operating_mode}
+      _PROVIDE: DX
+      _ROLE: Processing
+
+  - nodeType: mariadb-dockerized
+    tag: 10.2.12 # 10.3.9
+    displayName: MariaDB
+    count: 1
+    cloudlets: 40
+    nodeGroup: sqldb
+    env:
+      DATADOGAPIKEY: ${globals.datadog_key}
+      DB_USER_DATADOG: ${globals.db_user_datadog}
+      PACKAGE_TYPE: ${globals.package_type}
+      DX_VERSION: ${globals.dx_version}
+      _PROVIDE: MariaDB
+      _ROLE: master
+    
+# --Events --
+
+onUninstall:
+  cmd [${targetNodes.nodeGroup}]:
+  - sed -i -e 's/.*NOPASSWD.*//g' /etc/sudoers.d/sudo
+  user: root
+
+onInstall:
+  - install: ${baseUrl}/dx7302/dx-cluster.yml
+  #  - cmd [sqldb]:
+  #    - 'USER=$(grep -i ''x:''$(cat /etc/passwd | grep jelastic:x | cut -d'':'' -f 3) /etc/passwd | grep -v jelastic:x | cut -d: -f1)'
+  #    - 'touch /etc/sudoers.d/sudo'
+  #    - 'echo "$USER ALL=NOPASSWD: ALL" >> /etc/sudoers.d/sudo'
+  #    - 'echo "jelastic ALL=NOPASSWD: ALL" >> /etc/sudoers.d/sudo'
+  #    user: root
+  #    
+  #  - environment.control.ApplyNodeGroupData [proc]:
+  #      data: 
+  #        dxVersion: 7.3.0.2
+  #        packageType: dev
+  #  - setupSqlDB
+  #  - if (settings.skipStart != 'true'): createJahiaDatabase
+  #  - if (settings.mode == 'production'): createDataDogUser
+  #  
+  #  - copyApp: proc
+  #  - if (settings.mode == 'development'):  
+  #    - installMaven: proc
+  #  - if (settings.skipStart != 'true'):
+  #    - api: env.control.ExecDockerRunCmd
+  #      nodeId: ${nodes.proc.first.id}
+  #
+  #  - sleep:
+  #    - milliseconds: 120000
+  #  
+  #  - copyApp: cp
+  #  - if (settings.mode == 'development'):
+  #    - installMaven: cp
+  #  - if (settings.skipStart != 'true'):
+  #    - forEach(nodes.cp):
+  #        api: env.control.ExecDockerRunCmd
+  #        nodeId: ${@i.id} 
+  #
+  #  - setupDatadogAgent: cp
+  #  - setupDatadogAgent: proc
+  #  - setupDatadogAgentSql: sqldb
+
+onAfterServiceScaleOut[cp]:
+  forEach(event.response.nodes):
+    - copyApp: ${@i.id}
+    - if (settings.mode == 'development'):
+      - installMaven: ${@i.id}   
+    - setupDatadogAgentPerNode: ${@i.id}
+
+onBeforeRedeployContainer:
+ - cmd [cp,proc]:
+    rm -rf $DATA_PATH/jahia/*
+        
+onAfterRedeployContainer[cp]:
+  - copyApp: cp
+  - if (settings.mode == 'development'):
+    - installMaven: cp
+  - cmd[cp]:  
+    - chkconfig --add tomcat
+    - chkconfig --level 3 tomcat on
+    - service tomcat start
+
+onAfterRedeployContainer[proc]:
+  - copyApp: proc
+  - if (settings.mode == 'development'):
+    - installMaven: proc
+  - cmd[proc]:  
+    - chkconfig --add tomcat
+    - chkconfig --level 3 tomcat on
+    - service tomcat start
+    
+#-- Actions --
+
+actions:
+
+  setupSqlDB:
+    - cmd[sqldb]: |-
+        service mysql stop
+        wget -O /etc/my.cnf ${baseUrl}/configs/my.cnf
+        sed -i 's/# create 600 mysql mysql/create 644 mysql adm/' /etc/logrotate.d/mysql
+        logrotate -f /etc/logrotate.d/mysql
+        service mysql start
+        wget -O setupUser.sh ${baseUrl}/scripts/setupUser.sh
+        bash setupUser.sh ${globals.db_user} ${globals.db_pass}
+      user: root
+
+  createJahiaDatabase:
+    - cmd[sqldb]: |-
+        mysql -u${globals.db_user} -p${globals.db_pass} -e "CREATE DATABASE IF NOT EXISTS jahia CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+      user: root
+    - cmd[${nodes.proc.first.id}]: cat $DATA_PATH/digital-factory-data/db/sql/schema/mysql/*.sql | mysql -h mysqldb -u$DB_USER -p$DB_PASSWORD -f jahia
+    
+  createDataDogUser:
+    - cmd[sqldb]: |-
+        mysql -u${globals.db_user} -p${globals.db_pass} -e "CREATE USER 'datadog'@'127.0.0.1' IDENTIFIED BY '${DB_USER_DATADOG}';"
+        mysql -u${globals.db_user} -p${globals.db_pass} -e "GRANT REPLICATION CLIENT ON *.* TO 'datadog'@'127.0.0.1' WITH MAX_USER_CONNECTIONS 5;"
+        mysql -u${globals.db_user} -p${globals.db_pass} -e "GRANT PROCESS ON *.* TO 'datadog'@'127.0.0.1';"
+        mysql -u${globals.db_user} -p${globals.db_pass} -e "GRANT SELECT ON performance_schema.* TO 'datadog'@'127.0.0.1';"
+      user: root
+      
+  installMaven:
+    - cmd[${this}]: |-
+        wget -O maven.zip http://apache.mirrors.ovh.net/ftp.apache.org/dist/maven/maven-3/3.6.0/binaries/apache-maven-3.6.0-bin.zip 
+        unzip maven.zip -d /opt
+        sed -i 's/#mvnPath = mvn/mvnPath = \/opt\/apache-maven-3.6.0\/bin\/mvn/' /opt/tomcat/conf/digital-factory-config/jahia/jahia.properties
+        chown tomcat:tomcat -R /opt/apache-maven*
+        sed -i "2i MAVEN_OPTS=\-XX:+UseParallelGC" /opt/apache-maven*/bin/mvn
+        sed -i "2i _JAVA_OPTIONS=" /opt/apache-maven*/bin/mvn
+        
+  copyApp:  
+    - cmd[${this}]: |-
+        [ "${this}" == "proc" ] && role="processing" || role="browsing" 
+        rm -rf $STACK_PATH/webapps/*
+        cp -rf $DATA_PATH/jahia/tomcat/webapps/* $STACK_PATH/webapps
+        chown -R tomcat:tomcat $STACK_PATH/webapps
+        cd /opt/tomcat/webapps/ROOT/WEB-INF/lib/
+        mngr_pwd=$(/usr/java/latest/bin/jjs -cp ./jahia-commons-1.0.6.jar:./jasypt-1.9.1-lite.jar -scripting <<< "print(org.jahia.commons.encryption.EncryptionUtils.pbkdf2Digest(\$ENV.MANAGER_PASSWORD, \"p\"))")
+        sed -i "s|^jahiaToolManagerPassword .*$|jahiaToolManagerPassword = $mngr_pwd|" $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
+        sed -i "s/operatingMode/#operatingMode/" $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
+        sed -i "s#\${HOST_NAME}#$HOSTNAME#g" $STACK_PATH/conf/digital-factory-config/jahia/jahia.node.properties
+        echo $SUPER_USER_PASSWORD > $DATA_PATH/digital-factory-data/root.pwd
+        chown -R tomcat:tomcat $DATA_PATH/digital-factory-data/root.pwd
+        sed -i "2i JMX_OPTS=\-XX:+UseParallelGC" /opt/tomcat/conf/tomcat-env.sh
+        
+  setupDatadogAgent:
+    - if (settings.mode == 'production'):
+        forEach(nodes.${this}):
+          cmd[${@i.id}]: |- 
+            DD_API_KEY=${globals.datadog_key} bash -c "$(curl -L https://raw.githubusercontent.com/DataDog/datadog-agent/master/cmd/agent/install_script.sh)" 
+            echo "hostname: ${this}.${@i.id}" >> /etc/datadog-agent/datadog.yaml
+            sed -i 's/# logs_enabled: false/logs_enabled: true/' /etc/datadog-agent/datadog.yaml
+            echo "tags:" >> /etc/datadog-agent/datadog.yaml
+            echo " - client:jahiacloud" >> /etc/datadog-agent/datadog.yaml
+            echo " - env:${PACKAGE_TYPE}" >> /etc/datadog-agent/datadog.yaml
+            echo " - product:dx" >> /etc/datadog-agent/datadog.yaml
+            echo " - version:${DX_VERSION}" >> /etc/datadog-agent/datadog.yaml
+            echo " - envname:${env.envName}" >> /etc/datadog-agent/datadog.yaml
+            echo " - provide:${_PROVIDE}" >> /etc/datadog-agent/datadog.yaml
+            echo " - role:${_ROLE}" >> /etc/datadog-agent/datadog.yaml
+            echo " - envmode:${jahia_cfg_operatingMode}" >> /etc/datadog-agent/datadog.yaml
+            wget -O /etc/datadog-agent/conf.d/tomcat.d/conf.yaml ${baseUrl}/conf.yaml
+            wget -O /usr/local/bin/set_dd_tags.sh ${baseUrl}/scripts/set_dd_tags.sh
+            wget -O /etc/cron.d/set_dd_tags_cron ${baseUrl}/configs/set_dd_tags_cron
+            chmod u+x /usr/local/bin/set_dd_tags.sh
+            chmod 755 /opt/tomcat/logs/catalina.out -R
+            /usr/local/bin/set_dd_tags.sh
+            systemctl restart crond
+          user: root
+            
+  setupDatadogAgentSql:
+    - if (settings.mode == 'production'):
+        forEach(nodes.${this}):
+          cmd[${@i.id}]: |- 
+            DD_API_KEY=${globals.datadog_key} bash -c "$(curl -L https://raw.githubusercontent.com/DataDog/datadog-agent/master/cmd/agent/install_script.sh)" 
+            echo "hostname: ${this}.${@i.id}" >> /etc/datadog-agent/datadog.yaml
+            sed -i 's/# logs_enabled: false/logs_enabled: true/' /etc/datadog-agent/datadog.yaml
+            echo "tags:" >> /etc/datadog-agent/datadog.yaml
+            echo " - client:jahiacloud" >> /etc/datadog-agent/datadog.yaml
+            echo " - env:${PACKAGE_TYPE}" >> /etc/datadog-agent/datadog.yaml
+            echo " - product:dx" >> /etc/datadog-agent/datadog.yaml
+            echo " - version:${DX_VERSION}" >> /etc/datadog-agent/datadog.yaml
+            echo " - envname:${env.envName}" >> /etc/datadog-agent/datadog.yaml
+            echo " - provide:${_PROVIDE}" >> /etc/datadog-agent/datadog.yaml
+            echo " - role:${_ROLE}" >> /etc/datadog-agent/datadog.yaml
+            echo " - envmode:${jahia_cfg_operatingMode}" >> /etc/datadog-agent/datadog.yaml
+            wget -O /etc/datadog-agent/conf.d/mysql.d/conf.yaml ${baseUrl}/conf.yaml
+            chmod 755 /var/log/mysql/mysqld.log -R
+            echo "---" > /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "logs:" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "  - type: file" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "    path: /var/log/mysql/mysqld.log" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "    source: mysql" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "    service: mydatabase" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "init_config:" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "instances:" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "  - server: 127.0.0.1" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "    user: datadog" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "    pass: ${DB_USER_DATADOG}" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "    tags:" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "      - 'env:${PACKAGE_TYPE}'" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "      - 'role:database'" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "options:" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "   replication: 0" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "   galera_cluster: 1" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            wget -O /etc/datadog-agent/conf.d/tomcat.d/conf.yaml ${baseUrl}/conf.yaml
+            wget -O /usr/local/bin/set_dd_tags.sh ${baseUrl}/scripts/set_dd_tags.sh
+            wget -O /etc/cron.d/set_dd_tags_cron ${baseUrl}/configs/set_dd_tags_cron
+            chmod u+x /usr/local/bin/set_dd_tags.sh
+            systemctl restart crond
+          user: root 
+            
+  setupDatadogAgentPerNode:
+    - if (settings.mode == 'production'):
+        - cmd[${this}]: |- 
+            DD_API_KEY=${globals.datadog_key} bash -c "$(curl -L https://raw.githubusercontent.com/DataDog/datadog-agent/master/cmd/agent/install_script.sh)" 
+            echo "hostname: cp.${this}" >> /etc/datadog-agent/datadog.yaml
+            sed -i 's/# logs_enabled: false/logs_enabled: true/' /etc/datadog-agent/datadog.yaml
+            echo "tags:" >> /etc/datadog-agent/datadog.yaml
+            echo " - client:jahiacloud" >> /etc/datadog-agent/datadog.yaml
+            echo " - env:${PACKAGE_TYPE}" >> /etc/datadog-agent/datadog.yaml
+            echo " - product:dx" >> /etc/datadog-agent/datadog.yaml
+            echo " - version:${DX_VERSION}" >> /etc/datadog-agent/datadog.yaml
+            echo " - envname:${env.envName}" >> /etc/datadog-agent/datadog.yaml
+            echo " - provide:${_PROVIDE}" >> /etc/datadog-agent/datadog.yaml
+            echo " - role:${_ROLE}" >> /etc/datadog-agent/datadog.yaml
+            echo " - envmode:${jahia_cfg_operatingMode}" >> /etc/datadog-agent/datadog.yaml
+            wget -O /etc/datadog-agent/conf.d/tomcat.d/conf.yaml ${baseUrl}/conf.yaml
+            chmod 755 /opt/tomcat/logs/catalina.out -R
+            wget -O /etc/datadog-agent/conf.d/tomcat.d/conf.yaml ${baseUrl}/conf.yaml
+            wget -O /usr/local/bin/set_dd_tags.sh ${baseUrl}/scripts/set_dd_tags.sh
+            wget -O /etc/cron.d/set_dd_tags_cron ${baseUrl}/configs/set_dd_tags_cron
+            chmod u+x /usr/local/bin/set_dd_tags.sh
+            systemctl restart crond
+          user: root 
+
+success: /text/success.md
+settings:
+  fields: 
+  - name: dxVersion
+    type: list
+    caption: Jahia DX version
+    values:
+      dx7211: 7.2.1.1
+      dx7220: 7.2.2.0
+      dx7221: 7.2.2.1
+      dx7230: 7.2.3.0
+      dx7231: 7.2.3.1
+      dx7300: 7.3.0.0
+      dx7301: 7.3.0.1
+      dx7302: 7.3.0.2
+  - name: rootpwd
+    type: string
+    caption: Jahia DX root password
+    vtype: text
+    required: true
+  - name: toolspwd
+    type: string
+    caption: Jahia tools password
+    vtype: text
+    required: true
+  - name: browsingCount
+    type: string
+    caption: Number of DX browsing nodes
+    vtype: text
+    required: true
+  - name: mode
+    type: radio-fieldset
+    caption: Operating Mode
+    values:
+      production: production
+      development: development
+    default: production
+    showIf:
+      production:
+        - name: ddogApikey
+          type: string
+          caption: Datadog API KEY
+          required: true
+          vtype: text
