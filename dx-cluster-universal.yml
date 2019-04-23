@@ -3,14 +3,14 @@ type: install
 version: 1.5
 name: Jahia - Digital Experience Manager
 logo: /images/jahia-logo-70x70.png
-id: jahia-dem-7302
+id: jahia-dx-universal
 description:
   short: Jahia - Digital Experience Manager
   text: Digital Experience Manager gives you an agile customizable platform that manages
     your entire digital ecosystem to innovate and deliver great customer experiences,
     foster internal collaboration and support dynamic business needs for sustainable
     growth.
-  baseUrl: https://github.com/Jahia/paas_jelastic_dx/raw/master
+  baseUrl: https://github.com/Jahia/paas_jelastic_dx_universal/raw/__UNIVERSAL_VERSION__
 globals:
   db_user: jahia-db-${fn.random}
   db_pass: ${fn.password(20)}
