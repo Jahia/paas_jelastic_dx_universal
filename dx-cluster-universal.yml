@@ -116,43 +116,42 @@ onUninstall:
   user: root
 
 onInstall:
-  - install: ${baseUrl}/dx7302/dx-cluster.yml
-  #  - cmd [sqldb]:
-  #    - 'USER=$(grep -i ''x:''$(cat /etc/passwd | grep jelastic:x | cut -d'':'' -f 3) /etc/passwd | grep -v jelastic:x | cut -d: -f1)'
-  #    - 'touch /etc/sudoers.d/sudo'
-  #    - 'echo "$USER ALL=NOPASSWD: ALL" >> /etc/sudoers.d/sudo'
-  #    - 'echo "jelastic ALL=NOPASSWD: ALL" >> /etc/sudoers.d/sudo'
-  #    user: root
-  #    
-  #  - environment.control.ApplyNodeGroupData [proc]:
-  #      data: 
-  #        dxVersion: 7.3.0.2
-  #        packageType: dev
-  #  - setupSqlDB
-  #  - if (settings.skipStart != 'true'): createJahiaDatabase
-  #  - if (settings.mode == 'production'): createDataDogUser
-  #  
-  #  - copyApp: proc
-  #  - if (settings.mode == 'development'):  
-  #    - installMaven: proc
-  #  - if (settings.skipStart != 'true'):
-  #    - api: env.control.ExecDockerRunCmd
-  #      nodeId: ${nodes.proc.first.id}
-  #
-  #  - sleep:
-  #    - milliseconds: 120000
-  #  
-  #  - copyApp: cp
-  #  - if (settings.mode == 'development'):
-  #    - installMaven: cp
-  #  - if (settings.skipStart != 'true'):
-  #    - forEach(nodes.cp):
-  #        api: env.control.ExecDockerRunCmd
-  #        nodeId: ${@i.id} 
-  #
-  #  - setupDatadogAgent: cp
-  #  - setupDatadogAgent: proc
-  #  - setupDatadogAgentSql: sqldb
+  - cmd [sqldb]:
+    - 'USER=$(grep -i ''x:''$(cat /etc/passwd | grep jelastic:x | cut -d'':'' -f 3) /etc/passwd | grep -v jelastic:x | cut -d: -f1)'
+    - 'touch /etc/sudoers.d/sudo'
+    - 'echo "$USER ALL=NOPASSWD: ALL" >> /etc/sudoers.d/sudo'
+    - 'echo "jelastic ALL=NOPASSWD: ALL" >> /etc/sudoers.d/sudo'
+    user: root
+    
+  - environment.control.ApplyNodeGroupData [proc]:
+      data: 
+        dxVersion: ${globals.dx_version}
+        packageType: dev
+  - setupSqlDB
+  - if (settings.skipStart != 'true'): createJahiaDatabase
+  - if (settings.mode == 'production'): createDataDogUser
+  
+  - copyApp: proc
+  - if (settings.mode == 'development'):  
+    - installMaven: proc
+  - if (settings.skipStart != 'true'):
+    - api: env.control.ExecDockerRunCmd
+      nodeId: ${nodes.proc.first.id}
+  
+  - sleep:
+    - milliseconds: 120000
+  
+  - copyApp: cp
+  - if (settings.mode == 'development'):
+    - installMaven: cp
+  - if (settings.skipStart != 'true'):
+    - forEach(nodes.cp):
+        api: env.control.ExecDockerRunCmd
+        nodeId: ${@i.id} 
+  
+  - setupDatadogAgent: cp
+  - setupDatadogAgent: proc
+  - setupDatadogAgentSql: sqldb
 
 onAfterServiceScaleOut[cp]:
   forEach(event.response.nodes):
