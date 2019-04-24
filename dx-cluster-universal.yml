@@ -23,6 +23,7 @@ globals:
   package_type: dev
   operating_mode: ${settings.mode}
   datadog_key: ${settings.ddogApikey}
+  shortdomain: ${settings.shortdomain}
   xms: 256M
   xmx: 3584M 
   java_opts:
@@ -67,7 +68,7 @@ nodes:
       jahia_cfg_operatingMode: ${globals.operating_mode}
       _PROVIDE: DX
       _ROLE: Browsing
-      envName: ${settings.shortdomain}
+      envName: ${globals.shortdomain}
     
   - image: jahiadev/processing:${globals.dx_version}
     displayName: Processing
@@ -94,7 +95,7 @@ nodes:
       jahia_cfg_operatingMode: ${globals.operating_mode}
       _PROVIDE: DX
       _ROLE: Processing
-      envName: ${settings.shortdomain}
+      envName: ${globals.shortdomain}
 
   - nodeType: mariadb-dockerized
     tag: 10.2.12 # 10.3.9
@@ -109,7 +110,7 @@ nodes:
       DX_VERSION: ${globals.dx_version}
       _PROVIDE: MariaDB
       _ROLE: master
-      envName: ${settings.shortdomain}
+      envName: ${globals.shortdomain}
     
 # --Events --
 
