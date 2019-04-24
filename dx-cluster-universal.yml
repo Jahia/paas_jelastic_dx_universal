@@ -67,7 +67,7 @@ nodes:
       jahia_cfg_operatingMode: ${globals.operating_mode}
       _PROVIDE: DX
       _ROLE: Browsing
-      envName: ${env.envName}
+      envName: ${settings.shortdomain}
     
   - image: jahiadev/processing:${globals.dx_version}
     displayName: Processing
@@ -94,7 +94,7 @@ nodes:
       jahia_cfg_operatingMode: ${globals.operating_mode}
       _PROVIDE: DX
       _ROLE: Processing
-      envName: ${env.envName}
+      envName: ${settings.shortdomain}
 
   - nodeType: mariadb-dockerized
     tag: 10.2.12 # 10.3.9
@@ -109,7 +109,7 @@ nodes:
       DX_VERSION: ${globals.dx_version}
       _PROVIDE: MariaDB
       _ROLE: master
-      envName: ${env.envName}
+      envName: ${settings.shortdomain}
     
 # --Events --
 
@@ -347,6 +347,10 @@ settings:
     type: string
     caption: Number of DX browsing nodes
     vtype: text
+    required: true
+  - name: shortdomain
+    type: envname
+    caption: Environment
     required: true
   - name: mode
     type: radio-fieldset
