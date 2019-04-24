@@ -69,9 +69,6 @@ nodes:
       _PROVIDE: DX
       _ROLE: Browsing
       envName: ${globals.shortdomain}
-      if (/\/raw\/[0-9]+\.[0-9]+$/.test(baseUrl)):
-        - setGlobals:
-            package_type: prod
     
   - image: jahiadev/processing:${globals.dx_version}
     displayName: Processing
@@ -99,9 +96,6 @@ nodes:
       _PROVIDE: DX
       _ROLE: Processing
       envName: ${globals.shortdomain}
-      if (/\/raw\/[0-9]+\.[0-9]+$/.test(baseUrl)):
-        - setGlobals:
-            package_type: prod
 
   - nodeType: mariadb-dockerized
     tag: 10.2.12 # 10.3.9
@@ -117,9 +111,6 @@ nodes:
       _PROVIDE: MariaDB
       _ROLE: master
       envName: ${globals.shortdomain}
-      if (/\/raw\/[0-9]+\.[0-9]+$/.test(baseUrl)):
-        - setGlobals:
-            package_type: prod
     
 # --Events --
 
@@ -127,6 +118,11 @@ onUninstall:
   cmd [${targetNodes.nodeGroup}]:
   - sed -i -e 's/.*NOPASSWD.*//g' /etc/sudoers.d/sudo
   user: root
+
+onBeforeChangeTopology:
+  - if (/\/raw\/[0-9]+\.[0-9]+$/.test(baseUrl)):
+      - setGlobals:
+          package_type: prod
 
 onInstall:
   - cmd [sqldb]:
