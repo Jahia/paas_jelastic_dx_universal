@@ -123,7 +123,7 @@ onInstall:
   - if (/\/raw\/[0-9]+\.[0-9]+$/.test(baseUrl)):
     - log: "## git repo branch is prod"
     - api [cp,proc,sqldb]: env.control.AddContainerEnvVars
-			vars: {"PACKAGE_TYPE": "prod"}
+      vars: {"PACKAGE_TYPE": "prod"}
 
   - cmd [sqldb]:
     - 'USER=$(grep -i ''x:''$(cat /etc/passwd | grep jelastic:x | cut -d'':'' -f 3) /etc/passwd | grep -v jelastic:x | cut -d: -f1)'
