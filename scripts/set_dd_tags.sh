@@ -32,7 +32,6 @@ if [ "$md5_tmp" == "$md5_dd" ]; then
     echo "Tags are up to date, exiting."
 else
     echo "Change detected in tag(s), updating Datadog conf..."
-    cp -f $tmpfile $ddconffile
-    systemctl restart datadog-agent
+    cp -f $tmpfile $ddconffile && sleep 2 && systemctl restart datadog-agent
 fi
 
