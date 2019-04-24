@@ -327,17 +327,9 @@ success: /text/success.md
 settings:
   fields: 
   - name: dxVersion
-    type: list
+    type: text
     caption: Jahia DX version
-    values:
-      dx7211: 7.2.1.1
-      dx7220: 7.2.2.0
-      dx7221: 7.2.2.1
-      dx7230: 7.2.3.0
-      dx7231: 7.2.3.1
-      dx7300: 7.3.0.0
-      dx7301: 7.3.0.1
-      dx7302: 7.3.0.2
+    required: true
   - name: rootpwd
     type: string
     caption: Jahia DX root password
