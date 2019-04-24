@@ -11,7 +11,6 @@ source ${hn_metadata}
 echo "api_key: $DATADOGAPIKEY"
 echo "hostname: $(awk '$1=="hostname:"{print $2}' $ddconffile)"
 echo "tags:"
-echo " - client:$(awk '$2~/^client/ {split($2,a,":"); print a[2]}' $ddconffile)"
 echo " - product:$(awk '$2~/^product/ {split($2,a,":"); print a[2]}' $ddconffile)"
 echo " - envname:$(awk '$2~/^envname/ {split($2,a,":"); print a[2]}' $ddconffile)"
 echo " - provide:${_PROVIDE}"

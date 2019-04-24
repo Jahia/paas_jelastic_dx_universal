@@ -247,7 +247,6 @@ actions:
             echo "hostname: ${this}.${@i.id}" >> /etc/datadog-agent/datadog.yaml
             sed -i 's/# logs_enabled: false/logs_enabled: true/' /etc/datadog-agent/datadog.yaml
             echo "tags:" >> /etc/datadog-agent/datadog.yaml
-            echo " - client:jahiacloud" >> /etc/datadog-agent/datadog.yaml
             echo " - env:${PACKAGE_TYPE}" >> /etc/datadog-agent/datadog.yaml
             echo " - product:dx" >> /etc/datadog-agent/datadog.yaml
             echo " - version:${DX_VERSION}" >> /etc/datadog-agent/datadog.yaml
@@ -272,7 +271,6 @@ actions:
             echo "hostname: ${this}.${@i.id}" >> /etc/datadog-agent/datadog.yaml
             sed -i 's/# logs_enabled: false/logs_enabled: true/' /etc/datadog-agent/datadog.yaml
             echo "tags:" >> /etc/datadog-agent/datadog.yaml
-            echo " - client:jahiacloud" >> /etc/datadog-agent/datadog.yaml
             echo " - env:${PACKAGE_TYPE}" >> /etc/datadog-agent/datadog.yaml
             echo " - product:dx" >> /etc/datadog-agent/datadog.yaml
             echo " - version:${DX_VERSION}" >> /etc/datadog-agent/datadog.yaml
@@ -311,7 +309,6 @@ actions:
             echo "hostname: cp.${this}" >> /etc/datadog-agent/datadog.yaml
             sed -i 's/# logs_enabled: false/logs_enabled: true/' /etc/datadog-agent/datadog.yaml
             echo "tags:" >> /etc/datadog-agent/datadog.yaml
-            echo " - client:jahiacloud" >> /etc/datadog-agent/datadog.yaml
             echo " - env:${PACKAGE_TYPE}" >> /etc/datadog-agent/datadog.yaml
             echo " - product:dx" >> /etc/datadog-agent/datadog.yaml
             echo " - version:${DX_VERSION}" >> /etc/datadog-agent/datadog.yaml
