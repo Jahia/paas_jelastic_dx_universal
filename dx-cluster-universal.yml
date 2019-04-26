@@ -370,73 +370,73 @@ settings:
     vtype: text
     required: true
 
-    - caption: DB stack
-      type: list
-      name: stack
-      default: mysql
-      required: true
-      values:        
-        - value: mysql
-          caption: MySQL CE
-        - value: mariadb-dockerized
-          caption: MariaDB
-      
-    - caption: DB topology
-      type: list
-      name: dbscheme
-      required: true      
-      dependsOn:                 
-        stack:
-            mysql:
-              - value: slave
-                caption: Master-Slave with extra slaves
-              - value: master
-                caption: Master-Master with extra slaves
-              - value: single
-                caption: Single Group Replication
-              - value: multi
-                caption: Multi Group Replication              
+  - caption: DB stack
+    type: list
+    name: stack
+    default: mysql
+    required: true
+    values:        
+      - value: mysql
+        caption: MySQL CE
+      - value: mariadb-dockerized
+        caption: MariaDB
+    
+  - caption: DB topology
+    type: list
+    name: dbscheme
+    required: true      
+    dependsOn:                 
+      stack:
+          mysql:
+            - value: slave
+              caption: Master-Slave with extra slaves
+            - value: master
+              caption: Master-Master with extra slaves
+            - value: single
+              caption: Single Group Replication
+            - value: multi
+              caption: Multi Group Replication              
 
-            mariadb-dockerized:    
-              - value: slave
-                caption: Master-Slave with extra slaves
-              - value: master
-                caption: Master-Master with extra slaves
-              - value: galera
-                caption: Galera Cluster
+          mariadb-dockerized:    
+            - value: slave
+              caption: Master-Slave with extra slaves
+            - value: master
+              caption: Master-Master with extra slaves
+            - value: galera
+              caption: Galera Cluster
 
-    - type: checkbox
-      name: is_proxysql
-      caption: Add ProxySQL for SQL Load Balancing
-      value: true
+  - type: checkbox
+    name: is_proxysql
+    caption: Add ProxySQL for SQL Load Balancing
+    value: true
 
-    - caption: None
-      inputType: hidden
-      type: list
-      name: dbnodeType
-      dependsOn:                 
-        stack:
-            mysql:
-              - value: mysql
-            mariadb-dockerized:    
-              - value: mariadb-dockerized
+  - caption: None
+    inputType: hidden
+    type: list
+    name: dbnodeType
+    dependsOn:                 
+      stack:
+          mysql:
+            - value: mysql
+          mariadb-dockerized:    
+            - value: mariadb-dockerized
 
-    - caption: None
-      inputType: hidden
-      type: list
-      name: dbnodes
-      dependsOn:                 
-        scheme:
-            slave:
-              - value: 2
-            master:    
-              - value: 2
-            single:
-              - value: 3
-            multi:    
-              - value: 3
-            galera:    
-              - value: 3
+  - caption: None
+    inputType: hidden
+    type: list
+    name: dbnodes
+    dependsOn:                 
+      scheme:
+          slave:
+            - value: 2
+          master:    
+            - value: 2
+          single:
+            - value: 3
+          multi:    
+            - value: 3
+          galera:    
+            - value: 3
 
 
   - name: shortdomain
