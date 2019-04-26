@@ -115,8 +115,8 @@ nodes:
   - nodeType: "${settings.dbnodeType}"
     nodeGroup: sqldb
     count: "${settings.dbnodes}"
-    cluster:
-      scheme: "${settings.dbscheme}"
+    # cluster:
+    #   scheme: "${settings.dbscheme}"
     cloudlets: 8
     env:
       ON_ENV_INSTALL: "${baseUrl}/addons/auto-clustering/auto-cluster.jps"
