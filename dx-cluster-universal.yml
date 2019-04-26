@@ -236,7 +236,7 @@ actions:
         cp -rf $DATA_PATH/jahia/tomcat/webapps/* $STACK_PATH/webapps
         chown -R tomcat:tomcat $STACK_PATH/webapps
         cd /opt/tomcat/webapps/ROOT/WEB-INF/lib/
-        mngr_pwd=$(/usr/java/latest/bin/jjs -cp $(find . -name jahia-commons-*.jar):$(find . -name jasypt-*.jar) -scripting <<< "print(org.jahia.commons.encryption.EncryptionUtils.pbkdf2Digest(\$ENV.MANAGER_PASSWORD, \"p\"))")
+        mngr_pwd=$(/usr/java/latest/bin/jjs -cp $(find . -name jahia-commons-*.jar):$(find . -name jasypt-*.jar) -scripting <<< "print(org.jahia.commons.encryption.EncryptionUtils.pbkdf2Digest(\$ENV.MANAGER_PASSWORD, \"p\"))" > /tmp/tools && awk '$1!="jjs>"' /tmp/tools)
         sed -i "s|^jahiaToolManagerPassword .*$|jahiaToolManagerPassword = $mngr_pwd|" $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
         sed -i "s/operatingMode/#operatingMode/" $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
         sed -i "s#\${HOST_NAME}#$HOSTNAME#g" $STACK_PATH/conf/digital-factory-config/jahia/jahia.node.properties
