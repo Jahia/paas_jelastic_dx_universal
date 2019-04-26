@@ -112,23 +112,23 @@ nodes:
 #       _ROLE: master
 #       envName: ${globals.shortdomain}
 
-    - nodeType: "${settings.dbnodeType}"
-      nodeGroup: sqldb
-      count: "${settings.dbnodes}"
-      cluster:
-        scheme: "${settings.dbscheme}"
-      cloudlets: 8
-      env:
-        ON_ENV_INSTALL: "${baseUrl}/addons/auto-clustering/auto-cluster.jps"
-        SCHEME: "${settings.dbscheme}"
-        IS_PROXYSQL: "${settings.is_proxysql}"
-        DATADOGAPIKEY: ${globals.datadog_key}
-        DB_USER_DATADOG: ${globals.db_user_datadog}
-        PACKAGE_TYPE: ${globals.package_type}
-        DX_VERSION: ${globals.dx_version}
-        _PROVIDE: MariaDB
-        _ROLE: master
-        envName: ${globals.shortdomain}
+  - nodeType: "${settings.dbnodeType}"
+    nodeGroup: sqldb
+    count: "${settings.dbnodes}"
+    cluster:
+      scheme: "${settings.dbscheme}"
+    cloudlets: 8
+    env:
+      ON_ENV_INSTALL: "${baseUrl}/addons/auto-clustering/auto-cluster.jps"
+      SCHEME: "${settings.dbscheme}"
+      IS_PROXYSQL: "${settings.is_proxysql}"
+      DATADOGAPIKEY: ${globals.datadog_key}
+      DB_USER_DATADOG: ${globals.db_user_datadog}
+      PACKAGE_TYPE: ${globals.package_type}
+      DX_VERSION: ${globals.dx_version}
+      _PROVIDE: MariaDB
+      _ROLE: master
+      envName: ${globals.shortdomain}
     
 # --Events --
 
