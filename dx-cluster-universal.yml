@@ -112,7 +112,7 @@ nodes:
 #       _ROLE: master
 #       envName: ${globals.shortdomain}
 
-	  - nodeType: "${settings.dbnodeType}"
+    - nodeType: "${settings.dbnodeType}"
       nodeGroup: sqldb
       count: "${settings.dbnodes}"
       cluster:
