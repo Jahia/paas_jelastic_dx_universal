@@ -24,6 +24,8 @@ globals:
   operating_mode: ${settings.mode}
   datadog_key: ${settings.ddogApikey}
   shortdomain: ${settings.shortdomain}
+  dbscheme: ${settings.dbscheme}
+  dbnodetype: ${settings.dbnodetype}
   xms: 256M
   xmx: 3584M 
   java_opts:
@@ -112,7 +114,7 @@ nodes:
 #       _ROLE: master
 #       envName: ${globals.shortdomain}
 
-  - nodeType: "${settings.dbnodeType}"
+  - nodeType: "${globals.dbnodeType}"
     nodeGroup: sqldb
     count: "${settings.dbnodes}"
     # cluster:
@@ -120,7 +122,7 @@ nodes:
     cloudlets: 8
     env:
       ON_ENV_INSTALL: "${baseUrl}/addons/auto-clustering/auto-cluster.jps"
-      SCHEME: "${settings.dbscheme}"
+      SCHEME: "${globals.dbscheme}"
       IS_PROXYSQL: "${settings.is_proxysql}"
       DATADOGAPIKEY: ${globals.datadog_key}
       DB_USER_DATADOG: ${globals.db_user_datadog}
