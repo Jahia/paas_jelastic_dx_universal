@@ -26,6 +26,8 @@ globals:
   shortdomain: ${settings.shortdomain}
   dbscheme: ${settings.dbscheme}
   dbnodeType: ${settings.dbnodeType}
+  dbnodes: ${settings.dbnodes}
+  is_proxysql: ${settings.is_proxysql}
   xms: 256M
   xmx: 3584M 
   java_opts:
@@ -114,16 +116,16 @@ nodes:
 #       _ROLE: master
 #       envName: ${globals.shortdomain}
 
-  - nodeType: "${globals.dbnodeType}"
+  - nodeType: ${globals.dbnodeType}
     nodeGroup: sqldb
-    count: "${settings.dbnodes}"
+    count: ${globals.dbnodes}
     # cluster:
     #   scheme: "${settings.dbscheme}"
     cloudlets: 8
     env:
-      ON_ENV_INSTALL: "${baseUrl}/addons/auto-clustering/auto-cluster.jps"
-      SCHEME: "${globals.dbscheme}"
-      IS_PROXYSQL: "${settings.is_proxysql}"
+      ON_ENV_INSTALL: ${baseUrl}/addons/auto-clustering/auto-cluster.jps
+      SCHEME: ${globals.dbscheme}
+      IS_PROXYSQL: ${globals.is_proxysql}
       DATADOGAPIKEY: ${globals.datadog_key}
       DB_USER_DATADOG: ${globals.db_user_datadog}
       PACKAGE_TYPE: ${globals.package_type}
