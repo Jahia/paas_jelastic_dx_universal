@@ -127,6 +127,8 @@ nodes:
     env:
       ON_ENV_INSTALL: ${globals.dbbaseUrl}/addons/auto-clustering/auto-cluster.jps
       SCHEME: ${globals.dbscheme}
+      db_user: ${globals.db_user}
+      db_pass: ${globals.db_pass}
       IS_PROXYSQL: ${globals.is_proxysql}
       DATADOGAPIKEY: ${globals.datadog_key}
       DB_USER_DATADOG: ${globals.db_user_datadog}
@@ -253,19 +255,19 @@ actions:
         logrotate -f /etc/logrotate.d/mysql
         service mysql start
       user: root
-    - cmd[${nodes.sqldb.first.id}]: |-
-        wget -O setupUser.sh ${baseUrl}/scripts/setupUser.sh
-        bash setupUser.sh ${globals.db_user} ${globals.db_pass}
-      user: root
+      # - cmd[${nodes.sqldb.master.id}]: |-
+      #     wget -O setupUser.sh ${baseUrl}/scripts/setupUser.sh
+      #     bash setupUser.sh ${globals.db_user} ${globals.db_pass}
+      #   user: mysql
 
   createJahiaDatabase:
-    - cmd[${nodes.sqldb[0].id}]: |-
+    - cmd[${nodes.sqldb.master.id}]: |-
         mysql -u${globals.db_user} -p${globals.db_pass} -e "CREATE DATABASE IF NOT EXISTS jahia CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
       user: root
     - cmd[${nodes.proc.first.id}]: cat $DATA_PATH/digital-factory-data/db/sql/schema/mysql/*.sql | mysql -h sqldb -u$DB_USER -p$DB_PASSWORD -f jahia
     
   createDataDogUser:
-    - cmd[${nodes.sqldb[0].id}]: |-
+    - cmd[${nodes.sqldb.master.id}]: |-
         mysql -u${globals.db_user} -p${globals.db_pass} -e "CREATE USER 'datadog'@'127.0.0.1' IDENTIFIED BY '${DB_USER_DATADOG}';"
         mysql -u${globals.db_user} -p${globals.db_pass} -e "GRANT REPLICATION CLIENT ON *.* TO 'datadog'@'127.0.0.1' WITH MAX_USER_CONNECTIONS 5;"
         mysql -u${globals.db_user} -p${globals.db_pass} -e "GRANT PROCESS ON *.* TO 'datadog'@'127.0.0.1';"
