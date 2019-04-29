@@ -193,6 +193,7 @@ onInstall:
   
   - setupDatadogAgent: cp
   - setupDatadogAgent: proc
+  - setupDatadogAgent: proxy
   - setupDatadogAgentSql: sqldb
 
 onAfterServiceScaleOut[cp]:
@@ -251,6 +252,8 @@ actions:
         sed -i 's/# create 600 mysql mysql/create 644 mysql adm/' /etc/logrotate.d/mysql
         logrotate -f /etc/logrotate.d/mysql
         service mysql start
+      user: root
+    - cmd[${nodes.sqldb.first.id}]: |-
         wget -O setupUser.sh ${baseUrl}/scripts/setupUser.sh
         bash setupUser.sh ${globals.db_user} ${globals.db_pass}
       user: root
@@ -259,7 +262,7 @@ actions:
     - cmd[${nodes.sqldb[0].id}]: |-
         mysql -u${globals.db_user} -p${globals.db_pass} -e "CREATE DATABASE IF NOT EXISTS jahia CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
       user: root
-    - cmd[${nodes.proc.first.id}]: cat $DATA_PATH/digital-factory-data/db/sql/schema/mysql/*.sql | mysql -h proxy -u$DB_USER -p$DB_PASSWORD -f jahia
+    - cmd[${nodes.proc.first.id}]: cat $DATA_PATH/digital-factory-data/db/sql/schema/mysql/*.sql | mysql -h sqldb -u$DB_USER -p$DB_PASSWORD -f jahia
     
   createDataDogUser:
     - cmd[${nodes.sqldb[0].id}]: |-
