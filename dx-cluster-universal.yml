@@ -1,6 +1,6 @@
 ---
 type: install
-version: 1.5
+version: 1.5.2
 name: Jahia - Digital Experience Manager
 logo: /images/jahia-logo-70x70.png
 id: jahia-dx-universal
@@ -120,11 +120,11 @@ nodes:
   - nodeType: ${globals.dbnodeType}
     nodeGroup: sqldb
     count: ${globals.dbnodes}
-    # cluster:
-    #   scheme: "${settings.dbscheme}"
+    cluster:
+      scheme: "${settings.dbscheme}"
     cloudlets: 16
     env:
-      # ON_ENV_INSTALL: ${globals.dbbaseUrl}/addons/auto-clustering/auto-cluster.jps
+      ON_ENV_INSTALL: ${globals.dbbaseUrl}/addons/auto-clustering/auto-cluster.jps
       SCHEME: ${globals.dbscheme}
       IS_PROXYSQL: ${globals.is_proxysql}
       DATADOGAPIKEY: ${globals.datadog_key}
@@ -149,13 +149,13 @@ onInstall:
     - api [cp,proc,sqldb]: env.control.AddContainerEnvVars
       vars: {"PACKAGE_TYPE": "prod"}
 
-  - log: "## install DB !!!!!!!!!"
-  - installDBnodes
-  - log: "## end DB !!!!!!!!!"
+  # - log: "## install DB !!!!!!!!!"
+  # - installDBnodes
+  # - log: "## end DB !!!!!!!!!"
 
-  - log: "## super sleep !!!!"
-  - sleep:
-    -milliseconds: 120000
+  # - log: "## super sleep !!!!"
+  # - sleep:
+  #   -milliseconds: 120000
 
   - cmd [sqldb]:
     - 'USER=$(grep -i ''x:''$(cat /etc/passwd | grep jelastic:x | cut -d'':'' -f 3) /etc/passwd | grep -v jelastic:x | cut -d: -f1)'
