@@ -225,7 +225,7 @@ actions:
 
   installDBnodes:
     - install:
-       jps: ${globals.dbbaseUrl}
+       jps: ${globals.dbbaseUrl}/addons/auto-clustering/auto-cluster.jps
        shortdomain: ${settings.shortdomain}
        settings:
          shortdomain: ${settings.shortdomain}
