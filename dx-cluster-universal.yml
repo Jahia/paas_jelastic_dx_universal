@@ -259,7 +259,7 @@ actions:
     - cmd[${nodes.sqldb[0].id}]: |-
         mysql -u${globals.db_user} -p${globals.db_pass} -e "CREATE DATABASE IF NOT EXISTS jahia CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
       user: root
-    - cmd[${nodes.proc.first.id}]: cat $DATA_PATH/digital-factory-data/db/sql/schema/mysql/*.sql | mysql -h proxysql -u$DB_USER -p$DB_PASSWORD -f jahia
+    - cmd[${nodes.proc.first.id}]: cat $DATA_PATH/digital-factory-data/db/sql/schema/mysql/*.sql | mysql -h proxy -u$DB_USER -p$DB_PASSWORD -f jahia
     
   createDataDogUser:
     - cmd[${nodes.sqldb[0].id}]: |-
