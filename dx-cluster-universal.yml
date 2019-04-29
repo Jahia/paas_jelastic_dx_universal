@@ -251,10 +251,9 @@ actions:
         sed -i 's/# create 600 mysql mysql/create 644 mysql adm/' /etc/logrotate.d/mysql
         logrotate -f /etc/logrotate.d/mysql
         service mysql start
-      user: root
-    - cmd[${nodes.sqldb[0].id}]: |-
         wget -O setupUser.sh ${baseUrl}/scripts/setupUser.sh
         bash setupUser.sh ${globals.db_user} ${globals.db_pass}
+      user: root
 
   createJahiaDatabase:
     - cmd[${nodes.sqldb[0].id}]: |-
