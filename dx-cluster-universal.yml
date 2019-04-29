@@ -55,7 +55,7 @@ nodes:
     count: ${settings.browsingCount}
     cloudlets: 40
     nodeGroup: cp
-    links: sqldb:mysqldb
+    links: proxy:proxysql
     startServiceOnCreation: false
     env: 
       DB_USER: ${globals.db_user}
@@ -81,8 +81,9 @@ nodes:
     cloudlets: 40
     nodeGroup: proc
     links: 
-      - sqldb:mysqldb
-      - nosqldb:redis
+      - proxy:proxysql
+        # - sqldb:mysqldb
+        # - nosqldb:redis
     startServiceOnCreation: false
     env: 
       DB_USER: ${globals.db_user}
@@ -250,18 +251,19 @@ actions:
         sed -i 's/# create 600 mysql mysql/create 644 mysql adm/' /etc/logrotate.d/mysql
         logrotate -f /etc/logrotate.d/mysql
         service mysql start
+      user: root
+    - cmd[$(nodes.sqldb[0].id)]: |-
         wget -O setupUser.sh ${baseUrl}/scripts/setupUser.sh
         bash setupUser.sh ${globals.db_user} ${globals.db_pass}
-      user: root
 
   createJahiaDatabase:
-    - cmd[sqldb]: |-
+    - cmd[${nodes.sqldb[0].id}]: |-
         mysql -u${globals.db_user} -p${globals.db_pass} -e "CREATE DATABASE IF NOT EXISTS jahia CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
       user: root
-    - cmd[${nodes.proc.first.id}]: cat $DATA_PATH/digital-factory-data/db/sql/schema/mysql/*.sql | mysql -h mysqldb -u$DB_USER -p$DB_PASSWORD -f jahia
+    - cmd[${nodes.proc.first.id}]: cat $DATA_PATH/digital-factory-data/db/sql/schema/mysql/*.sql | mysql -h proxysql -u$DB_USER -p$DB_PASSWORD -f jahia
     
   createDataDogUser:
-    - cmd[sqldb]: |-
+    - cmd[${nodes.sqldb[0].id}]: |-
         mysql -u${globals.db_user} -p${globals.db_pass} -e "CREATE USER 'datadog'@'127.0.0.1' IDENTIFIED BY '${DB_USER_DATADOG}';"
         mysql -u${globals.db_user} -p${globals.db_pass} -e "GRANT REPLICATION CLIENT ON *.* TO 'datadog'@'127.0.0.1' WITH MAX_USER_CONNECTIONS 5;"
         mysql -u${globals.db_user} -p${globals.db_pass} -e "GRANT PROCESS ON *.* TO 'datadog'@'127.0.0.1';"
