@@ -24,6 +24,7 @@ globals:
   operating_mode: ${settings.mode}
   datadog_key: ${settings.ddogApikey}
   shortdomain: ${settings.shortdomain}
+  dbbaseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master
   dbscheme: ${settings.dbscheme}
   dbnodeType: ${settings.dbnodeType}
   dbnodes: ${settings.dbnodes}
@@ -121,9 +122,9 @@ nodes:
     count: ${globals.dbnodes}
     # cluster:
     #   scheme: "${settings.dbscheme}"
-    cloudlets: 8
+    cloudlets: 16
     env:
-      ON_ENV_INSTALL: ${baseUrl}/addons/auto-clustering/auto-cluster.jps
+      ON_ENV_INSTALL: ${dbbaseUrl}/addons/auto-clustering/auto-cluster.jps
       SCHEME: ${globals.dbscheme}
       IS_PROXYSQL: ${globals.is_proxysql}
       DATADOGAPIKEY: ${globals.datadog_key}
