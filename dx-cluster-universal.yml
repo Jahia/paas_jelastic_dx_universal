@@ -55,7 +55,7 @@ nodes:
     count: ${settings.browsingCount}
     cloudlets: 40
     nodeGroup: cp
-    links: proxy:proxysql
+    links: proxy:mysqldb
     startServiceOnCreation: false
     env: 
       DB_USER: ${globals.db_user}
@@ -81,7 +81,7 @@ nodes:
     cloudlets: 40
     nodeGroup: proc
     links: 
-      - proxy:proxysql
+      - proxy:mysqldb
         # - sqldb:mysqldb
         # - nosqldb:redis
     startServiceOnCreation: false
