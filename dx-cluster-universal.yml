@@ -153,6 +153,10 @@ onInstall:
   - installDBnodes
   - log: "## end DB !!!!!!!!!"
 
+  - log: "## super sleep !!!!"
+  - sleep:
+    -milliseconds: 120000
+
   - cmd [sqldb]:
     - 'USER=$(grep -i ''x:''$(cat /etc/passwd | grep jelastic:x | cut -d'':'' -f 3) /etc/passwd | grep -v jelastic:x | cut -d: -f1)'
     - 'touch /etc/sudoers.d/sudo'
@@ -236,6 +240,8 @@ actions:
          nodes: ${settings.dbnodes}
          stack: ${settings.stack}
          is_proxysql: ${settings.is_proxysql}
+         db_user: ${globals.db_user}
+         db_pass: ${globals.db_pass}
 
   setupSqlDB:
     - cmd[sqldb]: |-
