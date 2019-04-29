@@ -252,7 +252,7 @@ actions:
         logrotate -f /etc/logrotate.d/mysql
         service mysql start
       user: root
-    - cmd[$(nodes.sqldb[0].id)]: |-
+    - cmd[${nodes.sqldb[0].id}]: |-
         wget -O setupUser.sh ${baseUrl}/scripts/setupUser.sh
         bash setupUser.sh ${globals.db_user} ${globals.db_pass}
 
