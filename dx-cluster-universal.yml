@@ -211,7 +211,7 @@ onInstall:
   
   - setupDatadogAgent: cp
   - setupDatadogAgent: proc
-  - setupDatadogAgentSql: proxy
+  - setupDatadogAgentProxySql: proxy
   - setupDatadogAgentSql: sqldb
 
 onAfterServiceScaleOut[cp]:
@@ -338,6 +338,46 @@ actions:
             systemctl restart crond datadog-agent
           user: root
             
+  setupDatadogAgentProxySql:
+    - if (settings.mode == 'production'):
+        forEach(nodes.${this}):
+          cmd[${@i.id}]: |- 
+            DD_API_KEY=${globals.datadog_key} bash -c "$(curl -L https://raw.githubusercontent.com/DataDog/datadog-agent/master/cmd/agent/install_script.sh)" 
+            echo "hostname: ${this}.${@i.id}" >> /etc/datadog-agent/datadog.yaml
+            sed -i 's/# logs_enabled: false/logs_enabled: true/' /etc/datadog-agent/datadog.yaml
+            echo "tags:" >> /etc/datadog-agent/datadog.yaml
+            echo " - env:${PACKAGE_TYPE}" >> /etc/datadog-agent/datadog.yaml
+            echo " - product:dx" >> /etc/datadog-agent/datadog.yaml
+            echo " - version:${DX_VERSION}" >> /etc/datadog-agent/datadog.yaml
+            echo " - envname:${env.envName}" >> /etc/datadog-agent/datadog.yaml
+            echo " - provide:${_PROVIDE}" >> /etc/datadog-agent/datadog.yaml
+            echo " - role:${_ROLE}" >> /etc/datadog-agent/datadog.yaml
+            echo " - envmode:${jahia_cfg_operatingMode}" >> /etc/datadog-agent/datadog.yaml
+            chmod 755 /var/log/mysql/mysqld.log -R
+            echo "---" > /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "logs:" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "  - type: file" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "    path: /var/log/mysql/mysqld.log" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "    source: mysql" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "    service: dx" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "init_config:" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "instances:" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "  - server: 127.0.0.1" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "    user: " >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "    pass: " >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "    sock: /var/lib/mysql/mysql.sock" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "    tags:" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "      - 'env:${PACKAGE_TYPE}'" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "      - 'role:database'" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "options:" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "   replication: false" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "   galera_cluster: true" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            wget -O /usr/local/bin/set_dd_tags.sh ${baseUrl}/scripts/set_dd_tags.sh
+            wget -O /etc/cron.d/set_dd_tags_cron ${baseUrl}/configs/set_dd_tags_cron
+            chmod u+x /usr/local/bin/set_dd_tags.sh
+            systemctl restart crond datadog-agent
+          user: root 
+
   setupDatadogAgentSql:
     - if (settings.mode == 'production'):
         forEach(nodes.${this}):
@@ -359,18 +399,24 @@ actions:
             echo "  - type: file" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "    path: /var/log/mysql/mysqld.log" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "    source: mysql" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
-            echo "    service: mydatabase" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "    service: dx" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "init_config:" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "instances:" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "  - server: 127.0.0.1" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "    user: datadog" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "    pass: ${DB_USER_DATADOG}" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "    sock: /var/lib/mysql/mysql.sock" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "    tags:" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "      - 'env:${PACKAGE_TYPE}'" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "      - 'role:database'" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "options:" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
-            echo "   replication: 0" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
-            echo "   galera_cluster: 1" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "   replication: false" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "   galera_cluster: true" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "   extra_status_metrics: true" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "   extra_innodb_metrics: true" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "   extra_performance_metrics: true" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "   schema_size_metrics: true" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "   disable_innodb_metrics: false" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             wget -O /usr/local/bin/set_dd_tags.sh ${baseUrl}/scripts/set_dd_tags.sh
             wget -O /etc/cron.d/set_dd_tags_cron ${baseUrl}/configs/set_dd_tags_cron
             chmod u+x /usr/local/bin/set_dd_tags.sh
