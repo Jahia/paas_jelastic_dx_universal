@@ -298,6 +298,7 @@ actions:
         echo $SUPER_USER_PASSWORD > $DATA_PATH/digital-factory-data/root.pwd
         chown -R tomcat:tomcat $DATA_PATH/digital-factory-data/root.pwd
         sed -i "2i JMX_OPTS=\-XX:+UseParallelGC" /opt/tomcat/conf/tomcat-env.sh
+        sed "s/mysqldb/${DB_ENDPOINT}/" -i /opt/tomcat/webapps/ROOT/META-INF/context.xml
         
   setupDatadogAgent:
     - if (settings.mode == 'production'):
