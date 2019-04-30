@@ -268,7 +268,7 @@ actions:
     - cmd[${nodes.proc.first.id}]: cat $DATA_PATH/digital-factory-data/db/sql/schema/mysql/*.sql | mysql -h mysqldb -u$DB_USER -p$DB_PASSWORD -f jahia
     
   createDataDogUser:
-    - cmd[${nodes.sqldb.master.id}]: |-
+    - cmd[${nodes.sqldb.master.id}, proxy]: |-
         mysql -u${globals.db_user} -p${globals.db_pass} -e "CREATE USER 'datadog'@'localhost' IDENTIFIED BY '${DB_USER_DATADOG}';"
         mysql -u${globals.db_user} -p${globals.db_pass} -e "GRANT REPLICATION CLIENT ON *.* TO 'datadog'@'localhost' WITH MAX_USER_CONNECTIONS 5;"
         mysql -u${globals.db_user} -p${globals.db_pass} -e "GRANT PROCESS ON *.* TO 'datadog'@'localhost';"
@@ -349,12 +349,12 @@ actions:
             echo "init_config:" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "instances:" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "  - server: 127.0.0.1" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
-            echo "    user: " >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
-            echo "    pass: " >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "    user: datadog" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "    pass: ${DB_USER_DATADOG}" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "    sock: /var/lib/mysql/mysql.sock" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "    tags:" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "      - 'env:${PACKAGE_TYPE}'" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
-            echo "      - 'role:database'" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "      - 'role:proxysql'" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "options:" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "   replication: false" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "   galera_cluster: true" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
