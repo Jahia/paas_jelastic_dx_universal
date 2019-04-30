@@ -127,7 +127,7 @@ nodes:
       scheme: "${settings.dbscheme}"
       db_user: ${globals.db_user}
       db_pass: ${globals.db_pass}
-    cloudlets: 16
+    cloudlets: 40
     env:
       ON_ENV_INSTALL: ${globals.dbbaseUrl}/addons/auto-clustering/auto-cluster.jps
       SCHEME: ${globals.dbscheme}
