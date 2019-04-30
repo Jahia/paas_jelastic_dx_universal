@@ -284,10 +284,10 @@ actions:
     
   createDataDogUser:
     - cmd[${nodes.sqldb.master.id}]: |-
-        mysql -u${globals.db_user} -p${globals.db_pass} -e "CREATE USER 'datadog'@'127.0.0.1' IDENTIFIED BY '${DB_USER_DATADOG}';"
-        mysql -u${globals.db_user} -p${globals.db_pass} -e "GRANT REPLICATION CLIENT ON *.* TO 'datadog'@'127.0.0.1' WITH MAX_USER_CONNECTIONS 5;"
-        mysql -u${globals.db_user} -p${globals.db_pass} -e "GRANT PROCESS ON *.* TO 'datadog'@'127.0.0.1';"
-        mysql -u${globals.db_user} -p${globals.db_pass} -e "GRANT SELECT ON performance_schema.* TO 'datadog'@'127.0.0.1';"
+        mysql -u${globals.db_user} -p${globals.db_pass} -e "CREATE USER 'datadog'@'localhost' IDENTIFIED BY '${DB_USER_DATADOG}';"
+        mysql -u${globals.db_user} -p${globals.db_pass} -e "GRANT REPLICATION CLIENT ON *.* TO 'datadog'@'localhost' WITH MAX_USER_CONNECTIONS 5;"
+        mysql -u${globals.db_user} -p${globals.db_pass} -e "GRANT PROCESS ON *.* TO 'datadog'@'localhost';"
+        mysql -u${globals.db_user} -p${globals.db_pass} -e "GRANT SELECT ON performance_schema.* TO 'datadog'@'localhost';"
       user: root
       
   installMaven:
