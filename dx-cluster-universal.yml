@@ -81,7 +81,7 @@ nodes:
     cloudlets: 40
     nodeGroup: proc
     links: 
-      - proxy:mysqldb
+      - sqldb:mysqldb
         # - sqldb:mysqldb
         # - nosqldb:redis
     startServiceOnCreation: false
@@ -140,27 +140,27 @@ nodes:
       _ROLE: master
       envName: ${globals.shortdomain}
     
-  - nodeType: ${globals.dbnodeType}
-    nodeGroup: proxy
-    count: 0
-    cluster:
-      scheme: "${settings.dbscheme}"
-      db_user: ${globals.db_user}
-      db_pass: ${globals.db_pass}
-    cloudlets: 12
-    env:
-      ON_ENV_INSTALL: ${globals.dbbaseUrl}/addons/auto-clustering/auto-cluster.jps
-      SCHEME: ${globals.dbscheme}
-      DB_USER: ${globals.db_user}
-      DB_PASS: ${globals.db_pass}
-      IS_PROXYSQL: ${globals.is_proxysql}
-      DATADOGAPIKEY: ${globals.datadog_key}
-      DB_USER_DATADOG: ${globals.db_user_datadog}
-      PACKAGE_TYPE: ${globals.package_type}
-      DX_VERSION: ${globals.dx_version}
-      _PROVIDE: MariaDB
-      _ROLE: master
-      envName: ${globals.shortdomain}
+      #- nodeType: ${globals.dbnodeType}
+      #  nodeGroup: proxy
+      #  count: 0
+      #  cluster:
+      #    scheme: "${settings.dbscheme}"
+      #    db_user: ${globals.db_user}
+      #    db_pass: ${globals.db_pass}
+      #  cloudlets: 12
+      #  env:
+      #    ON_ENV_INSTALL: ${globals.dbbaseUrl}/addons/auto-clustering/auto-cluster.jps
+      #    SCHEME: ${globals.dbscheme}
+      #    DB_USER: ${globals.db_user}
+      #    DB_PASS: ${globals.db_pass}
+      #    IS_PROXYSQL: ${globals.is_proxysql}
+      #    DATADOGAPIKEY: ${globals.datadog_key}
+      #    DB_USER_DATADOG: ${globals.db_user_datadog}
+      #    PACKAGE_TYPE: ${globals.package_type}
+      #    DX_VERSION: ${globals.dx_version}
+      #    _PROVIDE: MariaDB
+      #    _ROLE: master
+      #    envName: ${globals.shortdomain}
     
 
 # --Events --
