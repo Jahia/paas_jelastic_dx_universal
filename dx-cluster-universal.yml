@@ -55,7 +55,7 @@ nodes:
     count: ${settings.browsingCount}
     cloudlets: 40
     nodeGroup: cp
-    links: proxy:mysqldb
+    links: sqldb:mysqldb
     startServiceOnCreation: false
     env: 
       DB_USER: ${globals.db_user}
