@@ -268,11 +268,17 @@ actions:
     - cmd[${nodes.proc.first.id}]: cat $DATA_PATH/digital-factory-data/db/sql/schema/mysql/*.sql | mysql -h mysqldb -u$DB_USER -p$DB_PASSWORD -f jahia
     
   createDataDogUser:
-    - cmd[${nodes.sqldb.master.id}, proxy]: |-
+    - cmd[${nodes.sqldb.master.id}]: |-
         mysql -u${globals.db_user} -p${globals.db_pass} -e "CREATE USER 'datadog'@'localhost' IDENTIFIED BY '${DB_USER_DATADOG}';"
         mysql -u${globals.db_user} -p${globals.db_pass} -e "GRANT REPLICATION CLIENT ON *.* TO 'datadog'@'localhost' WITH MAX_USER_CONNECTIONS 5;"
         mysql -u${globals.db_user} -p${globals.db_pass} -e "GRANT PROCESS ON *.* TO 'datadog'@'localhost';"
         mysql -u${globals.db_user} -p${globals.db_pass} -e "GRANT SELECT ON performance_schema.* TO 'datadog'@'localhost';"
+      user: root
+    - cmd[proxy]: |-
+        mysql -e "CREATE USER 'datadog'@'localhost' IDENTIFIED BY '${DB_USER_DATADOG}';"
+        mysql -e "GRANT REPLICATION CLIENT ON *.* TO 'datadog'@'localhost' WITH MAX_USER_CONNECTIONS 5;"
+        mysql -e "GRANT PROCESS ON *.* TO 'datadog'@'localhost';"
+        mysql -e "GRANT SELECT ON performance_schema.* TO 'datadog'@'localhost';"
       user: root
       
   installMaven:
