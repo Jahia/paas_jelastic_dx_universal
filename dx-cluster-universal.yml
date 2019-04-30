@@ -140,6 +140,28 @@ nodes:
       _ROLE: master
       envName: ${globals.shortdomain}
     
+  - nodeType: ${globals.dbnodeType}
+    nodeGroup: proxy
+    count: 0
+    cluster:
+      scheme: "${settings.dbscheme}"
+      db_user: ${globals.db_user}
+      db_pass: ${globals.db_pass}
+    cloudlets: 12
+    env:
+      ON_ENV_INSTALL: ${globals.dbbaseUrl}/addons/auto-clustering/auto-cluster.jps
+      SCHEME: ${globals.dbscheme}
+      DB_USER: ${globals.db_user}
+      DB_PASS: ${globals.db_pass}
+      IS_PROXYSQL: ${globals.is_proxysql}
+      DATADOGAPIKEY: ${globals.datadog_key}
+      DB_USER_DATADOG: ${globals.db_user_datadog}
+      PACKAGE_TYPE: ${globals.package_type}
+      DX_VERSION: ${globals.dx_version}
+      _PROVIDE: MariaDB
+      _ROLE: master
+      envName: ${globals.shortdomain}
+    
 
 # --Events --
 
@@ -153,14 +175,6 @@ onInstall:
     - log: "## git repo branch is prod"
     - api [cp,proc,sqldb]: env.control.AddContainerEnvVars
       vars: {"PACKAGE_TYPE": "prod"}
-
-  # - log: "## install DB !!!!!!!!!"
-  # - installDBnodes
-  # - log: "## end DB !!!!!!!!!"
-
-  # - log: "## super sleep !!!!"
-  # - sleep:
-  #   -milliseconds: 120000
 
   - cmd [sqldb]:
     - 'USER=$(grep -i ''x:''$(cat /etc/passwd | grep jelastic:x | cut -d'':'' -f 3) /etc/passwd | grep -v jelastic:x | cut -d: -f1)'
@@ -197,7 +211,7 @@ onInstall:
   
   - setupDatadogAgent: cp
   - setupDatadogAgent: proc
-  - setupDatadogAgent: proxy
+  - setupDatadogAgentSql: proxy
   - setupDatadogAgentSql: sqldb
 
 onAfterServiceScaleOut[cp]:
@@ -233,26 +247,26 @@ onAfterRedeployContainer[proc]:
 
 actions:
 
-  installDBnodes:
-    - install:
-       jps: ${globals.dbbaseUrl}/addons/auto-clustering/auto-cluster.jps
-       shortdomain: ${settings.shortdomain}
-       settings:
-         shortdomain: ${settings.shortdomain}
-         dxVersion: ${globals.dx_version}
-         ddogApikey: ${settings.ddogApikey}
-         nodeType: ${settings.dbnodeType}
-         scheme: ${settings.dbscheme}
-         nodes: ${settings.dbnodes}
-         stack: ${settings.stack}
-         is_proxysql: ${settings.is_proxysql}
-         db_user: ${globals.db_user}
-         db_pass: ${globals.db_pass}
+  #installDBnodes:
+  #  - install:
+  #     jps: ${globals.dbbaseUrl}/addons/auto-clustering/auto-cluster.jps
+  #     shortdomain: ${settings.shortdomain}
+  #     settings:
+  #       shortdomain: ${settings.shortdomain}
+  #       dxVersion: ${globals.dx_version}
+  #       ddogApikey: ${settings.ddogApikey}
+  #       nodeType: ${settings.dbnodeType}
+  #       scheme: ${settings.dbscheme}
+  #       nodes: ${settings.dbnodes}
+  #       stack: ${settings.stack}
+  #       is_proxysql: ${settings.is_proxysql}
+  #       db_user: ${globals.db_user}
+  #       db_pass: ${globals.db_pass}
 
   setupSqlDB:
     - cmd[sqldb]: |-
         service mysql stop
-        wget -O /etc/my.cnf ${baseUrl}/configs/my.cnf
+        # wget -O /etc/my.cnf ${baseUrl}/configs/my.cnf
         sed -i 's/# create 600 mysql mysql/create 644 mysql adm/' /etc/logrotate.d/mysql
         logrotate -f /etc/logrotate.d/mysql
         service mysql start
@@ -266,7 +280,7 @@ actions:
     - cmd[${nodes.sqldb.master.id}]: |-
         mysql -u${globals.db_user} -p${globals.db_pass} -e "CREATE DATABASE IF NOT EXISTS jahia CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
       user: root
-    - cmd[${nodes.proc.first.id}]: cat $DATA_PATH/digital-factory-data/db/sql/schema/mysql/*.sql | mysql -h sqldb -u$DB_USER -p$DB_PASSWORD -f jahia
+    - cmd[${nodes.proc.first.id}]: cat $DATA_PATH/digital-factory-data/db/sql/schema/mysql/*.sql | mysql -h mysqldb -u$DB_USER -p$DB_PASSWORD -f jahia
     
   createDataDogUser:
     - cmd[${nodes.sqldb.master.id}]: |-
