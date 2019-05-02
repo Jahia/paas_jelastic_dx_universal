@@ -160,6 +160,8 @@ onInstall:
     - log: "## is_proxysql is true"
     - api[*]: env.control.AddContainerEnvVars
       vars: {"DB_ENDPOINT": "proxy"} 
+    - api[proxy]: env.control.AddContainerEnvVars
+      vars: {"envName": "${globals.shortdomain}", "_PROVIDE": "ProxySQL", "DX_VERSION": "${globals.dx_version}", "_ROLE": "ProxySQL", "jahia_cfg_operatingMode": "${globals.operating_mode}"}
 
   - cmd [sqldb, proxy]:
     - 'USER=$(grep -i ''x:''$(cat /etc/passwd | grep jelastic:x | cut -d'':'' -f 3) /etc/passwd | grep -v jelastic:x | cut -d: -f1)'
