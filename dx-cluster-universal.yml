@@ -152,6 +152,7 @@ onUninstall:
   user: root
 
 onInstall:
+  - log: "## Beginning installation of DX"
   - if (/\/raw\/[0-9]+\.[0-9]+$/.test(baseUrl)):
     - log: "## git repo branch is prod"
     - api [*]: env.control.AddContainerEnvVars
@@ -249,6 +250,7 @@ actions:
   #       db_pass: ${globals.db_pass}
 
   setSudoer:
+    - log: "## Set sudoer on ${this}"
     - cmd: |-
       - 'USER=$(grep -i ''x:''$(cat /etc/passwd | grep jelastic:x | cut -d'':'' -f 3) /etc/passwd | grep -v jelastic:x | cut -d: -f1)'
       - 'touch /etc/sudoers.d/sudo'
@@ -257,6 +259,7 @@ actions:
       user: root
 
   setupSqlDB:
+    - log: "## Set good mysql owners and right on ${this}"
     - cmd[sqldb]: |-
         service mysql stop
         wget -O /etc/my.cnf ${baseUrl}/configs/my.cnf
@@ -272,26 +275,32 @@ actions:
         user: root
 
   createJahiaDatabase:
+    - log: "## Create DX's Jahia database"
     - cmd[${nodes.sqldb.master.id}]: |-
         mysql -u${globals.db_user} -p${globals.db_pass} -e "CREATE DATABASE IF NOT EXISTS jahia CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
       user: root
+    - log: "## Import DX schema in database"
     - cmd[${nodes.proc.first.id}]: cat $DATA_PATH/digital-factory-data/db/sql/schema/mysql/*.sql | mysql -h mysqldb -u$DB_USER -p$DB_PASSWORD -f jahia
     
   createDataDogUser:
+    - log: "## Create Datadog database user"
     - cmd[${nodes.sqldb.master.id}]: |-
         mysql -u${globals.db_user} -p${globals.db_pass} -e "CREATE USER 'datadog'@'localhost' IDENTIFIED BY '${DB_USER_DATADOG}';"
         mysql -u${globals.db_user} -p${globals.db_pass} -e "GRANT REPLICATION CLIENT ON *.* TO 'datadog'@'localhost' WITH MAX_USER_CONNECTIONS 5;"
         mysql -u${globals.db_user} -p${globals.db_pass} -e "GRANT PROCESS ON *.* TO 'datadog'@'localhost';"
         mysql -u${globals.db_user} -p${globals.db_pass} -e "GRANT SELECT ON performance_schema.* TO 'datadog'@'localhost';"
       user: root
-    - cmd[proxy]: |-
-        mysql -e "CREATE USER 'datadog'@'localhost' IDENTIFIED BY '${DB_USER_DATADOG}';"
-        mysql -e "GRANT REPLICATION CLIENT ON *.* TO 'datadog'@'localhost' WITH MAX_USER_CONNECTIONS 5;"
-        mysql -e "GRANT PROCESS ON *.* TO 'datadog'@'localhost';"
-        mysql -e "GRANT SELECT ON performance_schema.* TO 'datadog'@'localhost';"
-      user: root
+    - if ( settings.is_proxysql == 'true' ):
+      - log: "## Create Datadog database use on proxys"
+      - cmd[proxy]: |-
+          mysql -e "CREATE USER 'datadog'@'localhost' IDENTIFIED BY '${DB_USER_DATADOG}';"
+          mysql -e "GRANT REPLICATION CLIENT ON *.* TO 'datadog'@'localhost' WITH MAX_USER_CONNECTIONS 5;"
+          mysql -e "GRANT PROCESS ON *.* TO 'datadog'@'localhost';"
+          mysql -e "GRANT SELECT ON performance_schema.* TO 'datadog'@'localhost';"
+        user: root
       
   installMaven:
+    - log: "## Install Maven on ${this}"
     - cmd[${this}]: |-
         wget -O maven.zip http://apache.mirrors.ovh.net/ftp.apache.org/dist/maven/maven-3/3.6.0/binaries/apache-maven-3.6.0-bin.zip 
         unzip maven.zip -d /opt
@@ -301,6 +310,7 @@ actions:
         sed -i "2i _JAVA_OPTIONS=" /opt/apache-maven*/bin/mvn
         
   copyApp:  
+    - log: "## Copying DX and settings is properties"
     - cmd[${this}]: |-
         [ "${this}" == "proc" ] && role="processing" || role="browsing" 
         rm -rf $STACK_PATH/webapps/*
@@ -320,6 +330,7 @@ actions:
           sed 's;\(url="jdbc:mariadb:\)[^"]\+\(/jahia[^"]\+\);\1failover://mysqldb_1,mysqldb_2,mysqldb_3\2;' -i /opt/tomcat/webapps/ROOT/META-INF/context.xml
         
   setupDatadogAgent:
+    - log: "## Install Datadog agent on ${this}"
     - if (settings.mode == 'production'):
         forEach(nodes.${this}):
           cmd[${@i.id}]: |- 
@@ -344,6 +355,7 @@ actions:
           user: root
             
   setupDatadogAgentProxySql:
+    - log: "## Install Datadog agent on ${this}"
     - if (settings.mode == 'production'):
         forEach(nodes.${this}):
           cmd[${@i.id}]: |- 
@@ -384,6 +396,7 @@ actions:
           user: root 
 
   setupDatadogAgentSql:
+    - log: "## Install Datadog agent on ${this}"
     - if (settings.mode == 'production'):
         forEach(nodes.${this}):
           cmd[${@i.id}]: |- 
@@ -429,6 +442,7 @@ actions:
           user: root 
             
   setupDatadogAgentPerNode:
+    - log: "## Install Datadog agent on ${this}"
     - if (settings.mode == 'production'):
         - cmd[${this}]: |- 
             DD_API_KEY=${globals.datadog_key} bash -c "$(curl -L https://raw.githubusercontent.com/DataDog/datadog-agent/master/cmd/agent/install_script.sh)" 
