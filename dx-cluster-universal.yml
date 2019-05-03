@@ -195,7 +195,8 @@ onInstall:
   
   - setupDatadogAgent: cp
   - setupDatadogAgent: proc
-  - setupDatadogAgentProxySql: proxy
+  - if ( '${globals.is_proxysql}' == 'true' ):
+    - setupDatadogAgentProxySql: proxy
   - setupDatadogAgentSql: sqldb
 
 onAfterServiceScaleOut[cp]:
