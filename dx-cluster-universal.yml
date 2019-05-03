@@ -163,12 +163,9 @@ onInstall:
     - api[proxy]: env.control.AddContainerEnvVars
       vars: {"envName": "${globals.shortdomain}", "_PROVIDE": "ProxySQL", "DX_VERSION": "${globals.dx_version}", "_ROLE": "ProxySQL", "jahia_cfg_operatingMode": "${globals.operating_mode}", "DATADOGAPIKEY": "${globals.datadog_key}"}
 
-  - cmd [sqldb, proxy]:
-    - 'USER=$(grep -i ''x:''$(cat /etc/passwd | grep jelastic:x | cut -d'':'' -f 3) /etc/passwd | grep -v jelastic:x | cut -d: -f1)'
-    - 'touch /etc/sudoers.d/sudo'
-    - 'echo "$USER ALL=NOPASSWD: ALL" >> /etc/sudoers.d/sudo'
-    - 'echo "jelastic ALL=NOPASSWD: ALL" >> /etc/sudoers.d/sudo'
-    user: root
+  - setSudoer: sqldb
+  - if ( '${globals.is_proxysql}' == 'true' ):
+    - setSudoer: proxy
     
   - environment.control.ApplyNodeGroupData [proc]:
       data: 
@@ -249,6 +246,14 @@ actions:
   #       is_proxysql: ${settings.is_proxysql}
   #       db_user: ${globals.db_user}
   #       db_pass: ${globals.db_pass}
+
+  setSudoer:
+    - cmd: |-
+      - 'USER=$(grep -i ''x:''$(cat /etc/passwd | grep jelastic:x | cut -d'':'' -f 3) /etc/passwd | grep -v jelastic:x | cut -d: -f1)'
+      - 'touch /etc/sudoers.d/sudo'
+      - 'echo "$USER ALL=NOPASSWD: ALL" >> /etc/sudoers.d/sudo'
+      - 'echo "jelastic ALL=NOPASSWD: ALL" >> /etc/sudoers.d/sudo'
+      user: root
 
   setupSqlDB:
     - cmd[sqldb]: |-
