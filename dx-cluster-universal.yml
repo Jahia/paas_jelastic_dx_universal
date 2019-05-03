@@ -251,7 +251,7 @@ actions:
 
   setSudoer:
     - log: "## Set sudoer on ${this}"
-    - cmd: |-
+    - cmd[${this}]: |-
         USER=$(grep -i ''x:''$(cat /etc/passwd | grep jelastic:x | cut -d'':'' -f 3) /etc/passwd | grep -v jelastic:x | cut -d: -f1)
         touch /etc/sudoers.d/sudo
         echo "$USER ALL=NOPASSWD: ALL" >> /etc/sudoers.d/sudo
