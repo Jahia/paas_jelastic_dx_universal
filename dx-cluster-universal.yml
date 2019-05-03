@@ -10,7 +10,7 @@ description:
     your entire digital ecosystem to innovate and deliver great customer experiences,
     foster internal collaboration and support dynamic business needs for sustainable
     growth.
-baseUrl: https://github.com/Jahia/paas_jelastic_dx_universal/raw/__UNIVERSAL_VERSION__
+baseUrl: https://github.com/Jahia/paas_jelastic_dx_universal/raw/test_single
 globals:
   db_user: jahia-db-${fn.random}
   db_pass: ${fn.password(20)}
@@ -138,7 +138,7 @@ nodes:
       DB_USER_DATADOG: ${globals.db_user_datadog}
       PACKAGE_TYPE: ${globals.package_type}
       DX_VERSION: ${globals.dx_version}
-      _PROVIDE: MariaDB
+      _PROVIDE: ${globals.dbscheme}
       _ROLE: master
       envName: ${globals.shortdomain}
       DB_ENDPOINT: mysqldb
@@ -258,10 +258,12 @@ actions:
         logrotate -f /etc/logrotate.d/mysql
         service mysql start
       user: root
-      # - cmd[${nodes.sqldb.master.id}]: |-
-      #     wget -O setupUser.sh ${baseUrl}/scripts/setupUser.sh
-      #     bash setupUser.sh ${globals.db_user} ${globals.db_pass}
-      #   user: mysql
+    - if (settings.dbscheme == 'lonely'):
+      - log: "## We just need one lonely, single, master db node, so let's handle it"
+      - cmd[${nodes.sqldb.master.id}]: |-
+          wget -O setupUser.sh ${baseUrl}/scripts/setupUser.sh
+          bash setupUser.sh ${globals.db_user} ${globals.db_pass}
+        user: root
 
   createJahiaDatabase:
     - cmd[${nodes.sqldb.master.id}]: |-
