@@ -191,8 +191,8 @@ onInstall:
       - installMaven: cp
   - if (settings.skipStart != 'true'):
       - forEach(nodes.cp):
-        api: env.control.ExecDockerRunCmd
-        nodeId: ${@i.id}
+          api: env.control.ExecDockerRunCmd
+          nodeId: ${@i.id}
 
   - setupDatadogAgent: cp
   - setupDatadogAgent: proc
