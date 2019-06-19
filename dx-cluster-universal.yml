@@ -168,10 +168,11 @@ onInstall:
   - if ( '${globals.is_proxysql}' == 'true' ):
       - setSudoer: proxy
 
-  - environment.control.ApplyNodeGroupData [proc]:
+  - environment.control.ApplyNodeGroupData [proc, cp]:
       data:
-        dxVersion: ${globals.dx_version}
-        packageType: dev
+        productName: dx
+        productVersion: ${globals.dx_version}
+        packageType: ${globals.package_type}
   - setupSqlDB
   - if (settings.skipStart != 'true'): createJahiaDatabase
   - if (settings.mode == 'production'): createDataDogUser
