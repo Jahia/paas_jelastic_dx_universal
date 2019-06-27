@@ -10,6 +10,7 @@ description:
 onInstall:
   - cmd [cp,proc]:
     - service tomcat stop
+    - rm -rf /data/jahia
   - api: environment.control.RedeployContainersByGroup
     nodeGroup: proc
     tag: ${settings.targetVersion}
@@ -37,7 +38,7 @@ settings:
       required: true
     - name: packageType
       type: string
-      caption: DX Target Version
+      caption: Package Type
       default: dev
       vtype: text
       required: true
