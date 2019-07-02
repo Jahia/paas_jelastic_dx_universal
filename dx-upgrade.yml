@@ -1,0 +1,44 @@
+---
+type: update
+version: 0.1
+name: Jahia - Upgrade
+logo: /images/jahia-logo-70x70.png
+id: jahia-upgrade
+description:
+  short: Jahia - Upgrade
+
+onInstall:
+  - cmd [cp,proc]:
+    - service tomcat stop
+    - rm -rf /data/jahia
+  - api: environment.control.RedeployContainersByGroup
+    nodeGroup: proc
+    tag: ${settings.targetVersion}
+    useExistingVolumes: false
+    skipReinstall: false
+    envName: ${env.envName}  
+  - api: environment.control.RedeployContainersByGroup
+    nodeGroup: cp
+    tag: ${settings.targetVersion}
+    useExistingVolumes: false
+    skipReinstall: false
+    envName: ${env.envName}  
+  - env.control.ApplyNodeGroupData[proc]:
+      data:
+        productVersion: ${settings.targetVersion}
+        packageType: ${settings.packageType}
+  - cmd [cp,proc]:
+    - service tomcat start
+settings:
+  fields:
+    - name: targetVersion
+      type: string
+      caption: DX Target Version
+      vtype: text
+      required: true
+    - name: packageType
+      type: string
+      caption: Package Type
+      default: dev
+      vtype: text
+      required: true
