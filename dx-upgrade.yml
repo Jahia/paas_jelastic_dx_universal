@@ -9,26 +9,26 @@ description:
 
 onInstall:
   - cmd [cp,proc]:
-    - service tomcat stop
-    - rm -rf /data/jahia
+      - service tomcat stop
+      - rm -rf /data/jahia
   - api: environment.control.RedeployContainersByGroup
     nodeGroup: proc
     tag: ${settings.targetVersion}
     useExistingVolumes: false
     skipReinstall: false
-    envName: ${env.envName}  
+    envName: ${env.envName}
   - api: environment.control.RedeployContainersByGroup
     nodeGroup: cp
     tag: ${settings.targetVersion}
     useExistingVolumes: false
     skipReinstall: false
-    envName: ${env.envName}  
+    envName: ${env.envName}
   - env.control.ApplyNodeGroupData[proc]:
       data:
         productVersion: ${settings.targetVersion}
         packageType: ${settings.packageType}
   - cmd [cp,proc]:
-    - service tomcat start
+      - service tomcat start
 settings:
   fields:
     - name: targetVersion
