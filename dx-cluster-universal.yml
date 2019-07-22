@@ -266,7 +266,7 @@ actions:
     - cmd[sqldb]: |-
         service mysql stop
         wget -O /etc/my.cnf ${baseUrl}/configs/my.cnf
-        sed -i 's/# create 600 mysql mysql/create 644 mysql adm/' /etc/logrotate.d/mysql
+        wget -O /etc/logrotate.d/mysql ${baseUrl}/configs/logrotate_mysql
         logrotate -f /etc/logrotate.d/mysql
         service mysql start
       user: root

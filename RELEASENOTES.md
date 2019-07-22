@@ -6,9 +6,10 @@
 * [BUG]: `DX_VERSION` and `PACKAGE_TYPE` where not updated when upgrading an env
 * [BUG]: fix `set_dd_tag.sh` removing Datadog agent's `logs_enabled`
 * [IMPROVEMENT]: services name in logs sent to Datadog
-* [IMPROVEMENT]: MariaDB logs
+* [IMPROVEMENT][BUG]: MariaDB logs
     * adding slow queries log in /var/log/mysql/slow-queries.log
         * a slow query is more than 5.0s
+    * now functionnal log rotation
 
 
 ### v1.4 (2019-07-05)
