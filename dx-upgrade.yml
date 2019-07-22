@@ -27,6 +27,8 @@ onInstall:
       data:
         productVersion: ${settings.targetVersion}
         packageType: ${settings.packageType}
+  - env.control.AddContainerEnvVars[cp, proc]:
+      vars: {"DX_VERSION": "${settings.targetVersion}", "PACKAGE_TYPE": "${settings.packageType}"}
   - cmd [cp,proc]:
       - service tomcat start
 settings:
