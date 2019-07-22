@@ -1,6 +1,10 @@
 # Jahia Universal Package Release notes
 
-## actual version: v1.4
+## actual version: v1.5
+
+### v1.5 (2019-07-22)
+* [BUG]: `DX_VERSION` and `PACKAGE_TYPE` where not updated when upgrading an env
+* [BUG]: `set_dd_tag.sh` was removing Datadog agent's `logs_enabled`
 
 ### v1.4 (2019-07-05)
 * [NEW]: Add license if set
