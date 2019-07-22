@@ -10,6 +10,7 @@ source ${hn_metadata}
 {
 echo "api_key: $DATADOGAPIKEY"
 echo "hostname: $(awk '$1=="hostname:"{print $2}' $ddconffile)"
+echo "logs_enabled: true"
 echo "tags:"
 echo " - product:$(awk '$2~/^product/ {split($2,a,":"); print a[2]}' $ddconffile)"
 echo " - envname:${envName}"
