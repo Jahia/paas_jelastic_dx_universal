@@ -3,7 +3,7 @@ logs:
      - type: file
        path: /opt/tomcat/logs/catalina.out
        source: tomcat
-       service: myservice
+       service: jahia
 
 instances:
     -   host: localhost
