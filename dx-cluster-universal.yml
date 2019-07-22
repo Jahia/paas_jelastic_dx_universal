@@ -267,6 +267,9 @@ actions:
         service mysql stop
         wget -O /etc/my.cnf ${baseUrl}/configs/my.cnf
         wget -O /etc/logrotate.d/mysql ${baseUrl}/configs/logrotate_mysql
+        echo "[mysqladmin]" > /root/.my.cnf
+        echo "user = ${globals.db_user}" >> /root/.my.cnf
+        echo "password = ${globals.db_pass}" >> /root/.my.cnf
         logrotate -f /etc/logrotate.d/mysql
         service mysql start
       user: root
