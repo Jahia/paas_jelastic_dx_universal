@@ -384,6 +384,10 @@ actions:
             echo "    path: /var/log/mysql/mysqld.log" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "    source: mysql" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "    service: jahia" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "  - type: file" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "    path: /var/log/mysql/slow-queries.log" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "    source: mysql" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "    service: jahia" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "init_config:" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "instances:" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "  - server: 127.0.0.1" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
@@ -424,6 +428,10 @@ actions:
             echo "logs:" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "  - type: file" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "    path: /var/log/mysql/mysqld.log" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "    source: mysql" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "    service: jahia" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "  - type: file" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "    path: /var/log/mysql/slow-queries.log" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "    source: mysql" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "    service: jahia" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "init_config:" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
