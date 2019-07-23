@@ -2,7 +2,7 @@
 
 ## actual version: v1.5
 
-### v1.5 (2019-07-22)
+### v1.5 (2019-07-23)
 * [BUG]: `DX_VERSION` and `PACKAGE_TYPE` where not updated when upgrading an env
 * [BUG]: fix `set_dd_tag.sh` removing Datadog agent's `logs_enabled`
 * [IMPROVEMENT]: services name in logs sent to Datadog
