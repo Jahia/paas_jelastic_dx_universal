@@ -489,23 +489,23 @@ success: /text/success.md
 settings:
   fields:
     - name: dxVersion
-      type: text
+      type: string
       caption: Jahia DX version
       required: true
     - name: rootpwd
       type: string
       caption: Jahia DX root password
-      vtype: text
+      vtype: string
       required: true
     - name: toolspwd
       type: string
       caption: Jahia tools password
-      vtype: text
+      vtype: string
       required: true
     - name: browsingCount
       type: string
       caption: Number of DX browsing nodes
-      vtype: text
+      vtype: string
       required: true
       default: 2
 
@@ -598,7 +598,6 @@ settings:
             type: string
             caption: Datadog API KEY
             required: true
-            vtype: text
 
     - name: license
       type: text
