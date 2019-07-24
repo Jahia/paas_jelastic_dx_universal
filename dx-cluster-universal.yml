@@ -24,6 +24,7 @@ globals:
   operating_mode: ${settings.mode}
   datadog_key: ${settings.ddogApikey}
   shortdomain: ${settings.shortdomain}
+  displayName: ${env.displayName}
   dbbaseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master
   dbscheme: ${settings.dbscheme}
   dbnodeType: ${settings.dbnodeType}
@@ -76,7 +77,7 @@ nodes:
       _PROVIDE: DX
       _ROLE: Browsing
       envName: ${globals.shortdomain}
-      displayName: ${env.displayName}
+      displayName: ${globals.displayName}
       DB_ENDPOINT: mysqldb
 
   - image: jahiadev/processing:${globals.dx_version}
@@ -106,7 +107,7 @@ nodes:
       _PROVIDE: DX
       _ROLE: Processing
       envName: ${globals.shortdomain}
-      displayName: ${env.displayName}
+      displayName: ${globals.displayName}
       DB_ENDPOINT: mysqldb
 
   # - nodeType: mariadb-dockerized
@@ -145,7 +146,7 @@ nodes:
       _PROVIDE: ${globals.dbscheme}
       _ROLE: Database
       envName: ${globals.shortdomain}
-      displayName: ${env.displayName}
+      displayName: ${globals.displayName}
       DB_ENDPOINT: mysqldb
 
 
