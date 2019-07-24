@@ -222,6 +222,7 @@ onAfterRedeployContainer[cp]:
       - chkconfig --add tomcat
       - chkconfig --level 3 tomcat on
       - service tomcat start
+  - setupDatadogAgent: cp
 
 onAfterRedeployContainer[proc]:
   - copyApp: proc
@@ -231,6 +232,7 @@ onAfterRedeployContainer[proc]:
       - chkconfig --add tomcat
       - chkconfig --level 3 tomcat on
       - service tomcat start
+  - setupDatadogAgent: proc
 
 # -- Actions --
 
@@ -357,6 +359,7 @@ actions:
             echo " - role:${_ROLE}" >> /etc/datadog-agent/datadog.yaml
             echo " - envmode:${jahia_cfg_operatingMode}" >> /etc/datadog-agent/datadog.yaml
             wget -O /etc/datadog-agent/conf.d/tomcat.d/conf.yaml ${baseUrl}/configs/dd_agent_tomcat_conf.yaml
+            sed 's/service: jahia/service: ${env.shortdomain}/' -i /etc/datadog-agent/conf.d/tomcat.d/conf.yaml
             wget -O /usr/local/bin/set_dd_tags.sh ${baseUrl}/scripts/set_dd_tags.sh
             wget -O /etc/cron.d/set_dd_tags_cron ${baseUrl}/configs/set_dd_tags_cron
             chmod u+x /usr/local/bin/set_dd_tags.sh
@@ -386,11 +389,11 @@ actions:
             echo "  - type: file" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "    path: /var/log/mysql/mysqld.log" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "    source: mysql" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
-            echo "    service: jahia" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "    service: ${env.shortdomain}" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "  - type: file" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "    path: /var/log/mysql/slow-queries.log" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "    source: mysql" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
-            echo "    service: jahia" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "    service: ${env.shortdomain}" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "init_config:" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "instances:" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "  - server: 127.0.0.1" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
@@ -432,11 +435,11 @@ actions:
             echo "  - type: file" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "    path: /var/log/mysql/mysqld.log" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "    source: mysql" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
-            echo "    service: jahia" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "    service: ${env.shortdomain}" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "  - type: file" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "    path: /var/log/mysql/slow-queries.log" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "    source: mysql" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
-            echo "    service: jahia" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+            echo "    service: ${env.shortdomain}" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "init_config:" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "instances:" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
             echo "  - server: 127.0.0.1" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
@@ -478,6 +481,7 @@ actions:
             echo " - role:${_ROLE}" >> /etc/datadog-agent/datadog.yaml
             echo " - envmode:${jahia_cfg_operatingMode}" >> /etc/datadog-agent/datadog.yaml
             wget -O /etc/datadog-agent/conf.d/tomcat.d/conf.yaml ${baseUrl}/configs/dd_agent_tomcat_conf.yaml
+            sed 's/service: jahia/service: ${env.shortdomain}/' -i /etc/datadog-agent/conf.d/tomcat.d/conf.yaml
             chmod 755 /opt/tomcat/logs/catalina.out -R
             wget -O /usr/local/bin/set_dd_tags.sh ${baseUrl}/scripts/set_dd_tags.sh
             wget -O /etc/cron.d/set_dd_tags_cron ${baseUrl}/configs/set_dd_tags_cron
