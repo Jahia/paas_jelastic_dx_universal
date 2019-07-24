@@ -2,7 +2,7 @@
 
 ## actual version: v1.5
 
-### v1.5 (2019-07-23)
+### v1.5 (2019-07-24)
 * [BUG]: `DX_VERSION` and `PACKAGE_TYPE` where not updated when upgrading an env
 * [BUG]: fix `set_dd_tag.sh` removing Datadog agent's `logs_enabled`
 * [BUG]: fix update env that do not reinstall datadog agent
@@ -12,6 +12,7 @@
     * adding slow queries log in /var/log/mysql/slow-queries.log
         * a slow query is more than 5.0s
     * now functionnal log rotation
+    * Datadog agent now use tag `role:Database` for mariadb nodes
 
 
 ### v1.4 (2019-07-05)

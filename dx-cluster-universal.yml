@@ -141,7 +141,7 @@ nodes:
       PACKAGE_TYPE: ${globals.package_type}
       DX_VERSION: ${globals.dx_version}
       _PROVIDE: ${globals.dbscheme}
-      _ROLE: master
+      _ROLE: Database
       envName: ${globals.shortdomain}
       DB_ENDPOINT: mysqldb
 
