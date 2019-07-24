@@ -24,7 +24,7 @@ globals:
   operating_mode: ${settings.mode}
   datadog_key: ${settings.ddogApikey}
   shortdomain: ${settings.shortdomain}
-  displayName: ${env.displayName}
+  displayName: ${settings.displayName}
   dbbaseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master
   dbscheme: ${settings.dbscheme}
   dbnodeType: ${settings.dbnodeType}
@@ -593,6 +593,8 @@ settings:
       type: envname
       caption: Environment
       required: true
+    - name: displayName
+      type: string
     - name: mode
       type: radio-fieldset
       caption: Operating Mode
