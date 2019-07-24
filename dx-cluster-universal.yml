@@ -76,6 +76,7 @@ nodes:
       _PROVIDE: DX
       _ROLE: Browsing
       envName: ${globals.shortdomain}
+      displayName: ${env.displayName}
       DB_ENDPOINT: mysqldb
 
   - image: jahiadev/processing:${globals.dx_version}
@@ -105,6 +106,7 @@ nodes:
       _PROVIDE: DX
       _ROLE: Processing
       envName: ${globals.shortdomain}
+      displayName: ${env.displayName}
       DB_ENDPOINT: mysqldb
 
   # - nodeType: mariadb-dockerized
@@ -143,6 +145,7 @@ nodes:
       _PROVIDE: ${globals.dbscheme}
       _ROLE: Database
       envName: ${globals.shortdomain}
+      displayName: ${env.displayName}
       DB_ENDPOINT: mysqldb
 
 

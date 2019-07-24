@@ -13,6 +13,7 @@
         * a slow query is more than 5.0s
     * now functionnal log rotation
     * Datadog agent now use tag `role:Database` for mariadb nodes
+* [IMPROVEMENT]: add displayName as an envvar in nodes for backup's metadata
 
 
 ### v1.4 (2019-07-05)
