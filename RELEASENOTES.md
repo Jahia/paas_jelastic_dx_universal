@@ -9,6 +9,8 @@
 * [IMPROVEMENT]: logs sent to Datadog
     * services name in logs sent to Datadog  where `service` is `shortdomain`
     * user `dd-agent` is now a `tomcat` group member
+    * now send access_logs too
+    * now send karaf logs too
 * [IMPROVEMENT][BUG]: MariaDB
     * adding slow queries log in /var/log/mysql/slow-queries.log
         * a slow query is more than 5.0s
