@@ -366,6 +366,7 @@ actions:
             chmod u+x /usr/local/bin/set_dd_tags.sh
             chmod 755 /opt/tomcat/logs/catalina.out -R
             /usr/local/bin/set_dd_tags.sh
+            usermod -G tomcat dd-agent
             systemctl restart crond datadog-agent
           user: root
 
@@ -412,7 +413,6 @@ actions:
             chmod u+x /usr/local/bin/set_dd_tags.sh
             chmod 644 /var/log/mysql/mysqld.log
             chmod 644 /var/log/mysql/slow-queries.log
-            usermod -G tomcat dd-agent
             systemctl restart crond datadog-agent
           user: root
 
@@ -464,7 +464,6 @@ actions:
             chmod u+x /usr/local/bin/set_dd_tags.sh
             chmod 644 /var/log/mysql/mysqld.log
             chmod 644 /var/log/mysql/slow-queries.log
-            usermod -G tomcat dd-agent
             systemctl restart crond datadog-agent
           user: root
 
@@ -489,6 +488,7 @@ actions:
             wget -O /usr/local/bin/set_dd_tags.sh ${baseUrl}/scripts/set_dd_tags.sh
             wget -O /etc/cron.d/set_dd_tags_cron ${baseUrl}/configs/set_dd_tags_cron
             chmod u+x /usr/local/bin/set_dd_tags.sh
+            usermod -G tomcat dd-agent
             systemctl restart crond datadog-agent
           user: root
 
