@@ -412,6 +412,7 @@ actions:
             chmod u+x /usr/local/bin/set_dd_tags.sh
             chmod 644 /var/log/mysql/mysqld.log
             chmod 644 /var/log/mysql/slow-queries.log
+            usermod -G tomcat dd-agent
             systemctl restart crond datadog-agent
           user: root
 
@@ -463,6 +464,7 @@ actions:
             chmod u+x /usr/local/bin/set_dd_tags.sh
             chmod 644 /var/log/mysql/mysqld.log
             chmod 644 /var/log/mysql/slow-queries.log
+            usermod -G tomcat dd-agent
             systemctl restart crond datadog-agent
           user: root
 

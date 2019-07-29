@@ -6,8 +6,9 @@
 * [BUG]: `DX_VERSION` and `PACKAGE_TYPE` where not updated when upgrading an env
 * [BUG]: fix `set_dd_tag.sh` removing Datadog agent's `logs_enabled`
 * [BUG]: fix update env that do not reinstall datadog agent
-* [IMPROVEMENT]: services name in logs sent to Datadog
-    * where `service` is `shortdomain`
+* [IMPROVEMENT]: logs sent to Datadog
+    * services name in logs sent to Datadog  where `service` is `shortdomain`
+    * user `dd-agent` is now a `tomcat` group member
 * [IMPROVEMENT][BUG]: MariaDB
     * adding slow queries log in /var/log/mysql/slow-queries.log
         * a slow query is more than 5.0s
