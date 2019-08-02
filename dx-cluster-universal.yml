@@ -25,7 +25,7 @@ globals:
   datadog_key: ${settings.ddogApikey}
   shortdomain: ${settings.shortdomain}
   displayName: ${settings.displayName}
-  dbbaseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master
+  dbbaseUrl: https://raw.githubusercontent.com/Jahia/pass_jelastic_mysql_cluster/master
   dbscheme: ${settings.dbscheme}
   dbnodeType: ${settings.dbnodeType}
   dbnodes: ${settings.dbnodes}
@@ -50,6 +50,7 @@ globals:
     -XX:+UseParallelGC
     -XX:SurvivorRatio=8
     -Xmn1G
+    -Xlog:gc::time,uptime,level,pid,tid,tags
 ssl: true
 skipNodeEmails: true
 nodes:
