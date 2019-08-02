@@ -266,7 +266,7 @@ actions:
       user: root
 
   setupSqlDB:
-    - log: "## Set good mysql owners and right on ${this}"
+    - log: "## Setup MariaDB logrotate on ${this}"
     - cmd[sqldb]: |-
         service mysql stop
         wget -O /etc/my.cnf ${baseUrl}/configs/my.cnf
@@ -282,10 +282,10 @@ actions:
       #       user: root
 
   createJahiaDatabase:
-    - log: "## Create DX's Jahia database"
+    - log: "## Create DX's Jahia database and user"
     - cmd[${nodes.sqldb.master.id}]: |-
         mysql -e "CREATE DATABASE IF NOT EXISTS jahia CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-        mysql -e "grant all privileges on jahia.* to ${globals.db_user}@'%' identified by '${globals.db_pass}';"
+        mysql -e "grant all privileges on jahia.* to '${globals.db_user}'@'%' identified by '${globals.db_pass}';"
         mysql -e "flush privileges;"
       user: root
     - log: "## Import DX schema in database"
