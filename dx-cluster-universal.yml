@@ -10,7 +10,7 @@ description:
     manages your entire digital ecosystem to innovate and deliver great customer
     experiences, foster internal collaboration and support dynamic business
     needs for sustainable growth.
-baseUrl: https://github.com/Jahia/paas_jelastic_dx_universal/raw/v1.5
+baseUrl: https://github.com/Jahia/paas_jelastic_dx_universal/raw/v1.6
 globals:
   db_user: jahia-db-${fn.random}
   db_pass: ${fn.password(20)}
@@ -271,23 +271,22 @@ actions:
         service mysql stop
         wget -O /etc/my.cnf ${baseUrl}/configs/my.cnf
         wget -O /etc/logrotate.d/mysql ${baseUrl}/configs/logrotate_mysql
-        echo "[mysqladmin]" > /root/.my.cnf
-        echo "user = ${globals.db_user}" >> /root/.my.cnf
-        echo "password = ${globals.db_pass}" >> /root/.my.cnf
         logrotate -f /etc/logrotate.d/mysql
         service mysql start
       user: root
-    - if (settings.dbscheme == 'lonely'):
-        - log: "## We just need one lonely, single, master db node, so let's handle it"
-        - cmd[${nodes.sqldb.master.id}]: |-
-            wget -O setupUser.sh ${baseUrl}/scripts/setupUser.sh
-            bash setupUser.sh ${globals.db_user} ${globals.db_pass}
-          user: root
+      # - if (settings.dbscheme == 'lonely'):
+      #     - log: "## We just need one lonely, single, master db node, so let's handle it"
+      #     - cmd[${nodes.sqldb.master.id}]: |-
+      #         wget -O setupUser.sh ${baseUrl}/scripts/setupUser.sh
+      #         bash setupUser.sh ${globals.db_user} ${globals.db_pass}
+      #       user: root
 
   createJahiaDatabase:
     - log: "## Create DX's Jahia database"
     - cmd[${nodes.sqldb.master.id}]: |-
-        mysql -u${globals.db_user} -p${globals.db_pass} -e "CREATE DATABASE IF NOT EXISTS jahia CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+        mysql -e "CREATE DATABASE IF NOT EXISTS jahia CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+        mysql -e "grant all privileges on jahia.* to ${globals.db_user}@'%' identified by '${globals.db_pass}';"
+        mysql -e "flush privileges;"
       user: root
     - log: "## Import DX schema in database"
     - cmd[${nodes.proc.first.id}]: cat $DATA_PATH/digital-factory-data/db/sql/schema/mysql/*.sql | mysql -h mysqldb -u$DB_USER -p$DB_PASSWORD -f jahia
@@ -295,10 +294,10 @@ actions:
   createDataDogUser:
     - log: "## Create Datadog database user"
     - cmd[${nodes.sqldb.master.id}]: |-
-        mysql -u${globals.db_user} -p${globals.db_pass} -e "CREATE USER 'datadog'@'localhost' IDENTIFIED BY '${DB_USER_DATADOG}';"
-        mysql -u${globals.db_user} -p${globals.db_pass} -e "GRANT REPLICATION CLIENT ON *.* TO 'datadog'@'localhost' WITH MAX_USER_CONNECTIONS 5;"
-        mysql -u${globals.db_user} -p${globals.db_pass} -e "GRANT PROCESS ON *.* TO 'datadog'@'localhost';"
-        mysql -u${globals.db_user} -p${globals.db_pass} -e "GRANT SELECT ON performance_schema.* TO 'datadog'@'localhost';"
+        mysql -e "CREATE USER 'datadog'@'localhost' IDENTIFIED BY '${DB_USER_DATADOG}';"
+        mysql -e "GRANT REPLICATION CLIENT ON *.* TO 'datadog'@'localhost' WITH MAX_USER_CONNECTIONS 5;"
+        mysql -e "GRANT PROCESS ON *.* TO 'datadog'@'localhost';"
+        mysql -e "GRANT SELECT ON performance_schema.* TO 'datadog'@'localhost';"
       user: root
     - if ( settings.is_proxysql == 'true' ):
         - log: "## Create Datadog database use on proxys"
