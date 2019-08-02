@@ -5,7 +5,7 @@
 ### v1.6 (2019-08-02)
 * [CHANGE][BUG][IMPROVEMENT]: about MariaDB
     * now using a fork version of Jelastic's `mysql_cluster` package
-        * it can be found here: https://www.github.com/Jahia/pass_elastic_mysql_cluster
+        * it can be found here: https://www.github.com/Jahia/pass_jelastic_mysql_cluster
     * MariaDB is now v10.4 which have some importants authentification changes
         * now local user `root` and `mysql` can connect to the server using a socket and without password
         * now the mysql user used by Jahia is just a regular user granted with all permission on jahia's database only (and not the mariadb's root anymore)
