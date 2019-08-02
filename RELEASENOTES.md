@@ -1,6 +1,15 @@
 # Jahia Universal Package Release notes
 
-## actual version: v1.5
+## actual version: v1.6
+
+### v1.6 (2019-08-02)
+* [CHANGE][BUG][IMPROVEMENT]: about MariaDB
+    * now using a fork version of Jelastic's `mysql_cluster` package
+        * it can be found here: https://www.github.com/Jahia/pass_elastic_mysql_cluster
+    * MariaDB is now v10.4 which have some importants authentification changes
+        * now local user `root` and `mysql` can connect to the server using a socket and without password
+        * now the mysql user used by Jahia is just a regular user granted with all permission on jahia's database only (and not the mariadb's root anymore)
+* [IMPROVEMENT]: Garbage Collector Logs are now enabled for Jahia
 
 ### v1.5 (2019-07-24)
 * [BUG]: `DX_VERSION` and `PACKAGE_TYPE` where not updated when upgrading an env
