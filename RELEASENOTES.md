@@ -2,6 +2,10 @@
 
 ## actual version: v1.6
 
+### v1.7 (2019-xx-xx)
+* [IMPROVEMENT]: password in logs are now masked before being set to datadog
+* [IMPROVEMENT]: now sqldb nodes get a jahia_cfg_operatingMode envvar too
+
 ### v1.6 (2019-08-02)
 * [CHANGE][BUG][IMPROVEMENT]: about MariaDB
     * now using a fork version of Jelastic's `mysql_cluster` package

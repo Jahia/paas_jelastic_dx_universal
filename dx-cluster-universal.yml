@@ -146,6 +146,7 @@ nodes:
       _ROLE: Database
       envName: ${globals.shortdomain}
       DB_ENDPOINT: mysqldb
+      jahia_cfg_operatingMode: ${globals.operating_mode}
 
 
 # --Events --
