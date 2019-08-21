@@ -147,6 +147,7 @@ nodes:
       envName: ${globals.shortdomain}
       DB_ENDPOINT: mysqldb
       jahia_cfg_operatingMode: ${globals.operating_mode}
+      PHPMYADMIN_ENABLED: false
 
 
 # --Events --
@@ -267,10 +268,10 @@ actions:
       user: root
 
   setupSqlDB:
-    - log: "## Do not start httpd anymore"
-    - cmd[sqldb]: |-
-        service httpd stop
-        rm /etc/rc.d/init.d/httpd
+    # - log: "## Do not start httpd anymore"
+    # - cmd[sqldb]: |-
+    #     service httpd stop
+    #     rm /etc/rc.d/init.d/httpd
     - log: "## Setup MariaDB logrotate on ${this}"
     - cmd[sqldb]: |-
         service mysql stop
