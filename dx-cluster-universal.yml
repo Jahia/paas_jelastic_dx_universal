@@ -148,6 +148,7 @@ nodes:
       DB_ENDPOINT: mysqldb
       jahia_cfg_operatingMode: ${globals.operating_mode}
       PHPMYADMIN_ENABLED: false
+      ADMINPANEL_ENABLED: false
 
 
 # --Events --
