@@ -25,7 +25,7 @@ globals:
   datadog_key: ${settings.ddogApikey}
   shortdomain: ${settings.shortdomain}
   displayName: ${settings.displayName}
-  dbbaseUrl: https://raw.githubusercontent.com/Jahia/pass_jelastic_mysql_cluster/master
+  dbbaseUrl: https://raw.githubusercontent.com/Jahia/paas_jelastic_mysql_cluster/master
   dbscheme: ${settings.dbscheme}
   dbnodeType: ${settings.dbnodeType}
   dbnodes: ${settings.dbnodes}
