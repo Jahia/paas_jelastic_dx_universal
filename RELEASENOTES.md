@@ -1,11 +1,17 @@
 # Jahia Universal Package Release notes
 
-## actual version: v1.6
+## actual version: v1.7
 
 ### v1.7 (2019-xx-xx)
 * [IMPROVEMENT]: password in logs are now masked before being set to datadog
 * [IMPROVEMENT]: now sqldb nodes get a jahia_cfg_operatingMode envvar too
-* [BUG]: fix a typo introduce in v1.6
+* [BUG]: I'm ashamed about a lot of things from previous version
+    * change PhpMyAdmin disabling method
+        * v1.6 is completly broken because of it, sorry for that
+        * now using `PHPMYADMIN_ENABLED` and `ADMINPANEL_ENABLED` envvars to `false`
+    * MariaDB fork was shitty
+        * wrong repo name `pass` instead of `paas`
+        * `baseURL`'s package still rely to originated Jelastic's repo
 
 ### v1.6 (2019-08-02)
 * [CHANGE][BUG][IMPROVEMENT]: about MariaDB
