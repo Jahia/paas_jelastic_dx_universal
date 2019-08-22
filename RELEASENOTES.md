@@ -2,7 +2,7 @@
 
 ## actual version: v1.7
 
-### v1.7 (2019-xx-xx)
+### v1.7 (2019-08-22)
 * [IMPROVEMENT]: password in logs are now masked before being set to datadog
 * [IMPROVEMENT]: now sqldb nodes get a jahia_cfg_operatingMode envvar too
 * [BUG]: I'm ashamed about a lot of things from previous version
