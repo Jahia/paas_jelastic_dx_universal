@@ -1,6 +1,15 @@
 # Jahia Universal Package Release notes
 
-## actual version: v1.7
+## actual version: v1.8
+
+### v1.8 (2019-09-03)
+* [BUG]: weird probleme with `mysql_cluster` package
+    * install mariadb 10.4.6 in dev cluster and 10.3.16 in prod
+    * now we not using this package anymore and directly create the node with v10.4.6
+    * we will return to it when mariadb clustering will be ok
+* [BUG]: maven url is 404
+    * new version (3.6.1) of Maven was release today
+    * change to used url to the archived one from the Maven website
 
 ### v1.7 (2019-08-22)
 * [IMPROVEMENT]: password in logs are now masked before being set to datadog
