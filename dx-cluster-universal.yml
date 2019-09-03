@@ -572,7 +572,7 @@ settings:
       type: list
       name: dbnodes
       dependsOn:
-        scheme:
+        dbscheme:
           lonely:
             - value: 1
           slave:
