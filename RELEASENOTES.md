@@ -1,6 +1,10 @@
 # Jahia Universal Package Release notes
 
-## actual version: v1.8
+## actual version: v1.8.1
+
+### v1.8.1 (2019-09-04)
+* [BUG]: Cannot have working DX if not >v7.3.1.0
+    * because of a java argument for Garbage Collector logging wich is unknown for jdk 8
 
 ### v1.8 (2019-09-03)
 * [BUG]: weird probleme with `mysql_cluster` package
