@@ -50,7 +50,7 @@ globals:
     -XX:+UseParallelGC
     -XX:SurvivorRatio=8
     -Xmn1G
-    -Xlog:gc::time,uptime,level,pid,tid,tags
+    #    -Xlog:gc::time,uptime,level,pid,tid,tags
 ssl: true
 skipNodeEmails: true
 nodes:
@@ -165,7 +165,8 @@ onUninstall:
 
 onInstall:
   - log: "## Beginning installation of DX"
-  - if (/\/raw\/[0-9]+\.[0-9]+\.prod$/.test(baseUrl)):
+  # - if (/\/raw\/[0-9]+\.[0-9]+\.prod$/.test(baseUrl)):
+  - if (/\/raw\/v[0-9]+\.[0-9]+$/.test(baseUrl)):
       - log: "## git repo branch is prod"
       - api [*]: env.control.AddContainerEnvVars
         vars: {"PACKAGE_TYPE": "prod"}
@@ -619,8 +620,8 @@ settings:
             type: string
             caption: Datadog API KEY
             required: true
+            default: NoDatadog
 
     - name: license
       type: text
       caption: license
-
