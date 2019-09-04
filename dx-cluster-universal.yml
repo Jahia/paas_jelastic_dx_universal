@@ -345,7 +345,7 @@ actions:
     - setGlobals:
         java_opts: ${response.out}
     - log: "## Now setting the good java options envvar"
-    - api [cp,proc]: env.control.AddContainerEnvVars
+    - api[${this}]: env.control.AddContainerEnvVars
       vars: {"_JAVA_OPTIONS": "${globals.java_opts}"}
 
     - log: "## Copying DX and settings is properties"
