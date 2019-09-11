@@ -10,7 +10,7 @@ description:
     manages your entire digital ecosystem to innovate and deliver great customer
     experiences, foster internal collaboration and support dynamic business
     needs for sustainable growth.
-baseUrl: https://github.com/Jahia/paas_jelastic_dx_universal/raw/v1.8.1
+baseUrl: https://github.com/Jahia/paas_jelastic_dx_universal/raw/PAAS-284
 globals:
   db_user: jahia-db-${fn.random}
   db_pass: ${fn.password(20)}
@@ -54,7 +54,7 @@ globals:
 ssl: true
 skipNodeEmails: true
 nodes:
-  - image: jahiadev/browsing:${globals.dx_version}
+  - image: jahiadev/browsing:${globals.dx_version}_TEST
     displayName: Browsing
     count: ${settings.browsingCount}
     cloudlets: 40
@@ -80,7 +80,7 @@ nodes:
       envName: ${globals.shortdomain}
       DB_ENDPOINT: mysqldb
 
-  - image: jahiadev/processing:${globals.dx_version}
+  - image: jahiadev/processing:${globals.dx_version}_TEST
     displayName: Processing
     count: 1
     cloudlets: 40
@@ -322,14 +322,10 @@ actions:
           user: root
 
   installMaven:
-    - log: "## Install Maven on ${this}"
+    - log: "## Activate Maven on ${this}"
     - cmd[${this}]: |-
-        wget -O maven.zip https://archive.apache.org/dist/maven/maven-3/3.6.0/binaries/apache-maven-3.6.0-bin.zip
-        unzip maven.zip -d /opt
-        sed -i 's/#mvnPath = mvn/mvnPath = \/opt\/apache-maven-3.6.0\/bin\/mvn/' /opt/tomcat/conf/digital-factory-config/jahia/jahia.properties
-        chown tomcat:tomcat -R /opt/apache-maven*
-        sed -i "2i MAVEN_OPTS=\-XX:+UseParallelGC" /opt/apache-maven*/bin/mvn
-        sed -i "2i _JAVA_OPTIONS=" /opt/apache-maven*/bin/mvn
+        mvn_path=$(find /opt/*maven*/bin -type f -name "mvn")
+        sed -i 's,#\(mvnPath =\s*\).*$,\1'$mvn_path',' /opt/tomcat/conf/digital-factory-config/jahia/jahia.properties
 
   copyApp:
     - log: "## Determine JDK version for good _JAVA_OPTIONS envvar"
@@ -377,26 +373,11 @@ actions:
     - if (settings.mode == 'production'):
         forEach(nodes.${this}):
           cmd[${@i.id}]: |-
-            DD_API_KEY=${globals.datadog_key} bash -c "$(curl -L https://raw.githubusercontent.com/DataDog/datadog-agent/master/cmd/agent/install_script.sh)"
-            echo "hostname: ${this}.${@i.id}" >> /etc/datadog-agent/datadog.yaml
-            sed -i 's/# logs_enabled: false/logs_enabled: true/' /etc/datadog-agent/datadog.yaml
-            echo "tags:" >> /etc/datadog-agent/datadog.yaml
-            echo " - env:${PACKAGE_TYPE}" >> /etc/datadog-agent/datadog.yaml
-            echo " - product:dx" >> /etc/datadog-agent/datadog.yaml
-            echo " - version:${DX_VERSION}" >> /etc/datadog-agent/datadog.yaml
-            echo " - envname:${env.envName}" >> /etc/datadog-agent/datadog.yaml
-            echo " - provide:${_PROVIDE}" >> /etc/datadog-agent/datadog.yaml
-            echo " - role:${_ROLE}" >> /etc/datadog-agent/datadog.yaml
-            echo " - envmode:${jahia_cfg_operatingMode}" >> /etc/datadog-agent/datadog.yaml
-            wget -O /etc/datadog-agent/conf.d/tomcat.d/conf.yaml ${baseUrl}/configs/dd_agent_tomcat_conf.yaml
             sed 's/service: jahia/service: ${env.shortdomain}/' -i /etc/datadog-agent/conf.d/tomcat.d/conf.yaml
-            wget -O /usr/local/bin/set_dd_tags.sh ${baseUrl}/scripts/set_dd_tags.sh
-            wget -O /etc/cron.d/set_dd_tags_cron ${baseUrl}/configs/set_dd_tags_cron
-            chmod u+x /usr/local/bin/set_dd_tags.sh
-            chmod 755 /opt/tomcat/logs/catalina.out -R
+            chmod 644 /opt/tomcat/logs/catalina.out
             /usr/local/bin/set_dd_tags.sh
-            usermod -G tomcat dd-agent
-            systemctl restart crond datadog-agent
+            systemctl restart crond
+            systemctl enable datadog-agent
           user: root
 
   setupDatadogAgentProxySql:
@@ -500,25 +481,10 @@ actions:
     - log: "## Install Datadog agent on ${this}"
     - if (settings.mode == 'production'):
         - cmd[${this}]: |-
-            DD_API_KEY=${globals.datadog_key} bash -c "$(curl -L https://raw.githubusercontent.com/DataDog/datadog-agent/master/cmd/agent/install_script.sh)"
-            echo "hostname: cp.${this}" >> /etc/datadog-agent/datadog.yaml
-            sed -i 's/# logs_enabled: false/logs_enabled: true/' /etc/datadog-agent/datadog.yaml
-            echo "tags:" >> /etc/datadog-agent/datadog.yaml
-            echo " - env:${PACKAGE_TYPE}" >> /etc/datadog-agent/datadog.yaml
-            echo " - product:dx" >> /etc/datadog-agent/datadog.yaml
-            echo " - version:${DX_VERSION}" >> /etc/datadog-agent/datadog.yaml
-            echo " - envname:${env.envName}" >> /etc/datadog-agent/datadog.yaml
-            echo " - provide:${_PROVIDE}" >> /etc/datadog-agent/datadog.yaml
-            echo " - role:${_ROLE}" >> /etc/datadog-agent/datadog.yaml
-            echo " - envmode:${jahia_cfg_operatingMode}" >> /etc/datadog-agent/datadog.yaml
-            wget -O /etc/datadog-agent/conf.d/tomcat.d/conf.yaml ${baseUrl}/configs/dd_agent_tomcat_conf.yaml
             sed 's/service: jahia/service: ${env.shortdomain}/' -i /etc/datadog-agent/conf.d/tomcat.d/conf.yaml
-            chmod 755 /opt/tomcat/logs/catalina.out -R
-            wget -O /usr/local/bin/set_dd_tags.sh ${baseUrl}/scripts/set_dd_tags.sh
-            wget -O /etc/cron.d/set_dd_tags_cron ${baseUrl}/configs/set_dd_tags_cron
-            chmod u+x /usr/local/bin/set_dd_tags.sh
-            usermod -G tomcat dd-agent
-            systemctl restart crond datadog-agent
+            chmod 644 /opt/tomcat/logs/catalina.out
+            systemctl restart crond
+            systemctl enable datadog-agent
           user: root
 
 success: /text/success.md
