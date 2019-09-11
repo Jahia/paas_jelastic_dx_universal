@@ -74,7 +74,7 @@ nodes:
       DX_VERSION: ${globals.dx_version}
       PACKAGE_TYPE: ${globals.package_type}
       jahia_cfg_operatingMode: ${globals.operating_mode}
-      _PROVIDE: DX
+      _PROVIDE: jahia
       _ROLE: Browsing
       envName: ${globals.shortdomain}
       DB_ENDPOINT: mysqldb
@@ -102,7 +102,7 @@ nodes:
       DX_VERSION: ${globals.dx_version}
       PACKAGE_TYPE: ${globals.package_type}
       jahia_cfg_operatingMode: ${globals.operating_mode}
-      _PROVIDE: DX
+      _PROVIDE: jahia
       _ROLE: Processing
       envName: ${globals.shortdomain}
       DB_ENDPOINT: mysqldb
@@ -363,10 +363,11 @@ actions:
             sed 's;\(url="jdbc:mariadb:\)[^"]\+\(/jahia[^"]\+\);\1failover://mysqldb_1,mysqldb_2,mysqldb_3\2;' -i /opt/tomcat/webapps/ROOT/META-INF/context.xml
 
   setupDatadogAgent:
-    - log: "## Install Datadog agent on ${this}"
+    - log: "## Finalize Datadog agent setup on ${this}"
     - if (settings.mode == 'production'):
         forEach(nodes.${this}):
           cmd[${@i.id}]: |-
+            sed 's/#\(hostname:\s*\).*$/\1${this}.${@i.id}' -i /etc/datadog-agent/datadog.yaml
             sed 's/service: jahia/service: ${env.shortdomain}/' -i /etc/datadog-agent/conf.d/tomcat.d/conf.yaml
             chmod 644 /opt/tomcat/logs/catalina.out
             /usr/local/bin/set_dd_tags.sh
@@ -421,7 +422,7 @@ actions:
           user: root
 
   setupDatadogAgentSql:
-    - log: "## Install Datadog agent on ${this}"
+    - log: "## Finalize Datadog agent setup on ${this}"
     - if (settings.mode == 'production'):
         forEach(nodes.${this}):
           cmd[${@i.id}]: |-
