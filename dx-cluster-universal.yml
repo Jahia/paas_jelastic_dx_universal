@@ -181,7 +181,7 @@ onInstall:
 
   - environment.control.ApplyNodeGroupData [proc, cp]:
       data:
-        productName: dx
+        productName: jahia
         productVersion: ${globals.dx_version}
         packageType: ${globals.package_type}
   - setupSqlDB
@@ -385,7 +385,7 @@ actions:
             sed -i 's/# logs_enabled: false/logs_enabled: true/' /etc/datadog-agent/datadog.yaml
             echo "tags:" >> /etc/datadog-agent/datadog.yaml
             echo " - env:${PACKAGE_TYPE}" >> /etc/datadog-agent/datadog.yaml
-            echo " - product:dx" >> /etc/datadog-agent/datadog.yaml
+            echo " - product:jahia" >> /etc/datadog-agent/datadog.yaml
             echo " - version:${DX_VERSION}" >> /etc/datadog-agent/datadog.yaml
             echo " - envname:${env.envName}" >> /etc/datadog-agent/datadog.yaml
             echo " - provide:${_PROVIDE}" >> /etc/datadog-agent/datadog.yaml
@@ -431,7 +431,7 @@ actions:
             sed -i 's/# logs_enabled: false/logs_enabled: true/' /etc/datadog-agent/datadog.yaml
             echo "tags:" >> /etc/datadog-agent/datadog.yaml
             echo " - env:${PACKAGE_TYPE}" >> /etc/datadog-agent/datadog.yaml
-            echo " - product:dx" >> /etc/datadog-agent/datadog.yaml
+            echo " - product:jahia" >> /etc/datadog-agent/datadog.yaml
             echo " - version:${DX_VERSION}" >> /etc/datadog-agent/datadog.yaml
             echo " - envname:${env.envName}" >> /etc/datadog-agent/datadog.yaml
             echo " - provide:${_PROVIDE}" >> /etc/datadog-agent/datadog.yaml
