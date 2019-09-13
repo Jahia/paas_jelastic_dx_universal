@@ -212,6 +212,12 @@ onInstall:
       - setupDatadogAgentProxySql: proxy
   - setupDatadogAgentSql: sqldb
 
+onBeforeScaleIn[cp]:
+  forEach(event.response.nodes):
+    - removeNodeFromHaproxy:
+        nodeId: ${@i.id}
+        nodeIp: ${@i.intIP}
+
 onAfterServiceScaleOut[cp]:
   forEach(event.response.nodes):
     - copyApp: ${@i.id}
@@ -226,6 +232,10 @@ onAfterServiceScaleOut[cp]:
           echo "Now Launching Tomcat"
           service tomcat start
         fi
+    - addNodeToHaproxy: 
+        nodeId: ${@i.id}
+        nodeIp: ${@i.intIP}
+
 # onBeforeRedeployContainer:
 #   - cmd [cp,proc]:
 #   - rm -rf $DATA_PATH/jahia/*
@@ -360,6 +370,9 @@ actions:
         chown -R tomcat:tomcat $DATA_PATH/digital-factory-data/root.pwd
         sed -i "2i JMX_OPTS=\-XX:+UseParallelGC" /opt/tomcat/conf/tomcat-env.sh
         sed -i 's/\(^default.config.sync = \)cluster/\1disabled/' /data/digital-factory-data/karaf/etc/org.apache.karaf.cellar.groups.cfg
+        sed -i '/<!-- Access log processes all example./i \\t<!-- Remote IP Valve -->\n \t<Valve className="org.apache.catalina.valves.RemoteIpValve" />\n' /opt/tomcat/conf/server.xml
+        sed -i 's/pattern="%h /pattern="%{org.apache.catalina.AccessLog.RemoteAddr}r /' /opt/tomcat/conf/server.xml
+        rm -rf /data/jahia
     - if (settings.license):
         - cmd[${this}]: |-
             echo "${settings.license}" | base64 -d > /opt/tomcat/conf/digital-factory-config/jahia/license.xml
@@ -489,6 +502,26 @@ actions:
             systemctl restart crond
             systemctl enable datadog-agent
           user: root
+
+  addNodeToHaproxy:
+    - script: |-
+        var resp = jelastic.env.control.ExecCmdByGroup('${env.displayName}-lb', session, "bl", toJSON([
+          { "command": 'echo \"server ${env.appid}-${this.nodeId} ${this.nodeIp}:80 check cookie s${this.nodeId}\" >> /etc/haproxy/haproxy.cfg.d/10-jahia.cfg' }
+        ]), false, false, "root");
+        return {
+          "result": 0,
+          "resp": resp
+        };
+
+  removeNodeFromHaproxy:
+    - script: |-
+        var resp = jelastic.env.control.ExecCmdByGroup('${env.displayName}-lb', session, "bl", toJSON([
+          { "command": 'sed -i \"/${env.appid}-${this.nodeId}/d\" /etc/haproxy/haproxy.cfg.d/10-jahia.cfg' }
+        ]), false, false, "root");
+        return {
+          "result": 0,
+          "resp": resp
+        };
 
 success: /text/success.md
 settings:
