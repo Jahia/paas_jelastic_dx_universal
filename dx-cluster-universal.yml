@@ -264,7 +264,7 @@ onBeforeDelete:
   - api: environment.control.DeleteEnv
     params:
       envName: "${env.shortdomain}-ha"
-      password: ${settings.password}
+      password: ${event.password}
 
 # -- Actions --
 
