@@ -157,9 +157,13 @@ nodes:
 # --Events --
 
 onUninstall:
-  cmd [${targetNodes.nodeGroup}]:
-    - sed -i -e 's/.*NOPASSWD.*//g' /etc/sudoers.d/sudo
-  user: root
+  - cmd [${targetNodes.nodeGroup}]:
+      - sed -i -e 's/.*NOPASSWD.*//g' /etc/sudoers.d/sudo
+    user: root
+  - api: environment.control.DeleteEnv
+    params:
+      envName: "${env.shortdomain}-ha"
+      password: ${settings.password}
 
 onInstall:
   - log: "## Beginning installation of DX"
@@ -505,7 +509,7 @@ actions:
 
   addNodeToHaproxy:
     - script: |-
-        var resp = jelastic.env.control.ExecCmdByGroup('${env.displayName}-lb', session, "bl", toJSON([
+        var resp = jelastic.env.control.ExecCmdByGroup('${env.shortdomain}-ha', session, "bl", toJSON([
           { "command": 'echo \"server ${env.appid}-${this.nodeId} ${this.nodeIp}:80 check cookie s${this.nodeId}\" >> /etc/haproxy/haproxy.cfg.d/10-jahia.cfg' }
         ]), false, false, "root");
         return {
@@ -515,7 +519,7 @@ actions:
 
   removeNodeFromHaproxy:
     - script: |-
-        var resp = jelastic.env.control.ExecCmdByGroup('${env.displayName}-lb', session, "bl", toJSON([
+        var resp = jelastic.env.control.ExecCmdByGroup('${env.shortdomain}-ha', session, "bl", toJSON([
           { "command": 'sed -i \"/${env.appid}-${this.nodeId}/d\" /etc/haproxy/haproxy.cfg.d/10-jahia.cfg' }
         ]), false, false, "root");
         return {

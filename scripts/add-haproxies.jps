@@ -10,7 +10,7 @@ ssl: true
 
 settings:
   fields:
-    - name: nodesCount
+    - name: loadBalancerCount
       caption: Number of nodes
       type: string
       required: true
@@ -22,7 +22,7 @@ settings:
       required: true
 
 globals:
-  nodesCount: ${settings.nodesCount}
+  nodesCount: ${settings.loadBalancerCount}
   targetEnvironment: ${settings.targetEnvironment}
 
 nodes:
@@ -43,14 +43,18 @@ actions:
     - script: |-
         var environment = jelastic.env.control.GetEnvInfo('${globals.targetEnvironment}', session);
         if (environment.result != 0) return environment;
+        
         var cpNodes = [];
         for (var i = 0, node = environment.nodes; i < node.length; i++) {
           if (node[i].nodeGroup == 'cp') {
             cpNodes.push(node[i].id + ':' + node[i].address);
           }
         }
+
+        var result = 0;
+        if (cpNodes.length == 0) result = 1;
         return {
-          "result": 0,
+          "result": result,
           "cpNodes": cpNodes.join(';')
         };
     - setGlobals:
@@ -62,7 +66,8 @@ actions:
         mkdir /etc/haproxy/haproxy.cfg.d && chmod 775 /etc/haproxy/haproxy.cfg.d
         mv /etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg.d/00-global.cfg
         sed -i "s|cfgfile=.*|cfgfile=/etc/haproxy/haproxy.cfg.d|g" /etc/init.d/haproxy
-        setfacl -m g:ssh-access:rw /etc/haproxy/haproxy.cfg.d/*
+        # setfacl -m g:ssh-access:rw /etc/haproxy/haproxy.cfg.d/*
+        chown -R haproxy:haproxy /etc/haproxy
       user: root
 
   updateConf:
@@ -83,5 +88,4 @@ actions:
         done
         # Service reload
         sudo service haproxy reload
-        echo "root:password" | chpasswd
-      user: root
+      user: haproxy
