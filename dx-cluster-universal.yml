@@ -227,9 +227,9 @@ onAfterServiceScaleOut[cp]:
           echo "Now Launching Tomcat"
           service tomcat start
         fi
-onBeforeRedeployContainer:
-  - cmd [cp,proc]:
-      - rm -rf $DATA_PATH/jahia/*
+# onBeforeRedeployContainer:
+#   - cmd [cp,proc]:
+#   - rm -rf $DATA_PATH/jahia/*
 
 onAfterRedeployContainer[cp]:
   - copyApp: cp
