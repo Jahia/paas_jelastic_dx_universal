@@ -10,7 +10,7 @@ description:
     manages your entire digital ecosystem to innovate and deliver great customer
     experiences, foster internal collaboration and support dynamic business
     needs for sustainable growth.
-baseUrl: https://github.com/Jahia/paas_jelastic_dx_universal/raw/v1.9
+baseUrl: https://github.com/Jahia/paas_jelastic_dx_universal/raw/PAAS-318-mariabd-cluster
 globals:
   db_user: jahia-db-${fn.random}
   db_pass: ${fn.password(20)}
@@ -25,7 +25,7 @@ globals:
   datadog_key: ${settings.ddogApikey}
   shortdomain: ${settings.shortdomain}
   displayName: ${settings.displayName}
-  # dbbaseUrl: https://raw.githubusercontent.com/Jahia/paas_jelastic_mysql_cluster/master
+  dbbaseUrl: https://raw.githubusercontent.com/Jahia/paas_jelastic_mysql_cluster/PAAS-318-mariabd-cluster
   dbscheme: ${settings.dbscheme}
   dbnodeType: ${settings.dbnodeType}
   dbnodes: ${settings.dbnodes}
@@ -54,12 +54,13 @@ globals:
 ssl: true
 skipNodeEmails: true
 nodes:
+
   - image: jahiadev/browsing:${globals.dx_version}_TEST
     displayName: Browsing
     count: ${settings.browsingCount}
     cloudlets: 40
     nodeGroup: cp
-    links: sqldb:mysqldb
+    links: proxy:proxysql
     startServiceOnCreation: false
     env:
       DB_USER: ${globals.db_user}
@@ -84,10 +85,7 @@ nodes:
     count: 1
     cloudlets: 40
     nodeGroup: proc
-    links:
-      - sqldb:mysqldb
-      # - sqldb:mysqldb
-      # - nosqldb:redis
+    links: proxy:proxysql
     startServiceOnCreation: false
     env:
       DB_USER: ${globals.db_user}
@@ -107,52 +105,39 @@ nodes:
       envName: ${globals.shortdomain}
       DB_ENDPOINT: mysqldb
 
-  - nodeType: mariadb-dockerized
-    tag: 10.4.6  # 10.2.12 # 10.3.9
-    displayName: MariaDB
-    count: 1
-    cloudlets: 40
+  - displayName: ProxySQL
+    nodeType: proxysql
+    nodeGroup: proxy
+    scalingMode: stateless
+    cloudlets: 8
+    count: 2
+    nodeGroupData:
+      validation :
+        minCount: 2
+        maxCount: 2
+
+
+  - nodeType: ${globals.dbnodeType}
     nodeGroup: sqldb
+    cluster:
+      jps: "${globals.dbbaseUrl}/addons/auto-clustering/auto-cluster.jps"
+      skipOnEnvInstall: true
+      settings:
+        scheme: "${settings.dbscheme}"
+        db_user: ${globals.db_user}
+        db_pass: ${globals.db_pass}
+    count: ${globals.dbnodes}
+    cloudlets: 40
     env:
       ADMINPANEL_ENABLED: false
       DATADOGAPIKEY: ${globals.datadog_key}
-      DB_ENDPOINT: mysqldb
       DB_USER_DATADOG: ${globals.db_user_datadog}
-      DX_VERSION: ${globals.dx_version}
       IS_PROXYSQL: ${globals.is_proxysql}
-      PACKAGE_TYPE: ${globals.package_type}
       PHPMYADMIN_ENABLED: false
-      _PROVIDE: Database
-      _ROLE: ${globals.dbscheme}
+      DB_USER: ${globals.db_user}
+      DB_PASS: ${globals.db_pass}
       envName: ${globals.shortdomain}
       jahia_cfg_operatingMode: ${globals.operating_mode}
-
-      # - nodeType: ${globals.dbnodeType}
-      #   nodeGroup: sqldb
-      #   count: ${globals.dbnodes}
-      #   cluster:
-      #     scheme: "${settings.dbscheme}"
-      #     db_user: ${globals.db_user}
-      #     db_pass: ${globals.db_pass}
-      #   cloudlets: 40
-      #   env:
-      #     ON_ENV_INSTALL: ${globals.dbbaseUrl}/addons/auto-clustering/auto-cluster.jps
-      #     SCHEME: ${globals.dbscheme}
-      #     DB_USER: ${globals.db_user}
-      #     DB_PASS: ${globals.db_pass}
-      #     IS_PROXYSQL: ${globals.is_proxysql}
-      #     DATADOGAPIKEY: ${globals.datadog_key}
-      #     DB_USER_DATADOG: ${globals.db_user_datadog}
-      #     PACKAGE_TYPE: ${globals.package_type}
-      #     DX_VERSION: ${globals.dx_version}
-      #     _PROVIDE: ${globals.dbscheme}
-      #     _ROLE: Database
-      #     envName: ${globals.shortdomain}
-      #     DB_ENDPOINT: mysqldb
-      #     jahia_cfg_operatingMode: ${globals.operating_mode}
-      #     PHPMYADMIN_ENABLED: false
-      #     ADMINPANEL_ENABLED: false
-
 
 # --Events --
 
@@ -168,7 +153,7 @@ onInstall:
       - log: "## git repo branch is prod"
       - api [*]: env.control.AddContainerEnvVars
         vars: {"PACKAGE_TYPE": "prod"}
-  - if ( '${globals.is_proxysql}' == 'true'):
+  - if ( '${globals.is_proxysql}' == 'true' ):
       - log: "## is_proxysql is true"
       - api[*]: env.control.AddContainerEnvVars
         vars: {"DB_ENDPOINT": "proxy"}
@@ -177,7 +162,7 @@ onInstall:
 
   - setSudoer: sqldb
   - if ( '${globals.is_proxysql}' == 'true' ):
-      - setSudoer: proxy
+    setSudoer: proxy
 
   - environment.control.ApplyNodeGroupData [proc, cp]:
       data:
@@ -185,6 +170,7 @@ onInstall:
         productVersion: ${globals.dx_version}
         packageType: ${globals.package_type}
   - setupSqlDB
+
   - if (settings.skipStart != 'true'): createJahiaDatabase
   - if (settings.mode == 'production'): createDataDogUser
 
@@ -253,23 +239,6 @@ onAfterRedeployContainer[proc]:
 # -- Actions --
 
 actions:
-
-  # installDBnodes:
-  #   - install:
-  #      jps: ${globals.dbbaseUrl}/addons/auto-clustering/auto-cluster.jps
-  #      shortdomain: ${settings.shortdomain}
-  #      settings:
-  #        shortdomain: ${settings.shortdomain}
-  #        dxVersion: ${globals.dx_version}
-  #        ddogApikey: ${settings.ddogApikey}
-  #        nodeType: ${settings.dbnodeType}
-  #        scheme: ${settings.dbscheme}
-  #        nodes: ${settings.dbnodes}
-  #        stack: ${settings.stack}
-  #        is_proxysql: ${settings.is_proxysql}
-  #        db_user: ${globals.db_user}
-  #        db_pass: ${globals.db_pass}
-
   setSudoer:
     - log: "## Set sudoer on ${this}"
     - cmd[${this}]: |-
@@ -280,24 +249,11 @@ actions:
       user: root
 
   setupSqlDB:
-    # - log: "## Do not start httpd anymore"
-    # - cmd[sqldb]: |-
-    #     service httpd stop
-    #     rm /etc/rc.d/init.d/httpd
     - log: "## Setup MariaDB logrotate on ${this}"
     - cmd[sqldb]: |-
-        service mysql stop
-        wget -O /etc/my.cnf ${baseUrl}/configs/my.cnf
         wget -O /etc/logrotate.d/mysql ${baseUrl}/configs/logrotate_mysql
         logrotate -f /etc/logrotate.d/mysql
-        service mysql start
       user: root
-      # - if (settings.dbscheme == 'lonely'):
-      #     - log: "## We just need one lonely, single, master db node, so let's handle it"
-      #     - cmd[${nodes.sqldb.master.id}]: |-
-      #         wget -O setupUser.sh ${baseUrl}/scripts/setupUser.sh
-      #         bash setupUser.sh ${globals.db_user} ${globals.db_pass}
-      #       user: root
 
   createJahiaDatabase:
     - log: "## Create DX's Jahia database and user"
@@ -307,7 +263,10 @@ actions:
         mysql -e "flush privileges;"
       user: root
     - log: "## Import DX schema in database"
-    - cmd[${nodes.proc.first.id}]: cat $DATA_PATH/digital-factory-data/db/sql/schema/mysql/*.sql | mysql -h mysqldb -u$DB_USER -p$DB_PASSWORD -f jahia
+    - if ( '${globals.is_proxysql}' == 'true' ):
+      - cmd[${nodes.proc.first.id}]: cat $DATA_PATH/digital-factory-data/db/sql/schema/mysql/01-create*.sql | mysql -h proxysql_1 -u$DB_USER -p$DB_PASSWORD -f jahia
+    - else:
+      - cmd[${nodes.proc.first.id}]: cat $DATA_PATH/digital-factory-data/db/sql/schema/mysql/01-create*.sql | mysql -h mysqldb -u$DB_USER -p$DB_PASSWORD -f jahia
 
   createDataDogUser:
     - log: "## Create Datadog database user"
@@ -367,6 +326,17 @@ actions:
         - log: "## Now settings context.xml for directly use the 3 MariaDB Galera server (no proxysql)"
         - cmd[${this}]: |-
             sed 's;\(url="jdbc:mariadb:\)[^"]\+\(/jahia[^"]\+\);\1failover://mysqldb_1,mysqldb_2,mysqldb_3\2;' -i /opt/tomcat/webapps/ROOT/META-INF/context.xml
+    - if ( settings.dbscheme == 'master' && '${globals.is_proxysql}' == 'false'):
+        - log: "## configure mysqldb_1 as master and mysqldb_2 as failover. others are in read only."
+        - cmd[${this}]: |-
+            sed 's;\(url="jdbc:mariadb:\)[^"]\+\(/jahia[^"]\+\);\1failover://mysqldb_1,mysqldb_2\2;' -i /opt/tomcat/webapps/ROOT/META-INF/context.xml
+    - if ( '${globals.is_proxysql}' == 'true' ):
+        - log: "## Configure jdbc to target ProxySQL instead of mariadb and disable usePipelineAuth option from mariadb connector"
+        - cmd[${this}]: |-
+            sed 's;\(url="jdbc:mariadb:\)[^"]\+\(/jahia[^"]\+\);\1failover://proxysql_1,proxysql_2\2\&amp\;usePipelineAuth=false;' -i /opt/tomcat/webapps/ROOT/META-INF/context.xml
+        - log: "## set jdbc timeBetweenEvictionRunsMillis to 5000 (default jdbc value)"
+        - cmd[${this}]: |-
+            sed 's;\(timeBetweenEvictionRunsMillis="\)[0-9]*;\15000;' -i /opt/tomcat/webapps/ROOT/META-INF/context.xml
 
   setupDatadogAgent:
     - log: "## Finalize Datadog agent setup on ${this}"
