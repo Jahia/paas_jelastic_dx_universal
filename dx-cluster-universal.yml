@@ -10,7 +10,7 @@ description:
     manages your entire digital ecosystem to innovate and deliver great customer
     experiences, foster internal collaboration and support dynamic business
     needs for sustainable growth.
-baseUrl: https://github.com/Jahia/paas_jelastic_dx_universal/raw/v1.9
+baseUrl: https://github.com/Jahia/paas_jelastic_dx_universal/raw/PAAS-309-haproxy
 globals:
   db_user: jahia-db-${fn.random}
   db_pass: ${fn.password(20)}
@@ -160,10 +160,6 @@ onUninstall:
   - cmd [${targetNodes.nodeGroup}]:
       - sed -i -e 's/.*NOPASSWD.*//g' /etc/sudoers.d/sudo
     user: root
-  - api: environment.control.DeleteEnv
-    params:
-      envName: "${env.shortdomain}-ha"
-      password: ${settings.password}
 
 onInstall:
   - log: "## Beginning installation of DX"
@@ -263,6 +259,12 @@ onAfterRedeployContainer[proc]:
       - chkconfig --level 3 tomcat on
       - service tomcat start
   - setupDatadogAgent: proc
+
+onBeforeDelete:
+  - api: environment.control.DeleteEnv
+    params:
+      envName: "${env.shortdomain}-ha"
+      password: ${settings.password}
 
 # -- Actions --
 
