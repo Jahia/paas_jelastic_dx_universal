@@ -513,21 +513,15 @@ actions:
     - script: |-
         var resp = jelastic.env.control.ExecCmdByGroup('${env.shortdomain}-ha', session, "bl", toJSON([
           { "command": 'echo \"server ${env.appid}-${this.nodeId} ${this.nodeIp}:80 check cookie s${this.nodeId}\" >> /etc/haproxy/haproxy.cfg.d/10-jahia.cfg' }
-        ]), false, false, "root");
-        return {
-          "result": 0,
-          "resp": resp
-        };
+        ]), false, false, "haproxy");
+        return resp;
 
   removeNodeFromHaproxy:
     - script: |-
         var resp = jelastic.env.control.ExecCmdByGroup('${env.shortdomain}-ha', session, "bl", toJSON([
           { "command": 'sed -i \"/${env.appid}-${this.nodeId}/d\" /etc/haproxy/haproxy.cfg.d/10-jahia.cfg' }
-        ]), false, false, "root");
-        return {
-          "result": 0,
-          "resp": resp
-        };
+        ]), false, false, "haproxy");
+        return resp;
 
 success: /text/success.md
 settings:
