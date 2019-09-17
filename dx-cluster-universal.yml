@@ -331,7 +331,7 @@ actions:
 
   copyApp:
     - log: "## Determine JDK version for good _JAVA_OPTIONS envvar"
-    - cmd [proc]: |-
+    - cmd[${this}]: |-
         case "$(ls /usr/java/latest -l | awk '{print $NF}' | awk -F'/' '{print $NF}')" in
           jdk1.8*)
               j_opts='${globals.java_opts}'
@@ -341,11 +341,6 @@ actions:
               ;;
         esac
         sed -e '2isource /.jelenv' -e "s/\(^JAVA_OPTS=.*\)\(\"$\)/\1 ${j_opts}\2/" -i /opt/tomcat/conf/tomcat-env.sh
-    - setGlobals:
-        java_opts: ${response.out}
-    - log: "## Now setting the good java options envvar"
-    - api[${this}]: env.control.AddContainerEnvVars
-      vars: {"_JAVA_OPTIONS": "${globals.java_opts}"}
 
     - log: "## Copying DX and settings is properties"
     - cmd[${this}]: |-
