@@ -340,7 +340,7 @@ actions:
               j_opts='${globals.java_opts} -Xlog:gc::time,uptime,level,pid,tid,tags'
               ;;
         esac
-        sed -e '2isource /.jelenv' -e "s/\(^JAVA_OPTS=.*\)\(\"$\)/\1${j_opts}\2/" -i /opt/tomcat/conf/tomcat-env.sh
+        sed -e '2isource /.jelenv' -e "s/\(^JAVA_OPTS=.*\)\(\"$\)/\1 ${j_opts}\2/" -i /opt/tomcat/conf/tomcat-env.sh
     - setGlobals:
         java_opts: ${response.out}
     - log: "## Now setting the good java options envvar"
