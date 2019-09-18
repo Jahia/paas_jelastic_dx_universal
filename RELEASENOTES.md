@@ -1,6 +1,11 @@
 # Jahia Universal Package Release notes
 
-## actual version: v1.8.1
+## actual version: v1.9
+
+### v1.9 (2019-09-18)
+* [IMPROVEMENT]: PAAS-150 passwords are not deisplayed anymore in catalina.out
+* [IMPROVEMENT]: PAAS-284 use new images for browsing and processing nodes
+    * remove some actions from the package (datadog installation, maven,)
 
 ### v1.8.1 (2019-09-04)
 * [BUG]: Cannot have working DX if not >v7.3.1.0
