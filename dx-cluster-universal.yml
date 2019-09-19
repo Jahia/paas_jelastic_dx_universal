@@ -512,15 +512,18 @@ actions:
   addNodeToHaproxy:
     - script: |-
         var resp = jelastic.env.control.ExecCmdByGroup('${env.shortdomain}-ha', session, "bl", toJSON([
-          { "command": 'echo \"server ${env.appid}-${this.nodeId} ${this.nodeIp}:80 check cookie s${this.nodeId}\" >> /etc/haproxy/haproxy.cfg.d/10-jahia.cfg' }
-        ]), false, false, "haproxy");
+          { "command": 'echo \"server ${env.appid}-${this.nodeId} ${this.nodeIp}:80 check cookie s${this.nodeId}\" >> /etc/haproxy/haproxy.cfg.d/10-jahia.cfg && \
+          sudo service haproxy reload' }
+        ]), false, false);
         return resp;
 
   removeNodeFromHaproxy:
     - script: |-
         var resp = jelastic.env.control.ExecCmdByGroup('${env.shortdomain}-ha', session, "bl", toJSON([
-          { "command": 'sed -i \"/${env.appid}-${this.nodeId}/d\" /etc/haproxy/haproxy.cfg.d/10-jahia.cfg' }
-        ]), false, false, "haproxy");
+          { "command": 'grep "${env.appid}-${this.nodeId}" /etc/haproxy/haproxy.cfg.d/10-jahia.cfg && \
+          sed -i \"/${env.appid}-${this.nodeId}/d\" /etc/haproxy/haproxy.cfg.d/10-jahia.cfg && \
+          sudo service haproxy reload' }
+        ]), false, false);
         return resp;
 
 success: /text/success.md
