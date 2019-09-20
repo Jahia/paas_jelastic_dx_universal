@@ -220,7 +220,8 @@ onAfterServiceScaleOut[cp]:
     - setupDatadogAgentPerNode: ${@i.id}
     - cmd[${@i.id}]: |-
         if (service tomcat status); then
-          echo "Tomcat is already launched"
+          echo "Now Restarting Tomcat"
+          service tomcat restart
         else
           echo "Now Launching Tomcat"
           service tomcat start
