@@ -116,13 +116,13 @@ nodes:
         minCount: 2
         maxCount: 2
 
-
   - nodeType: ${globals.dbnodeType}
     nodeGroup: sqldb
     cluster:
       jps: "${globals.dbbaseUrl}/addons/auto-clustering/auto-cluster.jps"
       skipOnEnvInstall: true
       settings:
+        base_url: ${globals.dbbaseUrl}
         scheme: "${settings.dbscheme}"
         db_user: ${globals.db_user}
         db_pass: ${globals.db_pass}
