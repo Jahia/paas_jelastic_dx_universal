@@ -520,7 +520,7 @@ actions:
   removeNodeFromHaproxy:
     - script: |-
         var resp = jelastic.env.control.ExecCmdByGroup('${env.shortdomain}-ha', session, "bl", toJSON([
-          { "command": 'grep "${env.appid}-${this.nodeId}" /etc/haproxy/haproxy.cfg.d/10-jahia.cfg && \
+          { "command": 'grep -q "${env.appid}-${this.nodeId}" /etc/haproxy/haproxy.cfg.d/10-jahia.cfg && \
           sed -i \"/${env.appid}-${this.nodeId}/d\" /etc/haproxy/haproxy.cfg.d/10-jahia.cfg && \
           sudo service haproxy reload' }
         ]), false, false);
