@@ -1,6 +1,5 @@
 ---
 type: install
-version: 1.5.2
 name: Jahia - Add load balancers
 id: jahia-add-load-balancers
 description:
