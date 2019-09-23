@@ -29,7 +29,7 @@ globals:
   dbscheme: ${settings.dbscheme}
   dbnodeType: ${settings.dbnodeType}
   dbnodes: ${settings.dbnodes}
-  is_proxysql: ${settings.is_proxysql}
+  is_proxysql: true
   xms: 256M
   xmx: 3584M
   java_opts:
@@ -521,11 +521,6 @@ settings:
             - value: galera
               caption: Galera Cluster
 
-    - type: checkbox
-      name: is_proxysql
-      caption: Add ProxySQL for SQL Load Balancing
-      value: false
-
     - caption: None
       inputType: hidden
       type: list
@@ -550,7 +545,7 @@ settings:
           master:
             - value: 2
           single:
-            - value: 3
+            - value: 1
           multi:
             - value: 3
           galera:
