@@ -73,6 +73,7 @@ actions:
     # Copy of jahia backend conf
     - cmd[${this}]: |-
         sed -i "s/default_backend.*default/default_backend bk_jahia/g" /etc/haproxy/haproxy.cfg.d/00-global.cfg
+        sed -i "/^option.*forwardfor$/d" /etc/haproxy/haproxy.cfg.d/00-global.cfg
         echo "backend bk_jahia" > /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
         echo "mode http" >> /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
         echo "cookie JSESSIONID prefix nocache" >> /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
