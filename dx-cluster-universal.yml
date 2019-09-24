@@ -10,7 +10,7 @@ description:
     manages your entire digital ecosystem to innovate and deliver great customer
     experiences, foster internal collaboration and support dynamic business
     needs for sustainable growth.
-baseUrl: https://github.com/Jahia/paas_jelastic_dx_universal/raw/PAAS-318-mariabd-cluster
+baseUrl: https://github.com/Jahia/paas_jelastic_dx_universal/raw/v1.9
 globals:
   db_user: jahia-db-${fn.random}
   db_pass: ${fn.password(20)}
@@ -25,7 +25,7 @@ globals:
   datadog_key: ${settings.ddogApikey}
   shortdomain: ${settings.shortdomain}
   displayName: ${settings.displayName}
-  dbbaseUrl: https://raw.githubusercontent.com/Jahia/paas_jelastic_mysql_cluster/PAAS-318-mariabd-cluster
+  dbbaseUrl: https://raw.githubusercontent.com/Jahia/paas_jelastic_mysql_cluster/master
   dbscheme: ${settings.dbscheme}
   dbnodeType: ${settings.dbnodeType}
   dbnodes: ${settings.dbnodes}
@@ -136,6 +136,8 @@ nodes:
       PHPMYADMIN_ENABLED: false
       DB_USER: ${globals.db_user}
       DB_PASS: ${globals.db_pass}
+      _PROVIDE: Database
+      _ROLE: ${globals.dbscheme}
       envName: ${globals.shortdomain}
       jahia_cfg_operatingMode: ${globals.operating_mode}
 
