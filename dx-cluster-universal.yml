@@ -157,9 +157,9 @@ nodes:
 # --Events --
 
 onUninstall:
-  cmd [${targetNodes.nodeGroup}]:
-    - sed -i -e 's/.*NOPASSWD.*//g' /etc/sudoers.d/sudo
-  user: root
+  - cmd [${targetNodes.nodeGroup}]:
+      - sed -i -e 's/.*NOPASSWD.*//g' /etc/sudoers.d/sudo
+    user: root
 
 onInstall:
   - log: "## Beginning installation of DX"
@@ -212,6 +212,12 @@ onInstall:
       - setupDatadogAgentProxySql: proxy
   - setupDatadogAgentSql: sqldb
 
+onBeforeScaleIn[cp]:
+  forEach(event.response.nodes):
+    - removeNodeFromHaproxy:
+        nodeId: ${@i.id}
+        nodeIp: ${@i.intIP}
+
 onAfterServiceScaleOut[cp]:
   forEach(event.response.nodes):
     - copyApp: ${@i.id}
@@ -226,6 +232,10 @@ onAfterServiceScaleOut[cp]:
           echo "Now Launching Tomcat"
           service tomcat start
         fi
+    - addNodeToHaproxy: 
+        nodeId: ${@i.id}
+        nodeIp: ${@i.intIP}
+
 # onBeforeRedeployContainer:
 #   - cmd [cp,proc]:
 #   - rm -rf $DATA_PATH/jahia/*
@@ -249,6 +259,12 @@ onAfterRedeployContainer[proc]:
       - chkconfig --level 3 tomcat on
       - service tomcat start
   - setupDatadogAgent: proc
+
+onBeforeDelete:
+  - api: environment.control.DeleteEnv
+    params:
+      envName: "${env.shortdomain}-ha"
+      password: ${event.params.password}
 
 # -- Actions --
 
@@ -360,6 +376,9 @@ actions:
         chown -R tomcat:tomcat $DATA_PATH/digital-factory-data/root.pwd
         sed -i "2i JMX_OPTS=\-XX:+UseParallelGC" /opt/tomcat/conf/tomcat-env.sh
         sed -i 's/\(^default.config.sync = \)cluster/\1disabled/' /data/digital-factory-data/karaf/etc/org.apache.karaf.cellar.groups.cfg
+        sed -i '/<!-- Access log processes all example./i \\t<!-- Remote IP Valve -->\n \t<Valve className="org.apache.catalina.valves.RemoteIpValve" />\n' /opt/tomcat/conf/server.xml
+        sed -i 's/pattern="%h /pattern="%{org.apache.catalina.AccessLog.RemoteAddr}r /' /opt/tomcat/conf/server.xml
+        rm -rf /data/jahia
     - if (settings.license):
         - cmd[${this}]: |-
             echo "${settings.license}" | base64 -d > /opt/tomcat/conf/digital-factory-config/jahia/license.xml
@@ -489,6 +508,23 @@ actions:
             systemctl restart crond
             systemctl enable datadog-agent
           user: root
+
+  addNodeToHaproxy:
+    - script: |-
+        var resp = jelastic.env.control.ExecCmdByGroup('${env.shortdomain}-ha', session, "bl", toJSON([
+          { "command": 'echo \"server ${env.appid}-${this.nodeId} ${this.nodeIp}:80 check cookie s${this.nodeId}\" >> /etc/haproxy/haproxy.cfg.d/10-jahia.cfg && \
+          sudo service haproxy reload' }
+        ]), false, false);
+        return resp;
+
+  removeNodeFromHaproxy:
+    - script: |-
+        var resp = jelastic.env.control.ExecCmdByGroup('${env.shortdomain}-ha', session, "bl", toJSON([
+          { "command": 'grep -q "${env.appid}-${this.nodeId}" /etc/haproxy/haproxy.cfg.d/10-jahia.cfg && \
+          sed -i \"/${env.appid}-${this.nodeId}/d\" /etc/haproxy/haproxy.cfg.d/10-jahia.cfg && \
+          sudo service haproxy reload' }
+        ]), false, false);
+        return resp;
 
 success: /text/success.md
 settings:

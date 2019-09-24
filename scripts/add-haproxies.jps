@@ -1,0 +1,90 @@
+---
+type: install
+name: Jahia - Add load balancers
+id: jahia-add-load-balancers
+description:
+  short: Jahia - Add load balancers
+  text: Add load balancers (haproxies) to an environment
+ssl: true
+
+settings:
+  fields:
+    - name: loadBalancerCount
+      caption: Number of nodes
+      type: string
+      required: true
+      default: 1
+    - name: targetEnvironment
+      caption: Target Environment
+      type: envlist
+      valueField: appid
+      required: true
+
+globals:
+  nodesCount: ${settings.loadBalancerCount}
+  targetEnvironment: ${settings.targetEnvironment}
+
+nodes:
+  - nodeType: haproxy
+    displayName: Load Balancers
+    tag: 2.0.5
+    nodeGroup: bl
+    count: ${globals.nodesCount}
+    cloudlets: 40
+
+onInstall:
+  - getCpNodesIp
+  - log: "## Updating haproxy configuration"
+  - splitConf: bl
+  - updateConf: bl
+
+actions:
+  getCpNodesIp:
+    - script: |-
+        var environment = jelastic.env.control.GetEnvInfo('${globals.targetEnvironment}', session);
+        if (environment.result != 0) return environment;
+        
+        var cpNodes = [];
+        for (var i = 0, node = environment.nodes; i < node.length; i++) {
+          if (node[i].nodeGroup == 'cp') {
+            cpNodes.push(node[i].id + ':' + node[i].address);
+          }
+        }
+
+        var result = 0;
+        if (cpNodes.length == 0) result = 1;
+        return {
+          "result": result,
+          "cpNodes": cpNodes.join(';')
+        };
+    - setGlobals:
+        cpNodes: ${response.cpNodes}
+
+  splitConf:
+    # "Hack" to split the haproxy conf file and isolate jahia backend conf
+    - cmd[${this}]: |-
+        mkdir /etc/haproxy/haproxy.cfg.d && chmod 775 /etc/haproxy/haproxy.cfg.d
+        mv /etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg.d/00-global.cfg
+        sed -i "s|cfgfile=.*|cfgfile=/etc/haproxy/haproxy.cfg.d|g" /etc/init.d/haproxy
+        chown -R haproxy:haproxy /etc/haproxy
+      user: root
+
+  updateConf:
+    # Copy of jahia backend conf
+    - cmd[${this}]: |-
+        sed -i "s/default_backend.*default/default_backend bk_jahia/g" /etc/haproxy/haproxy.cfg.d/00-global.cfg
+        sed -i "/^option.*forwardfor$/d" /etc/haproxy/haproxy.cfg.d/00-global.cfg
+        echo "backend bk_jahia" > /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
+        echo "mode http" >> /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
+        echo "cookie JSESSIONID prefix nocache" >> /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
+        echo "balance roundrobin" >> /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
+        echo "option httpchk HEAD /cms/login HTTP/1.0" >> /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
+        # Add backend IP addresses
+        for node in $(echo "${globals.cpNodes}" | tr ";" " "); do
+          node_id=$(echo $node | cut -d":" -f1)
+          node_ip=$(echo $node | cut -d":" -f2)
+          echo "server ${globals.targetEnvironment}-$node_id ${node_ip}:80 check cookie s$node_id" >> /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
+        done
+        # Service reload
+        sudo service haproxy reload
+      user: haproxy

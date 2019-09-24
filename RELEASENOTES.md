@@ -3,6 +3,10 @@
 ## actual version: v1.9
 
 ### v1.9 (2019-09-18)
+* [IMPROVEMENT]: PAAS-309 changes to adapt to haproxy environement
+    * scaling of tomcat nodes now involve haproxies conf update
+    * deletion of a Jahia environment involve deletion of the corresponding haproxy environment
+    * tomcat logs now show the real IP address of the client
 * [IMPROVEMENT]: PAAS-150 passwords are not deisplayed anymore in catalina.out
 * [IMPROVEMENT]: PAAS-284 use new images for browsing and processing nodes
     * remove some actions from the package (datadog installation, maven,)
