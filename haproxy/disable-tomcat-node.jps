@@ -1,0 +1,31 @@
+---
+type: update
+name: Disable tomcat node
+id: disable-tomcat-haproxy
+description:
+  short: Disable tomcat node
+  text: Comment a tomcat Jahia node from the corresponding haproxies configuration
+ssl: true
+
+settings:
+  fields:
+    - name: targetNodeId
+      type: string
+      caption: Target node ID
+      required: true
+
+onInstall:
+  - foreach(nodes.cp):
+      if (${@i.id} == ${settings.targetNodeId}):
+        updateHaproxyConf:
+          nodeId: ${@i.id}
+
+actions:
+  updateHaproxyConf:
+    - script: |-
+        var resp = jelastic.env.control.ExecCmdByGroup('${env.shortdomain}-ha', session, "bl", toJSON([
+          { "command": 'grep -q "${env.appid}-${this.nodeId}" /etc/haproxy/haproxy.cfg.d/10-jahia.cfg && \
+          sed -i \'s/\\(^server.*${env.appid}-${this.nodeId}.*\\)/#\\0/g\' /etc/haproxy/haproxy.cfg.d/10-jahia.cfg && \
+          sudo service haproxy reload' }
+        ]), false, false);
+        return resp;
