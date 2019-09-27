@@ -3,6 +3,7 @@
 ## actual version: v1.9
 
 ### v1.9 (2019-09-18)
+* [IMPROVEMENT]: PAAS-381 add package to update jahia tools password
 * [IMPROVEMENT]: PAAS-379 add package to update jahia root password
 * [IMPROVEMENT]: PAAS-309 changes to adapt to haproxy environement
     * scaling of tomcat nodes now involve haproxies conf update
