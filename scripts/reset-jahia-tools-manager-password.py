@@ -4,9 +4,9 @@ import fileinput
 import sys
 from os import urandom
 from hashlib import pbkdf2_hmac
-from binascii import b2a_base64
+from binascii import b2a_base64, a2b_base64
 
-new_password = str.encode(sys.argv[1])
+new_password = a2b_base64(str.encode(sys.argv[1]))
 file_path = sys.argv[2]
 
 salt = urandom(64)
