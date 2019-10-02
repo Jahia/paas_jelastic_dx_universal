@@ -168,7 +168,7 @@ onInstall:
 
   - environment.control.ApplyNodeGroupData [proc, cp]:
       data:
-        productName: jahia
+        productName: dx
         productVersion: ${globals.dx_version}
         packageType: ${globals.package_type}
   - setupSqlDB
