@@ -19,10 +19,18 @@ settings:
       type: envlist
       valueField: appid
       required: true
+    - name: base_url_branch
+      type: string
+      caption: base url branch
+      default: master
+      required: true
 
 globals:
   nodesCount: ${settings.loadBalancerCount}
   targetEnvironment: ${settings.targetEnvironment}
+  base_url_branch: ${settings.base_url_branch}
+  base_url: "https://github.com/Jahia/paas_jelastic_dx_universal/raw/${globals.base_url_branch}"
+  admin_stats_pass: ${fn.password(20)}
 
 nodes:
   - nodeType: haproxy
@@ -71,21 +79,19 @@ actions:
     # "Hack" to split the haproxy conf file and isolate jahia backend conf
     - cmd[${this}]: |-
         mkdir /etc/haproxy/haproxy.cfg.d && chmod 775 /etc/haproxy/haproxy.cfg.d
-        mv /etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg.d/00-global.cfg
+        wget -O /etc/haproxy/haproxy.cfg.d/00-global.cfg ${globals.base_url}/configs/haproxy-00-global.cfg
+        wget -O /etc/haproxy/haproxy.cfg.d/10-jahia.cfg ${globals.base_url}/configs/haproxy-10-jahia.cfg
+        stats_pwd="${globals.admin_stats_pass}"
+        sed -i "s/admin-stat-password/$stats_pwd/g" /etc/haproxy/haproxy.cfg.d/00-global.cfg
+        rm /etc/haproxy/haproxy.cfg
         sed -i "s|cfgfile=.*|cfgfile=/etc/haproxy/haproxy.cfg.d|g" /etc/init.d/haproxy
+        systemctl daemon-reload
         chown -R haproxy:haproxy /etc/haproxy
       user: root
 
   updateConf:
     # Copy of jahia backend conf
     - cmd[${this}]: |-
-        sed -i "s/default_backend.*default/default_backend bk_jahia/g" /etc/haproxy/haproxy.cfg.d/00-global.cfg
-        sed -i "/^option.*forwardfor$/d" /etc/haproxy/haproxy.cfg.d/00-global.cfg
-        echo "backend bk_jahia" > /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
-        echo "mode http" >> /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
-        echo "cookie JSESSIONID prefix nocache" >> /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
-        echo "balance roundrobin" >> /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
-        echo "option httpchk HEAD /cms/login HTTP/1.0" >> /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
         # Add backend IP addresses
         for node in $(echo "${globals.cpNodes}" | tr ";" " "); do
           node_id=$(echo $node | cut -d":" -f1)
