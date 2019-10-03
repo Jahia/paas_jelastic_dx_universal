@@ -112,7 +112,7 @@ nodes:
     cloudlets: 8
     count: 2
     nodeGroupData:
-      validation :
+      validation:
         minCount: 2
         maxCount: 2
 
@@ -220,7 +220,7 @@ onAfterServiceScaleOut[cp]:
           echo "Now Launching Tomcat"
           service tomcat start
         fi
-    - addNodeToHaproxy: 
+    - addNodeToHaproxy:
         nodeId: ${@i.id}
         nodeIp: ${@i.intIP}
 
@@ -282,9 +282,9 @@ actions:
       user: root
     - log: "## Import DX schema in database"
     - if ( '${globals.is_proxysql}' == 'true' ):
-      - cmd[${nodes.proc.first.id}]: cat $DATA_PATH/digital-factory-data/db/sql/schema/mysql/01-create*.sql | mysql -h proxysql_1 -u$DB_USER -p$DB_PASSWORD -f jahia
+        - cmd[${nodes.proc.first.id}]: cat $DATA_PATH/digital-factory-data/db/sql/schema/mysql/01-create*.sql | mysql -h proxysql_1 -u$DB_USER -p$DB_PASSWORD -f jahia
     - else:
-      - cmd[${nodes.proc.first.id}]: cat $DATA_PATH/digital-factory-data/db/sql/schema/mysql/01-create*.sql | mysql -h mysqldb -u$DB_USER -p$DB_PASSWORD -f jahia
+        - cmd[${nodes.proc.first.id}]: cat $DATA_PATH/digital-factory-data/db/sql/schema/mysql/01-create*.sql | mysql -h mysqldb -u$DB_USER -p$DB_PASSWORD -f jahia
 
   createDataDogUser:
     - log: "## Create Datadog database user"

@@ -31,19 +31,26 @@ nodes:
     nodeGroup: bl
     count: ${globals.nodesCount}
     cloudlets: 40
+    env:
+      _PROVIDE: haproxy
+      _ROLE: reverse_proxy
 
 onInstall:
   - getCpNodesIp
   - log: "## Updating haproxy configuration"
   - splitConf: bl
   - updateConf: bl
+  - environment.control.ApplyNodeGroupData [bl]:
+      data:
+        productName: haproxy
+        productVersion: ${nodes.bl.first.version}
 
 actions:
   getCpNodesIp:
     - script: |-
         var environment = jelastic.env.control.GetEnvInfo('${globals.targetEnvironment}', session);
         if (environment.result != 0) return environment;
-        
+
         var cpNodes = [];
         for (var i = 0, node = environment.nodes; i < node.length; i++) {
           if (node[i].nodeGroup == 'cp') {
