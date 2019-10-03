@@ -1,0 +1,43 @@
+---
+type: update
+version: 0.1
+name: Jahia - set auth basic
+id: jahia-set-auth-basic
+description:
+  short: Jahia - set auth basic
+
+globals:
+  new_password: ${settings.pwd}
+  new_login: ${settings.login}
+  enable_auth_basic: ${settings.enable}
+  base_url_branch: ${settings.base_url_branch}
+  base_url: "https://github.com/Jahia/paas_jelastic_dx_universal/raw/${globals.base_url_branch}"
+  haproxy_frontend_file: "/etc/haproxy/haproxy.cfg.d/00-global.cfg"
+
+onInstall:
+  - cmd [bl]: |-
+        yum install python3
+        wget -O /usr/local/bin/manage-auth-basic.py ${globals.base_url}/scripts/manage-auth-basic.py
+        chmod u+x /usr/local/bin/manage-auth-basic.py
+        manage-auth-basic.py "${globals.haproxy_frontend_file}" "${globals.enable_auth_basic}" "${globals.new_login}" "${globals.new_password}"
+        service haproxy reload
+    user: root
+
+settings:
+  fields:
+    - type: checkbox
+      name: enable
+      caption: Enable auth_basic
+      value: false
+    - name: login
+      type: string
+      caption: Auth basic login
+    - name: pwd
+      type: string
+      inputType: password
+      caption: Auth basic password (base64 encoded)
+    - name: base_url_branch
+      type: string
+      caption: base url branch
+      default: master
+      required: true
