@@ -294,7 +294,7 @@ actions:
         mysql -e "GRANT PROCESS ON *.* TO 'datadog'@'localhost';"
         mysql -e "GRANT SELECT ON performance_schema.* TO 'datadog'@'localhost';"
       user: root
-    - if ( settings.is_proxysql == 'true' ):
+    - if ( globals.is_proxysql == 'true' ):
         - log: "## Create Datadog database use on proxys"
         - cmd[proxy]: |-
             mysql -e "CREATE USER 'datadog'@'localhost' IDENTIFIED BY '${DB_USER_DATADOG}';"
