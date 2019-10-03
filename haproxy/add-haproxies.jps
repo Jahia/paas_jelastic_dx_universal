@@ -31,6 +31,9 @@ nodes:
     nodeGroup: bl
     count: ${globals.nodesCount}
     cloudlets: 40
+    env:
+      _PROVIDE: haproxy
+      _ROLE: reverse_proxy
 
 onInstall:
   - getCpNodesIp
