@@ -149,6 +149,12 @@ onUninstall:
     user: root
 
 onInstall:
+  - if ( '${globals.operating_mode}' == "production" ):
+      - log: "Update cloudlets for prod environment"
+      - api[proc, cp, sqldb]: environment.control.SetCloudletsCountByGroup
+        count: 1
+        flexibleCloudlets: 64
+        fixedCloudlets: 1
   - log: "## Beginning installation of DX"
   # - if (/\/raw\/[0-9]+\.[0-9]+\.prod$/.test(baseUrl)):
   - if (/\/raw\/v[0-9]+(\.[0-9]+)+$/.test(baseUrl)):
