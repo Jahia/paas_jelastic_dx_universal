@@ -46,6 +46,7 @@ nodes:
 onInstall:
   - getCpNodesIp
   - log: "## Updating haproxy configuration"
+  - setSudoer: bl
   - splitConf: bl
   - updateConf: bl
   - environment.control.ApplyNodeGroupData [bl]:
@@ -101,3 +102,10 @@ actions:
         # Service reload
         sudo service haproxy reload
       user: haproxy
+
+  setSudoer:
+    - log: "## Set sudoer on ${this}"
+    - cmd[${this}]: |-
+        echo "haproxy ALL=NOPASSWD: ALL" >> /etc/sudoers.d/sudo
+        echo "jelastic ALL=NOPASSWD: ALL" >> /etc/sudoers.d/sudo
+      user: root
