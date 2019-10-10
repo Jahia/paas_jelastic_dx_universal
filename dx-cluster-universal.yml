@@ -53,93 +53,123 @@ globals:
     #    -Xlog:gc::time,uptime,level,pid,tid,tags
 ssl: true
 skipNodeEmails: true
-nodes:
 
-  - image: jahiadev/browsing:${globals.dx_version}_TEST
-    displayName: Browsing
-    count: ${settings.browsingCount}
-    cloudlets: 40
-    nodeGroup: cp
-    links: proxy:proxysql
-    startServiceOnCreation: false
-    env:
-      DB_USER: ${globals.db_user}
-      DB_PASSWORD: ${globals.db_pass}
-      MANAGER_USER: ${globals.mngr_user}
-      MANAGER_PASSWORD: ${globals.mngr_pass}
-      SUPER_USER_PASSWORD: ${globals.su_pass}
-      REDIS_PASSWORD: ${globals.redis_pass}
-      XMS: ${globals.xms}
-      XMX: ${globals.xmx}
-      DATADOGAPIKEY: ${globals.datadog_key}
-      DX_VERSION: ${globals.dx_version}
-      PACKAGE_TYPE: ${globals.package_type}
-      jahia_cfg_operatingMode: ${globals.operating_mode}
-      _PROVIDE: jahia
-      _ROLE: Browsing
-      envName: ${globals.shortdomain}
-      DB_ENDPOINT: mysqldb
+onBeforeInstall: |
+  nodes = []
+  var cloudlets = '${globals.operating_mode}' == 'production' ? 64 : 40;
+  var xmx = '${globals.operating_mode}' == 'production' ? '6000M' : '${globals.xmx}';
 
-  - image: jahiadev/processing:${globals.dx_version}_TEST
-    displayName: Processing
-    count: 1
-    cloudlets: 40
-    nodeGroup: proc
-    links: proxy:proxysql
-    startServiceOnCreation: false
-    env:
-      DB_USER: ${globals.db_user}
-      DB_PASSWORD: ${globals.db_pass}
-      MANAGER_USER: ${globals.mngr_user}
-      MANAGER_PASSWORD: ${globals.mngr_pass}
-      SUPER_USER_PASSWORD: ${globals.su_pass}
-      REDIS_PASSWORD: ${globals.redis_pass}
-      XMS: ${globals.xms}
-      XMX: ${globals.xmx}
-      DATADOGAPIKEY: ${globals.datadog_key}
-      DX_VERSION: ${globals.dx_version}
-      PACKAGE_TYPE: ${globals.package_type}
-      jahia_cfg_operatingMode: ${globals.operating_mode}
-      _PROVIDE: jahia
-      _ROLE: Processing
-      envName: ${globals.shortdomain}
-      DB_ENDPOINT: mysqldb
+  node_cp = {
+    "image": "jahiadev/browsing:${globals.dx_version}_TEST",
+    "displayName": "Browsing",
+    "count": "${settings.browsingCount}",
+    "cloudlets": cloudlets,
+    "nodeGroup": "cp",
+    "links": "proxy:proxysql",
+    "startServiceOnCreation": false,
+    "env": {
+        "DB_USER": "${globals.db_user}",
+        "DB_PASSWORD": "${globals.db_pass}",
+        "MANAGER_USER": "${globals.mngr_user}",
+        "MANAGER_PASSWORD": "${globals.mngr_pass}",
+        "SUPER_USER_PASSWORD": "${globals.su_pass}",
+        "REDIS_PASSWORD": "${globals.redis_pass}",
+        "XMS": "${globals.xms}",
+        "XMX": xmx,
+        "DATADOGAPIKEY": "${globals.datadog_key}",
+        "DX_VERSION": "${globals.dx_version}",
+        "PACKAGE_TYPE": "${globals.package_type}",
+        "jahia_cfg_operatingMode": "${globals.operating_mode}",
+        "_PROVIDE": "jahia",
+        "_ROLE": "Browsing",
+        "envName": "${globals.shortdomain}",
+        "DB_ENDPOINT": "mysqldb",
+      }
+  }
+  nodes.push(node_cp);
 
-  - displayName: ProxySQL
-    nodeType: proxysql
-    nodeGroup: proxy
-    scalingMode: stateless
-    cloudlets: 8
-    count: 2
-    nodeGroupData:
-      validation:
-        minCount: 2
-        maxCount: 2
+  node_proc = {
+    "image": "jahiadev/processing:${globals.dx_version}_TEST",
+    "displayName": "Processing",
+    "count": "1",
+    "cloudlets": 40,
+    "nodeGroup": "proc",
+    "links": "proxy:proxysql",
+    "startServiceOnCreation": false,
+    "env": {
+        "DB_USER": "${globals.db_user}",
+        "DB_PASSWORD": "${globals.db_pass}",
+        "MANAGER_USER": "${globals.mngr_user}",
+        "MANAGER_PASSWORD": "${globals.mngr_pass}",
+        "SUPER_USER_PASSWORD": "${globals.su_pass}",
+        "REDIS_PASSWORD": "${globals.redis_pass}",
+        "XMS": "${globals.xms}",
+        "XMX": "${globals.xmx}",
+        "DATADOGAPIKEY": "${globals.datadog_key}",
+        "DX_VERSION": "${globals.dx_version}",
+        "PACKAGE_TYPE": "${globals.package_type}",
+        "jahia_cfg_operatingMode": "${globals.operating_mode}",
+        "_PROVIDE": "jahia",
+        "_ROLE": "Processing",
+        "envName": "${globals.shortdomain}",
+        "DB_ENDPOINT": "mysqldb",
+      }
+  }
+  nodes.push(node_proc);
 
-  - nodeType: ${globals.dbnodeType}
-    nodeGroup: sqldb
-    cluster:
-      jps: "${globals.dbbaseUrl}/addons/auto-clustering/auto-cluster.jps"
-      skipOnEnvInstall: true
-      settings:
-        base_url: ${globals.dbbaseUrl}
-        scheme: "${settings.dbscheme}"
-        db_user: ${globals.db_user}
-        db_pass: ${globals.db_pass}
-    count: ${globals.dbnodes}
-    cloudlets: 40
-    env:
-      ADMINPANEL_ENABLED: false
-      DATADOGAPIKEY: ${globals.datadog_key}
-      DB_USER_DATADOG: ${globals.db_user_datadog}
-      IS_PROXYSQL: ${globals.is_proxysql}
-      PHPMYADMIN_ENABLED: false
-      DB_USER: ${globals.db_user}
-      DB_PASS: ${globals.db_pass}
-      _PROVIDE: Database
-      _ROLE: ${globals.dbscheme}
-      envName: ${globals.shortdomain}
-      jahia_cfg_operatingMode: ${globals.operating_mode}
+  node_proxy = {
+    "displayName": "ProxySQL",
+    "nodeType": "proxysql",
+    "nodeGroup": "proxy",
+    "scalingMode": "stateless",
+    "cloudlets": 8,
+    "count": 2,
+    "nodeGroupData": {
+      "validation": {
+          "minCount": 2,
+          "maxCount": 2
+        }
+    }
+  }
+  nodes.push(node_proxy);
+
+  node_mariadb = {
+    "nodeType": "${globals.dbnodeType}",
+    "nodeGroup": "sqldb",
+    "cluster": {
+      "jps": "${globals.dbbaseUrl}/addons/auto-clustering/auto-cluster.jps",
+      "skipOnEnvInstall": true,
+      "settings": {
+        "base_url": "${globals.dbbaseUrl}",
+        "scheme": "${settings.dbscheme}",
+        "db_user": "${globals.db_user}",
+        "db_pass": "${globals.db_pass}",
+        }
+    },
+    "count": ${globals.dbnodes},
+    "cloudlets": cloudlets,
+    "env": {
+      "ADMINPANEL_ENABLED": false,
+      "DATADOGAPIKEY": "${globals.datadog_key}",
+      "DB_USER_DATADOG": "${globals.db_user_datadog}",
+      "IS_PROXYSQL": "${globals.is_proxysql}",
+      "PHPMYADMIN_ENABLED": false,
+      "DB_USER": "${globals.db_user}",
+      "DB_PASS": "${globals.db_pass}",
+      "_PROVIDE": "Database",
+      "_ROLE": "${globals.dbscheme}",
+      "envName": "${globals.shortdomain}",
+      "jahia_cfg_operatingMode": "${globals.operating_mode}",
+    }
+  }
+  nodes.push(node_mariadb);
+  var resp = {
+    result: 0,
+    nodes: nodes
+  };
+  return resp;
+
+nodes: definedInOnBeforeInstall
 
 # --Events --
 
@@ -149,12 +179,6 @@ onUninstall:
     user: root
 
 onInstall:
-  - if ( '${globals.operating_mode}' == "production" ):
-      - log: "Update cloudlets for prod environment"
-      - api[proc, cp, sqldb]: environment.control.SetCloudletsCountByGroup
-        count: 1
-        flexibleCloudlets: 64
-        fixedCloudlets: 1
   - log: "## Beginning installation of DX"
   # - if (/\/raw\/[0-9]+\.[0-9]+\.prod$/.test(baseUrl)):
   - if (/\/raw\/v[0-9]+(\.[0-9]+)+$/.test(baseUrl)):
