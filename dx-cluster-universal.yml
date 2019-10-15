@@ -60,15 +60,13 @@ onBeforeInstall: |
   var cloudlets = '${globals.operating_mode}' == 'production' ? 64 : 40;
   var xmx = '${globals.operating_mode}' == 'production' ? '6000M' : '${globals.xmx}';
   var dockerImage = "${globals.jahia_docker_image}";
-  var jahia_browsing_docker_image = "jahiadev/browsing:${globals.dx_version}_TEST";
-  var jahia_processing_docker_image = "jahiadev/processing:${globals.dx_version}_TEST";
+  var jahia_docker_image = "jahiadev/processing:${globals.dx_version}_TEST";
   if (dockerImage != "undefined") {
-    jahia_browsing_docker_image = dockerImage;
-    jahia_processing_docker_image = dockerImage;
+    jahia_docker_image = dockerImage;
   }
 
   node_cp = {
-    "image": jahia_browsing_docker_image,
+    "image": jahia_docker_image,
     "displayName": "Browsing",
     "count": "${settings.browsingCount}",
     "cloudlets": cloudlets,
@@ -97,7 +95,7 @@ onBeforeInstall: |
   nodes.push(node_cp);
 
   node_proc = {
-    "image": jahia_processing_docker_image,
+    "image": jahia_docker_image,
     "displayName": "Processing",
     "count": "1",
     "cloudlets": 40,
