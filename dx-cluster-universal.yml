@@ -25,6 +25,7 @@ globals:
   datadog_key: ${settings.ddogApikey}
   shortdomain: ${settings.shortdomain}
   displayName: ${settings.displayName}
+  jahia_docker_image: ${settings.jahiaDockerImage}
   dbbaseUrl: https://raw.githubusercontent.com/Jahia/paas_jelastic_mysql_cluster/master
   dbscheme: ${settings.dbscheme}
   dbnodeType: ${settings.dbnodeType}
@@ -58,9 +59,14 @@ onBeforeInstall: |
   nodes = []
   var cloudlets = '${globals.operating_mode}' == 'production' ? 64 : 40;
   var xmx = '${globals.operating_mode}' == 'production' ? '6000M' : '${globals.xmx}';
+  var dockerImage = "${globals.jahia_docker_image}";
+  var jahia_docker_image = "jahiadev/processing:${globals.dx_version}_TEST";
+  if (dockerImage != "undefined") {
+    jahia_docker_image = dockerImage;
+  }
 
   node_cp = {
-    "image": "jahiadev/browsing:${globals.dx_version}_TEST",
+    "image": jahia_docker_image,
     "displayName": "Browsing",
     "count": "${settings.browsingCount}",
     "cloudlets": cloudlets,
@@ -89,7 +95,7 @@ onBeforeInstall: |
   nodes.push(node_cp);
 
   node_proc = {
-    "image": "jahiadev/processing:${globals.dx_version}_TEST",
+    "image": jahia_docker_image,
     "displayName": "Processing",
     "count": "1",
     "cloudlets": 40,
@@ -263,6 +269,7 @@ onAfterRedeployContainer[cp]:
   - if (settings.mode == 'development'):
       - installMaven: cp
   - cmd[cp]:
+      - sed -i "s#\(processingServer\s*=\).*#\1 false#g" $STACK_PATH/conf/digital-factory-config/jahia/jahia.node.properties
       - chkconfig --add tomcat
       - chkconfig --level 3 tomcat on
       - service tomcat start
@@ -354,7 +361,7 @@ actions:
 
     - log: "## Copying DX and settings is properties"
     - cmd[${this}]: |-
-        [ "${this}" == "proc" ] && role="processing" || role="browsing"
+        [ "${this}" == "cp" ] && sed -i "s#\(processingServer\s*=\).*#\1 false#g" $STACK_PATH/conf/digital-factory-config/jahia/jahia.node.properties
         rm -rf $STACK_PATH/webapps/*
         cp -rf $DATA_PATH/jahia/tomcat/webapps/* $STACK_PATH/webapps
         chown -R tomcat:tomcat $STACK_PATH/webapps
@@ -601,3 +608,8 @@ settings:
     - name: license
       type: text
       caption: license
+
+    - name: jahiaDockerImage
+      inputType: hidden
+      type: string
+      default: 'undefined'
