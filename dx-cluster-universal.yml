@@ -60,13 +60,8 @@ onBeforeInstall: |
   var cloudlets = '${globals.operating_mode}' == 'production' ? 64 : 40;
   var xmx = '${globals.operating_mode}' == 'production' ? '6000M' : '${globals.xmx}';
   var dockerImage = "${globals.jahia_docker_image}";
-  var jahia_docker_image = "jahiadev/processing:${globals.dx_version}_TEST";
-  if (dockerImage != "undefined") {
-    jahia_docker_image = dockerImage;
-  }
 
   node_cp = {
-    "image": jahia_docker_image,
     "displayName": "Browsing",
     "count": "${settings.browsingCount}",
     "cloudlets": cloudlets,
@@ -92,10 +87,16 @@ onBeforeInstall: |
         "DB_ENDPOINT": "mysqldb",
       }
   }
+  if (dockerImage == "undefined") {
+    node_cp['nodeType'] = "jahia";
+    node_cp['tag'] = "${globals.dx_version}";
+  } else {
+    node_cp['image']  = dockerImage;
+  }
+
   nodes.push(node_cp);
 
   node_proc = {
-    "image": jahia_docker_image,
     "displayName": "Processing",
     "count": "1",
     "cloudlets": 40,
@@ -120,6 +121,12 @@ onBeforeInstall: |
         "envName": "${globals.shortdomain}",
         "DB_ENDPOINT": "mysqldb",
       }
+  }
+  if (dockerImage == "undefined") {
+    node_proc['nodeType'] = "jahia";
+    node_proc['tag'] = "${globals.dx_version}";
+  } else {
+    node_proc['image']  = dockerImage;
   }
   nodes.push(node_proc);
 
