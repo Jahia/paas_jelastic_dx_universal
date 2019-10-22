@@ -212,7 +212,7 @@ onInstall:
   - if (settings.skipStart != 'true'): createJahiaDatabase
   - if (settings.mode == 'production'): createDataDogUser
 
-  - copyApp: proc
+  - copyApp: proc, cp
   - if (settings.mode == 'development'):
       - installMaven: proc, cp
   - if (settings.skipStart != 'true'):
@@ -222,11 +222,7 @@ onInstall:
   - sleep:
       - milliseconds: 120000
 
-  - copyApp: cp
-  - if (settings.skipStart != 'true'):
-      - forEach(nodes.cp):
-          api: env.control.ExecDockerRunCmd
-          nodeId: ${@i.id}
+  - if (settings.skipStart != 'true'): env.control.ExecDockerRunCmd [${nodes.cp.join(id,)}]
 
   - setupDatadogAgent: cp, proc
   - if ( '${globals.is_proxysql}' == 'true' ):
@@ -358,7 +354,7 @@ actions:
 
     - log: "## Copying DX and settings is properties"
     - cmd[${this}]: |-
-        [ "${this}" == "cp" ] && sed -i "s#\(processingServer\s*=\).*#\1 false#g" $STACK_PATH/conf/digital-factory-config/jahia/jahia.node.properties
+        [ "$_ROLE" == "Browsing" ] && sed -i "s#\(processingServer\s*=\).*#\1 false#g" $STACK_PATH/conf/digital-factory-config/jahia/jahia.node.properties
         rm -rf $STACK_PATH/webapps/*
         cp -rf $DATA_PATH/jahia/tomcat/webapps/* $STACK_PATH/webapps
         chown -R tomcat:tomcat $STACK_PATH/webapps
