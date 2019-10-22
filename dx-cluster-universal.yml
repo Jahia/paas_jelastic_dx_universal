@@ -212,7 +212,7 @@ onInstall:
   - if (settings.skipStart != 'true'): createJahiaDatabase
   - if (settings.mode == 'production'): createDataDogUser
 
-  - copyApp: proc, cp
+  - copyApp: proc
   - if (settings.mode == 'development'):
       - installMaven: proc, cp
   - if (settings.skipStart != 'true'):
@@ -222,6 +222,7 @@ onInstall:
   - sleep:
       - milliseconds: 120000
 
+  - copyApp: cp
   - if (settings.skipStart != 'true'): env.control.ExecDockerRunCmd [${nodes.cp.join(id,)}]
 
   - setupDatadogAgent: cp, proc
