@@ -223,7 +223,10 @@ onInstall:
       - milliseconds: 120000
 
   - copyApp: cp
-  - if (settings.skipStart != 'true'): env.control.ExecDockerRunCmd [${nodes.cp.join(id,)}]
+  - if (settings.skipStart != 'true'):
+      - forEach(nodes.cp):
+          api: env.control.ExecDockerRunCmd
+          nodeId: ${@i.id}
 
   - setupDatadogAgent: cp, proc
   - if ( '${globals.is_proxysql}' == 'true' ):
