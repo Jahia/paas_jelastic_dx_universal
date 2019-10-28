@@ -205,7 +205,7 @@ onInstall:
       - api [${nodes.proxy.join(id,)}]: env.control.AddContainerEnvVars
         vars: {"envName": "${globals.shortdomain}", "_PROVIDE": "ProxySQL", "DX_VERSION": "${globals.dx_version}", "_ROLE": "ProxySQL", "jahia_cfg_operatingMode": "${globals.operating_mode}", "DATADOGAPIKEY": "${globals.datadog_key}"}
 
-  - setSudoer: sqldb
+  - setSudoer: proc, cp, sqldb
   - if ( '${globals.is_proxysql}' == 'true' ):
       setSudoer: proxy
 
@@ -297,7 +297,7 @@ actions:
   setSudoer:
     - log: "## Set sudoer on ${this}"
     - cmd[${this}]: |-
-        USER=$(awk -F':' '$1!="jelastic" && $6=="/home/jelastic/" {print $1}' /etc/passwd)
+        USER=$(awk -F':' '$1!="jelastic" && ($6=="/home/jelastic/" || $6=="/opt/tomcat/temp") {print $1}' /etc/passwd)
         touch /etc/sudoers.d/sudo
         echo "$USER ALL=NOPASSWD: ALL" >> /etc/sudoers.d/sudo
         echo "jelastic ALL=NOPASSWD: ALL" >> /etc/sudoers.d/sudo
