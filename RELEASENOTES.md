@@ -5,13 +5,13 @@
 ### v1.9 (2019-09-18)
 * [IMPROVEMENT]: PAAS-381 add package to update jahia tools password
 * [IMPROVEMENT]: PAAS-379 add package to update jahia root password
-* [IMPROVEMENT]: PAAS-309 changes to adapt to haproxy environement
-    * scaling of tomcat nodes now involve haproxies conf update
-    * deletion of a Jahia environment involve deletion of the corresponding haproxy environment
+* [IMPROVEMENT]: PAAS-309 & PAAS-498 adding haproxy containers to environment
+    * Scaling of browsing nodes managed by haproxy
     * tomcat logs now show the real IP address of the client
 * [IMPROVEMENT]: PAAS-150 passwords are not deisplayed anymore in catalina.out
 * [IMPROVEMENT]: PAAS-284 use new images for browsing and processing nodes
     * remove some actions from the package (datadog installation, maven,)
+* [BUG]: Various bug fixing
 
 ### v1.8.1 (2019-09-04)
 * [BUG]: Cannot have working DX if not >v7.3.1.0
