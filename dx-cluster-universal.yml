@@ -643,13 +643,11 @@ settings:
         production: production
         development: development
       default: production
-      showIf:
-        production:
-          - name: ddogApikey
-            type: string
-            caption: Datadog API KEY
-            required: true
-            default: NoDatadog
+    - name: ddogApikey
+      type: string
+      caption: Datadog API KEY
+      required: true
+      default: NoDatadog
 
     - name: license
       type: text
