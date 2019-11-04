@@ -1,0 +1,54 @@
+---
+type: update
+version: 1.5.2
+name: Jahia - after clone
+logo: /images/jahia-logo-70x70.png
+id: jahia-dx-cluster-universal-after-clone
+description:
+  short: Jahia - after clone
+
+onInstall:
+  - log: Start post-clone setup
+  - api [*]: env.control.AddContainerEnvVars
+    vars: {"envName": "${env.shortdomain}"}
+  - resetHaproxyBackends: bl
+  - if (nodes.sqldb.length > 1):
+      - repairReplication:
+          nodeId: ${nodes.sqldb.first.id}
+          masterId: ${nodes.sqldb.last.id}
+      - repairReplication:
+          nodeId: ${nodes.sqldb.last.id}
+          masterId: ${nodes.sqldb.first.id}
+      - cmd[proxy]: /root/clone-updates.sh ${nodes.sqldb.first.id} ${nodes.sqldb.last.id}
+        user: root
+  - else:
+      - cmd[proxy]: /root/clone-updates.sh ${nodes.sqldb.first.id}
+        user: root
+  - cmd[proc, cp]: |-
+      touch $DATA_PATH/digital-factory-data/safe-env-clone
+      chown tomcat:tomcat $DATA_PATH/digital-factory-data/safe-env-clone
+      rm /data/digital-factory-data/karaf/etc/org.jahia.modules.marketingfactory.settings-mf.cfg
+  - environment.control.ApplyNodeGroupData [proc, cp]:
+      data:
+        envLink: ""
+
+actions:
+  repairReplication:
+    - cmd[${this.masterId}]: mysql -e "show master status\G" |grep File|cut -d":" -f2|sed "s/\s//g"
+      user: root
+    - set:
+        log_file: ${response.responses.out}
+    - cmd[${this.masterId}]: mysql -e "show master status\G" |grep Position|cut -d":" -f2|sed "s/\s//g"
+      user: root
+    - set:
+        log_pos: ${response.responses.out}
+    - cmd[${this.nodeId}]: mysql -e "stop slave;change master to Master_Host=\"node${this.masterId}\",MASTER_LOG_FILE='${this.log_file}', MASTER_LOG_POS=${this.log_pos};start slave;"
+      user: root
+
+  resetHaproxyBackends:
+    - cmd[bl]: |-
+        sed -ie "/$server.*:80 check cookie/d" /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
+    - forEach(nodes.cp):
+        cmd[${this}]: |-
+          echo "    server ${env.appid}-${@i.id} ${@i.intIP}:80 check cookie s${@i.id}" >> /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
+
