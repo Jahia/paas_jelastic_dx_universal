@@ -12,6 +12,7 @@ description:
     needs for sustainable growth.
 baseUrl: https://github.com/Jahia/paas_jelastic_dx_universal/raw/v1.9
 globals:
+  haproxy_admin_stats_pass: ${fn.password(20)}
   db_user: jahia-db-${fn.random}
   db_pass: ${fn.password(20)}
   db_user_datadog: ${fn.password(20)}
@@ -51,7 +52,7 @@ globals:
     -XX:+UseParallelGC
     -XX:SurvivorRatio=8
     -Xmn1G
-  #    -Xlog:gc::time,uptime,level,pid,tid,tags
+    # -Xlog:gc::time,uptime,level,pid,tid,tags
 ssl: true
 skipNodeEmails: true
 
@@ -60,6 +61,21 @@ onBeforeInstall: |
   var cloudlets = '${globals.operating_mode}' == 'production' ? 64 : 40;
   var xmx = '${globals.operating_mode}' == 'production' ? '6000M' : '${globals.xmx}';
   var dockerImage = "${globals.jahia_docker_image}";
+
+  node_haproxy = {
+    "displayName": "Haproxy",
+    "nodeGroup": "bl",
+    "nodeType": "haproxy",
+    "tag": "2.0.5",
+    "count": 2,
+    "cloudlets": 8,
+    "env": {
+        "DATADOGAPIKEY": "${globals.datadog_key}",
+        "_PROVIDE": "haproxy",
+        "_ROLE": "reverse_proxy"
+      }
+  }
+  nodes.push(node_haproxy);
 
   node_cp = {
     "displayName": "Browsing",
@@ -231,6 +247,15 @@ onInstall:
 
   - if (settings.skipStart != 'true'): env.control.ExecDockerRunCmd [${nodes.cp.join(id,)}]
 
+  # Haproxy setup
+  - setSudoer: bl
+  - splitHaproxyConf: bl
+  - updateHaproxyConf: bl
+  - environment.control.ApplyNodeGroupData [bl]:
+      data:
+        productName: haproxy
+        productVersion: ${nodes.bl.first.version}
+
   - setupDatadogAgent: cp, proc
   - if ( '${globals.is_proxysql}' == 'true' ):
       - setupDatadogAgentProxySql: proxy
@@ -285,11 +310,6 @@ onAfterRedeployContainer[proc]:
       - service tomcat start
   - setupDatadogAgent: proc
 
-onBeforeDelete:
-  - api: environment.control.DeleteEnv
-    params:
-      envName: "${env.shortdomain}-ha"
-      password: ${event.params.password}
 
 # -- Actions --
 
@@ -297,8 +317,10 @@ actions:
   setSudoer:
     - log: "## Set sudoer on ${this}"
     - cmd[${this}]: |-
-        USER=$(awk -F':' '$1!="jelastic" && ($6=="/home/jelastic/" || $6=="/opt/tomcat/temp") {print $1}' /etc/passwd)
         touch /etc/sudoers.d/sudo
+        # Warning : it only works if jelastic user exists, which may be compromised
+        # if using a non-Jelastic docker image
+        USER=$(id -nu $(id -u jelastic))
         echo "$USER ALL=NOPASSWD: ALL" >> /etc/sudoers.d/sudo
         echo "jelastic ALL=NOPASSWD: ALL" >> /etc/sudoers.d/sudo
       user: root
@@ -395,6 +417,46 @@ actions:
         - log: "## set jdbc timeBetweenEvictionRunsMillis to 5000 (default jdbc value)"
         - cmd[${this}]: |-
             sed 's;\(timeBetweenEvictionRunsMillis="\)[0-9]*;\15000;' -i /opt/tomcat/webapps/ROOT/META-INF/context.xml
+
+  splitHaproxyConf:
+    # "Hack" to split the haproxy conf file and isolate jahia backend conf
+    - cmd[${this}]: |-
+        mkdir /etc/haproxy/haproxy.cfg.d && chmod 775 /etc/haproxy/haproxy.cfg.d
+        wget -O /etc/haproxy/haproxy.cfg.d/00-global.cfg ${baseUrl}/configs/haproxy-00-global.cfg
+        wget -O /etc/haproxy/haproxy.cfg.d/10-jahia.cfg ${baseUrl}/configs/haproxy-10-jahia.cfg
+        # We empty the file instead of deleting it because of Jelastic trying to update it
+        # when scaling
+        echo "### WARNING : this config file is not used for haproxy configuration" > /etc/haproxy/haproxy.cfg
+        sed -i "s|cfgfile=.*|cfgfile=/etc/haproxy/haproxy.cfg.d|g" /etc/init.d/haproxy
+        chown -R haproxy:haproxy /etc/haproxy
+        systemctl daemon-reload
+        service haproxy restart
+      user: root
+
+  updateHaproxyConf:
+    # Add backend IP addresses
+    - forEach(nodes.cp):
+        cmd[${this}]: |-
+          echo "    server ${env.appid}-${@i.id} ${@i.intIP}:80 check cookie s${@i.id}" >> /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
+    - cmd[${this}]: |-
+        # Various configuration changes
+        stats_pwd="${globals.haproxy_admin_stats_pass}"
+        sed -i "s/admin-stat-password/$stats_pwd/g" /etc/haproxy/haproxy.cfg.d/00-global.cfg
+        sudo service haproxy reload
+      user: haproxy
+
+  addNodeToHaproxy:
+    cmd[bl]: |-
+      echo "    server ${env.appid}-${this.nodeId} ${this.nodeIp}:80 check cookie s${this.nodeId}" >> /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
+      sudo service haproxy reload
+    user: haproxy
+
+  removeNodeFromHaproxy:
+    cmd[bl]: |-
+      grep -q "${env.appid}-${this.nodeId}" /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
+      if [ $? ]; then sed -i "/${env.appid}-${this.nodeId}/d" /etc/haproxy/haproxy.cfg.d/10-jahia.cfg; fi
+      sudo service haproxy reload
+    user: haproxy
 
   setupDatadogAgent:
     - log: "## Finalize Datadog agent setup on ${this}"
@@ -495,23 +557,6 @@ actions:
             systemctl enable datadog-agent
           user: root
 
-  addNodeToHaproxy:
-    - script: |-
-        var resp = jelastic.env.control.ExecCmdByGroup('${env.shortdomain}-ha', session, "bl", toJSON([
-          { "command": 'echo \"server ${env.appid}-${this.nodeId} ${this.nodeIp}:80 check cookie s${this.nodeId}\" >> /etc/haproxy/haproxy.cfg.d/10-jahia.cfg && \
-          sudo service haproxy reload' }
-        ]), false, false);
-        return resp;
-
-  removeNodeFromHaproxy:
-    - script: |-
-        var resp = jelastic.env.control.ExecCmdByGroup('${env.shortdomain}-ha', session, "bl", toJSON([
-          { "command": 'grep -q "${env.appid}-${this.nodeId}" /etc/haproxy/haproxy.cfg.d/10-jahia.cfg && \
-          sed -i \"/${env.appid}-${this.nodeId}/d\" /etc/haproxy/haproxy.cfg.d/10-jahia.cfg && \
-          sudo service haproxy reload' }
-        ]), false, false);
-        return resp;
-
 success: /text/success.md
 settings:
   fields:
@@ -598,13 +643,11 @@ settings:
         production: production
         development: development
       default: production
-      showIf:
-        production:
-          - name: ddogApikey
-            type: string
-            caption: Datadog API KEY
-            required: true
-            default: NoDatadog
+    - name: ddogApikey
+      type: string
+      caption: Datadog API KEY
+      required: true
+      default: NoDatadog
 
     - name: license
       type: text
