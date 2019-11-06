@@ -1,0 +1,13 @@
+---
+
+actions:
+  setSudoer:
+    - log: "## Set sudoer on ${this}"
+    - cmd[${this}]: |-
+        touch /etc/sudoers.d/sudo
+        # Warning : it only works if jelastic user exists, which may be compromised
+        # if using a non-Jelastic docker image
+        USER=$(id -nu $(id -u jelastic))
+        echo "$USER ALL=NOPASSWD: ALL" >> /etc/sudoers.d/sudo
+        echo "jelastic ALL=NOPASSWD: ALL" >> /etc/sudoers.d/sudo
+      user: root
