@@ -162,6 +162,11 @@ onBeforeInstall: |
   }
   nodes.push(node_proxy);
 
+  dbnodes = "${globals.dbnodes}";
+  if (dbnodes.length == 0) {
+    dbnodes = 2;
+  }
+
   node_mariadb = {
     "nodeType": "${globals.dbnodeType}",
     "nodeGroup": "sqldb",
@@ -175,7 +180,7 @@ onBeforeInstall: |
         "db_pass": "${globals.db_pass}",
         }
     },
-    "count": ${globals.dbnodes},
+    "count": dbnodes,
     "cloudlets": cloudlets,
     "env": {
       "ADMINPANEL_ENABLED": false,
