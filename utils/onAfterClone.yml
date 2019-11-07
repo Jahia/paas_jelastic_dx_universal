@@ -27,7 +27,7 @@ onInstall:
   - cmd[proc, cp]: |-
       touch $DATA_PATH/digital-factory-data/safe-env-clone
       chown tomcat:tomcat $DATA_PATH/digital-factory-data/safe-env-clone
-      rm /data/digital-factory-data/karaf/etc/org.jahia.modules.marketingfactory.settings-mf.cfg
+      rm -f /data/digital-factory-data/karaf/etc/org.jahia.modules.marketingfactory.settings-mf.cfg
   - environment.control.ApplyNodeGroupData [proc, cp]:
       data:
         envLink: ""
@@ -51,4 +51,5 @@ actions:
     - forEach(nodes.cp):
         cmd[${this}]: |-
           echo "    server ${env.appid}-${@i.id} ${@i.intIP}:80 check cookie s${@i.id}" >> /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
-
+          sudo service haproxy reload
+        user: haproxy
