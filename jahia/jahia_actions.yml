@@ -1,33 +1,18 @@
 ---
 actions:
-  onBeforeScaleIn[cp]:
-    forEach(event.response.nodes):
-      - removeNodeFromHaproxy:
-          nodeId: ${@i.id}
-          nodeIp: ${@i.intIP}
-
-  onAfterServiceScaleOut[cp]:
-    - forEach(event.response.nodes):
-        - copyApp: ${@i.id}
-        - if (settings.mode == 'development'):
-            - installMaven: ${@i.id}
-        - setupDatadogAgentPerNode: ${@i.id}
-        - cmd[${@i.id}]: |-
-            if (service tomcat status); then
-              echo "Now Restarting Tomcat"
-              service tomcat restart
-            else
-              echo "Now Launching Tomcat"
-              service tomcat start
-            fi
-
-    - resetHaproxyBackends
-
-  onAfterRedeployContainer[cp]:
-    - onAfterRedeployJahiaContainer: cp
-
-  onAfterRedeployContainer[proc]:
-    - onAfterRedeployJahiaContainer: proc
+  onAfterBrowsingScaleOut:
+    - copyApp: ${this.newNode}
+    - if (settings.mode == 'development'):
+        - installMaven: ${this.newNode}
+    - setupDatadogAgentPerNode: ${this.newNode}
+    - cmd[this.newNode]: |-
+        if (service tomcat status); then
+          echo "Now Restarting Tomcat"
+          service tomcat restart
+        else
+          echo "Now Launching Tomcat"
+          service tomcat start
+        fi
 
   onAfterRedeployJahiaContainer:
     - copyApp: ${this}

@@ -3,7 +3,7 @@ actions:
   installHaproxy:
     - setSudoer: bl
     - splitHaproxyConf: bl
-    - updateHaproxyConf: bl
+    - updateHaproxyConf
     - environment.control.ApplyNodeGroupData [bl]:
         data:
           productName: haproxy
@@ -25,7 +25,7 @@ actions:
       user: root
 
   updateHaproxyConf:
-    - cmd[${this}]: |-
+    - cmd[bl]: |-
         # Various configuration changes
         stats_pwd="${globals.haproxy_admin_stats_pass}"
         sed -i "s/admin-stat-password/$stats_pwd/g" /etc/haproxy/haproxy.cfg.d/00-global.cfg
@@ -33,17 +33,19 @@ actions:
     - resetHaproxyBackends
 
   removeNodeFromHaproxy:
-    cmd[bl]: |-
-      grep -q "${env.appid}-${this.nodeId}" /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
-      if [ $? ]; then sed -i "/${env.appid}-${this.nodeId}/d" /etc/haproxy/haproxy.cfg.d/10-jahia.cfg; fi
-      sudo service haproxy reload
-    user: haproxy
+    - log: "going to del ${this.nodeId}"
+    - cmd[bl]: |-
+        grep -q "${env.appid}-${this.nodeId}" /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
+        if [ $? ]; then sed -i "/${env.appid}-${this.nodeId}/d" /etc/haproxy/haproxy.cfg.d/10-jahia.cfg; fi
+        sudo service haproxy reload
+      user: haproxy
 
   resetHaproxyBackends:
     - cmd[bl]: |-
-        sed -ie "/$server.*:80 check cookie/d" /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
+        sed -i -e "/$server.*:80 check cookie/d" /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
     - forEach(nodes.cp):
-        cmd[${this}]: |-
-          echo "    server ${env.appid}-${@i.id} ${@i.intIP}:80 check cookie s${@i.id}" >> /etc/haproxy/haproxy  .cfg.d/10-jahia.cfg
-          sudo service haproxy reload
-        user: haproxy
+        cmd[bl]: |-
+          echo "    server ${env.appid}-${@i.id} ${@i.intIP}:80 check cookie s${@i.id}" >> /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
+    - cmd[bl]: |-
+        sudo service haproxy reload
+      user: haproxy
