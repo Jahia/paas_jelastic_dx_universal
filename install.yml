@@ -78,7 +78,10 @@ onBeforeInstall: |
         "DATADOGAPIKEY": "${globals.datadog_key}",
         "_PROVIDE": "haproxy",
         "_ROLE": "reverse_proxy"
-      }
+      },
+    "volumes": [
+      "/etc/haproxy"
+      ]
   }
   nodes.push(node_haproxy);
 
