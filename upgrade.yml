@@ -1,36 +1,16 @@
 ---
-type: install
+type: update
 version: 1.5.2
-name: Jahia - Digital Experience Manager
+name: Jahia - Digital Experience Manager upgrade
 logo: /images/jahia-logo-70x70.png
 id: jahia-jelastic
 description:
-  short: Jahia - Digital Experience Manager
-  text: Digital Experience Manager gives you an agile customizable platform that
-    manages your entire digital ecosystem to innovate and deliver great customer
-    experiences, foster internal collaboration and support dynamic business
-    needs for sustainable growth.
+  short: Jahia - Digital Experience Manager upgrade
 baseUrl: https://github.com/Jahia/paas_jelastic_dx_universal/raw/v1.9
 globals:
-  haproxy_admin_stats_pass: ${fn.password(20)}
-  db_user: jahia-db-${fn.random}
-  db_pass: ${fn.password(20)}
-  db_user_datadog: ${fn.password(20)}
-  redis_pass: ${fn.password(20)}
   mngr_user: manager
-  mngr_pass: ${settings.toolspwd}
-  su_pass: ${settings.rootpwd}
-  dx_version: ${settings.dxVersion}
   package_type: dev
-  operating_mode: ${settings.mode}
-  datadog_key: ${settings.ddogApikey}
-  shortdomain: ${settings.shortdomain}
-  displayName: ${settings.displayName}
-  jahia_docker_image: ${settings.jahiaDockerImage}
   dbbaseUrl: https://raw.githubusercontent.com/Jahia/paas_jelastic_mysql_cluster/master
-  dbscheme: ${settings.dbscheme}
-  dbnodeType: ${settings.dbnodeType}
-  dbnodes: ${settings.dbnodes}
   is_proxysql: true
   xms: 256M
   xmx: 3584M
@@ -61,186 +41,37 @@ mixins:
   - haproxy/haproxy_actions.yml
   - jahia/jahia_actions.yml
 
-onBeforeInstall: |
-  nodes = []
-  var cloudlets = '${globals.operating_mode}' == 'production' ? 64 : 40;
-  var xmx = '${globals.operating_mode}' == 'production' ? '6000M' : '${globals.xmx}';
-  var dockerImage = "${globals.jahia_docker_image}";
-
-  node_haproxy = {
-    "displayName": "Haproxy",
-    "nodeGroup": "bl",
-    "nodeType": "haproxy",
-    "tag": "2.0.5",
-    "count": 2,
-    "cloudlets": 8,
-    "env": {
-        "DATADOGAPIKEY": "${globals.datadog_key}",
-        "_PROVIDE": "haproxy",
-        "_ROLE": "reverse_proxy"
-      },
-    "volumes": [
-      "/etc/haproxy"
-      ]
-  }
-  nodes.push(node_haproxy);
-
-  node_cp = {
-    "displayName": "Browsing",
-    "count": "${settings.browsingCount}",
-    "cloudlets": cloudlets,
-    "nodeGroup": "cp",
-    "links": "proxy:proxysql",
-    "startServiceOnCreation": false,
-    "env": {
-        "DB_USER": "${globals.db_user}",
-        "DB_PASSWORD": "${globals.db_pass}",
-        "MANAGER_USER": "${globals.mngr_user}",
-        "MANAGER_PASSWORD": "${globals.mngr_pass}",
-        "SUPER_USER_PASSWORD": "${globals.su_pass}",
-        "REDIS_PASSWORD": "${globals.redis_pass}",
-        "XMS": "${globals.xms}",
-        "XMX": xmx,
-        "DATADOGAPIKEY": "${globals.datadog_key}",
-        "DX_VERSION": "${globals.dx_version}",
-        "PACKAGE_TYPE": "${globals.package_type}",
-        "jahia_cfg_operatingMode": "${globals.operating_mode}",
-        "_PROVIDE": "jahia",
-        "_ROLE": "Browsing",
-        "envName": "${globals.shortdomain}",
-        "DB_ENDPOINT": "mysqldb",
-      }
-  }
-  if (dockerImage == "undefined") {
-    node_cp['nodeType'] = "jahia";
-    node_cp['tag'] = "${globals.dx_version}";
-  } else {
-    node_cp['image']  = dockerImage;
-  }
-
-  nodes.push(node_cp);
-
-  node_proc = {
-    "displayName": "Processing",
-    "count": "1",
-    "cloudlets": 40,
-    "nodeGroup": "proc",
-    "links": "proxy:proxysql",
-    "startServiceOnCreation": false,
-    "env": {
-        "DB_USER": "${globals.db_user}",
-        "DB_PASSWORD": "${globals.db_pass}",
-        "MANAGER_USER": "${globals.mngr_user}",
-        "MANAGER_PASSWORD": "${globals.mngr_pass}",
-        "SUPER_USER_PASSWORD": "${globals.su_pass}",
-        "REDIS_PASSWORD": "${globals.redis_pass}",
-        "XMS": "${globals.xms}",
-        "XMX": "${globals.xmx}",
-        "DATADOGAPIKEY": "${globals.datadog_key}",
-        "DX_VERSION": "${globals.dx_version}",
-        "PACKAGE_TYPE": "${globals.package_type}",
-        "jahia_cfg_operatingMode": "${globals.operating_mode}",
-        "_PROVIDE": "jahia",
-        "_ROLE": "Processing",
-        "envName": "${globals.shortdomain}",
-        "DB_ENDPOINT": "mysqldb",
-      }
-  }
-  if (dockerImage == "undefined") {
-    node_proc['nodeType'] = "jahia";
-    node_proc['tag'] = "${globals.dx_version}";
-  } else {
-    node_proc['image']  = dockerImage;
-  }
-  nodes.push(node_proc);
-
-  node_proxy = {
-    "displayName": "ProxySQL",
-    "nodeType": "proxysql",
-    "nodeGroup": "proxy",
-    "scalingMode": "stateless",
-    "cloudlets": 8,
-    "count": 2,
-    "nodeGroupData": {
-      "validation": {
-          "minCount": 2,
-          "maxCount": 2
-        }
-    }
-  }
-  nodes.push(node_proxy);
-
-  dbnodes = "${globals.dbnodes}";
-  if (dbnodes.length == 0) {
-    dbnodes = 2;
-  }
-
-  node_mariadb = {
-    "nodeType": "${globals.dbnodeType}",
-    "nodeGroup": "sqldb",
-    "cluster": {
-      "jps": "${globals.dbbaseUrl}/addons/auto-clustering/auto-cluster.jps",
-      "skipOnEnvInstall": true,
-      "settings": {
-        "base_url": "${globals.dbbaseUrl}",
-        "scheme": "${settings.dbscheme}",
-        "db_user": "${globals.db_user}",
-        "db_pass": "${globals.db_pass}",
-        }
-    },
-    "count": dbnodes,
-    "cloudlets": cloudlets,
-    "env": {
-      "ADMINPANEL_ENABLED": false,
-      "DATADOGAPIKEY": "${globals.datadog_key}",
-      "DB_USER_DATADOG": "${globals.db_user_datadog}",
-      "IS_PROXYSQL": "${globals.is_proxysql}",
-      "PHPMYADMIN_ENABLED": false,
-      "DB_USER": "${globals.db_user}",
-      "DB_PASS": "${globals.db_pass}",
-      "_PROVIDE": "Database",
-      "_ROLE": "${globals.dbscheme}",
-      "envName": "${globals.shortdomain}",
-      "jahia_cfg_operatingMode": "${globals.operating_mode}",
-    }
-  }
-  nodes.push(node_mariadb);
-  var resp = {
-    result: 0,
-    nodes: nodes
-  };
-  return resp;
-
-nodes: definedInOnBeforeInstall
-
 # --Events --
+
+onInstall:
+  # actions taken from dx-upgrade.yml (old upgrade file)
+  - cmd [cp,proc]:
+      - service tomcat stop
+      - rm -rf /data/jahia
+  - api: environment.control.RedeployContainersByGroup
+    nodeGroup: proc
+    tag: ${settings.targetVersion}
+    useExistingVolumes: false
+    skipReinstall: false
+    envName: ${env.envName}
+  - api: environment.control.RedeployContainersByGroup
+    nodeGroup: cp
+    tag: ${settings.targetVersion}
+    useExistingVolumes: false
+    skipReinstall: false
+    envName: ${env.envName}
+  - env.control.ApplyNodeGroupData[proc]:
+      data:
+        productVersion: ${settings.targetVersion}
+        packageType: ${settings.packageType}
+  - env.control.AddContainerEnvVars[cp, proc]:
+      vars: {"DX_VERSION": "${settings.targetVersion}", "PACKAGE_TYPE": "${settings.packageType}"}
+  - cmd [cp,proc]:
+      - service tomcat start
+
 
 onUninstall:
   removeSudoers: ${targetNodes.nodeGroup}
-
-onInstall:
-  - log: "## Beginning installation of Jahia"
-  - setGlobalEnvVars
-
-  - api [${nodes.proxy.join(id,)}]: env.control.AddContainerEnvVars
-    vars: {"envName": "${globals.shortdomain}", "_PROVIDE": "ProxySQL", "DX_VERSION": "${globals.dx_version}", "_ROLE": "ProxySQL", "jahia_cfg_operatingMode": "${globals.operating_mode}", "DATADOGAPIKEY": "${globals.datadog_key}"}
-
-  - setSudoer: sqldb, proxy
-
-  - setupSqlDB
-
-  - if (settings.skipStart != 'true'):
-      - createJahiaDatabase
-
-  - if (settings.mode == 'production'): createDataDogUser
-
-  - installJahia
-
-  - installHaproxy
-
-  - if ( '${globals.is_proxysql}' == 'true' ):
-      - setupDatadogAgentProxySql: proxy
-  - setupDatadogAgentSql: sqldb
 
 onBeforeScaleIn[cp]:
   - forEach(event.response.nodes):
@@ -393,102 +224,5 @@ actions:
           user: root
 
 success: /text/success.md
-settings:
-  fields:
-    - name: dxVersion
-      type: string
-      caption: Jahia DX version
-      required: true
-    - name: rootpwd
-      type: string
-      caption: Jahia DX root password
-      vtype: string
-      required: true
-    - name: toolspwd
-      type: string
-      caption: Jahia tools password
-      vtype: string
-      required: true
-    - name: browsingCount
-      type: string
-      caption: Number of DX browsing nodes
-      vtype: string
-      required: true
-      default: 2
 
-    - caption: DB stack
-      type: list
-      name: stack
-      default: mariadb-dockerized
-      required: true
-      values:
-        - value: mariadb-dockerized
-          caption: MariaDB
 
-    - caption: DB topology
-      type: list
-      name: dbscheme
-      required: true
-      dependsOn:
-        stack:
-          mariadb-dockerized:
-            - value: single
-              caption: One, lonely, sad and single master
-            - value: slave
-              caption: Master-Slave with extra slaves
-            - value: master
-              caption: Master-Master with extra slaves
-            - value: galera
-              caption: Galera Cluster
-
-    - caption: None
-      inputType: hidden
-      type: list
-      name: dbnodeType
-      dependsOn:
-        stack:
-          mariadb-dockerized:
-            - value: mariadb-dockerized
-
-    - caption: None
-      inputType: hidden
-      type: list
-      name: dbnodes
-      dependsOn:
-        dbscheme:
-          single:
-            - value: 1
-          slave:
-            - value: 2
-          master:
-            - value: 2
-          galera:
-            - value: 3
-
-    - name: shortdomain
-      type: envname
-      caption: Environment
-      required: true
-    - name: displayName
-      type: string
-    - name: mode
-      type: radio-fieldset
-      caption: Operating Mode
-      values:
-        production: production
-        development: development
-      default: production
-    - name: ddogApikey
-      type: string
-      caption: Datadog API KEY
-      required: true
-      default: NoDatadog
-
-    - name: license
-      type: text
-      caption: license
-
-    - name: jahiaDockerImage
-      inputType: hidden
-      type: string
-      default: 'undefined'
