@@ -19,7 +19,7 @@ actions:
     - copyApp: ${this}
     - if (settings.mode == 'development'):
         - installMaven: ${this}
-    - if (${this} == "cp"):
+    - if ("${this}" == "cp"):
       cmd[${this}]:
         - sed -i "s#\(processingServer\s*=\).*#\1 false#g" $STACK_PATH/conf/digital-factory-config/jahia/jahia.node.properties
     - cmd[${this}]:
