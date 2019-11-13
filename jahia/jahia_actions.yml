@@ -20,7 +20,7 @@ actions:
         - installMaven: ${this}
     - if (${this} == "cp"):
       cmd[${this}]:
-        - sed -i "s#\(processingServer\s*=\).*#\1 false#g" $STACK_PATH/conf/digital-factory-config/jahia /jahia.node.properties
+        - sed -i "s#\(processingServer\s*=\).*#\1 false#g" $STACK_PATH/conf/digital-factory-config/jahia/jahia.node.properties
     - cmd[${this}]:
         - chkconfig --add tomcat
         - chkconfig --level 3 tomcat on
