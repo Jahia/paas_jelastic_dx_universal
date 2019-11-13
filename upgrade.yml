@@ -1,0 +1,228 @@
+---
+type: update
+version: 1.5.2
+name: Jahia - Digital Experience Manager upgrade
+logo: /images/jahia-logo-70x70.png
+id: jahia-jelastic
+description:
+  short: Jahia - Digital Experience Manager upgrade
+baseUrl: https://github.com/Jahia/paas_jelastic_dx_universal/raw/v1.9
+globals:
+  mngr_user: manager
+  package_type: dev
+  dbbaseUrl: https://raw.githubusercontent.com/Jahia/paas_jelastic_mysql_cluster/master
+  is_proxysql: true
+  xms: 256M
+  xmx: 3584M
+  java_opts:
+    -DDB_USER=${DB_USER}
+    -DDB_PASSWORD=${DB_PASSWORD}
+    -DREDIS_PASSWORD=${REDIS_PASSWORD}
+    -DMANAGER_USER=${MANAGER_USER}
+    -DMANAGER_PASSWORD=${MANAGER_PASSWORD}
+    -DSUPER_USER_PASSWORD=${SUPER_USER_PASSWORD}
+    -DHOST_NAME=$(hostname)
+    -Dcom.sun.management.jmxremote
+    -Dcom.sun.management.jmxremote.port=7199
+    -Dcom.sun.management.jmxremote.ssl=false
+    -Dcom.sun.management.jmxremote.authenticate=false
+    -XX:MaxPermSize=512m
+    -XX:+HeapDumpOnOutOfMemoryError
+    -XX:+PrintConcurrentLocks
+    -XX:+UseParallelGC
+    -XX:SurvivorRatio=8
+    -Xmn1G
+
+ssl: true
+skipNodeEmails: true
+
+mixins:
+  - common/common_actions.yml
+  - haproxy/haproxy_actions.yml
+  - jahia/jahia_actions.yml
+
+# --Events --
+
+onInstall:
+  # actions taken from dx-upgrade.yml (old upgrade file)
+  - cmd [cp,proc]:
+      - service tomcat stop
+      - rm -rf /data/jahia
+  - api: environment.control.RedeployContainersByGroup
+    nodeGroup: proc
+    tag: ${settings.targetVersion}
+    useExistingVolumes: false
+    skipReinstall: false
+    envName: ${env.envName}
+  - api: environment.control.RedeployContainersByGroup
+    nodeGroup: cp
+    tag: ${settings.targetVersion}
+    useExistingVolumes: false
+    skipReinstall: false
+    envName: ${env.envName}
+  - env.control.ApplyNodeGroupData[proc]:
+      data:
+        productVersion: ${settings.targetVersion}
+        packageType: ${settings.packageType}
+  - env.control.AddContainerEnvVars[cp, proc]:
+      vars: {"DX_VERSION": "${settings.targetVersion}", "PACKAGE_TYPE": "${settings.packageType}"}
+  - cmd [cp,proc]:
+      - service tomcat start
+
+
+onUninstall:
+  removeSudoers: ${targetNodes.nodeGroup}
+
+onBeforeScaleIn[cp]:
+  - forEach(event.response.nodes):
+      - removeNodeFromHaproxy:
+          nodeId: ${@i.id}
+          nodeIp: ${@i.intIP}
+
+onAfterServiceScaleOut[cp]:
+  - forEach(event.response.nodes):
+      - onAfterBrowsingScaleOut:
+          newNode: ${@i.id}
+  - resetHaproxyBackends
+
+onAfterRedeployContainer[cp]:
+  - onAfterRedeployJahiaContainer: cp
+
+onAfterRedeployContainer[proc]:
+  - onAfterRedeployJahiaContainer: proc
+
+
+onAfterClone:
+  - script: |
+      var newEnv = "${event.response.env.appid}";
+      data = {
+        "targetAppid": newEnv,
+        "manifest": "${baseUrl}/utils/onAfterClone.yml"
+        };
+      res = jelastic.dev.scripting.eval("appstore", session, "InstallApp", data);
+      return {"result": 0, "out": res}
+
+# -- Actions --
+
+actions:
+  setupSqlDB:
+    - log: "## Setup MariaDB logrotate on ${this}"
+    - cmd[sqldb]: |-
+        wget -O /etc/logrotate.d/mysql ${baseUrl}/configs/logrotate_mysql
+        logrotate -f /etc/logrotate.d/mysql
+      user: root
+
+  createJahiaDatabase:
+    - log: "## Create DX's Jahia database and user"
+    - cmd[${nodes.sqldb.master.id}]: |-
+        mysql -e "CREATE DATABASE IF NOT EXISTS jahia CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+        mysql -e "grant all privileges on jahia.* to '${globals.db_user}'@'%' identified by '${globals.db_pass}';"
+        mysql -e "flush privileges;"
+      user: root
+
+  createDataDogUser:
+    - log: "## Create Datadog database user"
+    - cmd[${nodes.sqldb.master.id}]: |-
+        mysql -e "CREATE USER 'datadog'@'localhost' IDENTIFIED BY '${DB_USER_DATADOG}';"
+        mysql -e "GRANT REPLICATION CLIENT ON *.* TO 'datadog'@'localhost' WITH MAX_USER_CONNECTIONS 5;"
+        mysql -e "GRANT PROCESS ON *.* TO 'datadog'@'localhost';"
+        mysql -e "GRANT SELECT ON performance_schema.* TO 'datadog'@'localhost';"
+      user: root
+    - if ( globals.is_proxysql == 'true' ):
+        - log: "## Create Datadog database use on proxys"
+        - cmd[proxy]: |-
+            mysql -e "CREATE USER 'datadog'@'localhost' IDENTIFIED BY '${DB_USER_DATADOG}';"
+            mysql -e "GRANT REPLICATION CLIENT ON *.* TO 'datadog'@'localhost' WITH MAX_USER_CONNECTIONS 5;"
+            mysql -e "GRANT PROCESS ON *.* TO 'datadog'@'localhost';"
+            mysql -e "GRANT SELECT ON performance_schema.* TO 'datadog'@'localhost';"
+          user: root
+
+  setupDatadogAgentProxySql:
+    - log: "## Install Datadog agent on ${this}"
+    - if (settings.mode == 'production'):
+        cmd [${this}]: |-
+          DD_API_KEY=${globals.datadog_key} bash -c "$(curl -L https://raw.githubusercontent.com/DataDog/datadog-agent/master/cmd/agent/install_script.sh)"
+          NODE_NAME=${HOSTNAME/-*}
+          echo "hostname: ${_ROLE}.${NODE_NAME#node}" >> /etc/datadog-agent/datadog.yaml
+          sed -i 's/# logs_enabled: false/logs_enabled: true/' /etc/datadog-agent/datadog.yaml
+          echo "tags:" >> /etc/datadog-agent/datadog.yaml
+          echo " - env:${PACKAGE_TYPE}" >> /etc/datadog-agent/datadog.yaml
+          echo " - product:jahia" >> /etc/datadog-agent/datadog.yaml
+          echo " - version:${DX_VERSION}" >> /etc/datadog-agent/datadog.yaml
+          echo " - envname:${env.envName}" >> /etc/datadog-agent/datadog.yaml
+          echo " - provide:${_PROVIDE}" >> /etc/datadog-agent/datadog.yaml
+          echo " - role:${_ROLE}" >> /etc/datadog-agent/datadog.yaml
+          echo " - envmode:${jahia_cfg_operatingMode}" >> /etc/datadog-agent/datadog.yaml
+          wget -O /usr/local/bin/set_dd_tags.sh ${baseUrl}/scripts/set_dd_tags.sh
+          wget -O /etc/cron.d/set_dd_tags_cron ${baseUrl}/configs/set_dd_tags_cron
+          chmod u+x /usr/local/bin/set_dd_tags.sh
+          systemctl restart crond datadog-agent
+        user: root
+
+  setupDatadogAgentSql:
+    - log: "## Finalize Datadog agent setup on ${this}"
+    - if (settings.mode == 'production'):
+        cmd [${this}]: |-
+          DD_API_KEY=${globals.datadog_key} bash -c "$(curl -L https://raw.githubusercontent.com/DataDog/datadog-agent/master/cmd/agent/install_script.sh)"
+          NODE_NAME=${HOSTNAME/-*}
+          echo "hostname: ${_ROLE}.${NODE_NAME#node}" >> /etc/datadog-agent/datadog.yaml
+          sed -i 's/# logs_enabled: false/logs_enabled: true/' /etc/datadog-agent/datadog.yaml
+          echo "tags:" >> /etc/datadog-agent/datadog.yaml
+          echo " - env:${PACKAGE_TYPE}" >> /etc/datadog-agent/datadog.yaml
+          echo " - product:jahia" >> /etc/datadog-agent/datadog.yaml
+          echo " - version:${DX_VERSION}" >> /etc/datadog-agent/datadog.yaml
+          echo " - envname:${env.envName}" >> /etc/datadog-agent/datadog.yaml
+          echo " - provide:${_PROVIDE}" >> /etc/datadog-agent/datadog.yaml
+          echo " - role:${_ROLE}" >> /etc/datadog-agent/datadog.yaml
+          echo " - envmode:${jahia_cfg_operatingMode}" >> /etc/datadog-agent/datadog.yaml
+          echo "---" > /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+          echo "logs:" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+          echo "  - type: file" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+          echo "    path: /var/log/mysql/mysqld.log" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+          echo "    source: mysql" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+          echo "    service: ${env.shortdomain}" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+          echo "  - type: file" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+          echo "    path: /var/log/mysql/slow-queries.log" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+          echo "    source: mysql" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+          echo "    service: ${env.shortdomain}" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+          echo "init_config:" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+          echo "instances:" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+          echo "  - server: 127.0.0.1" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+          echo "    user: datadog" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+          echo "    pass: ${DB_USER_DATADOG}" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+          echo "    sock: /var/lib/mysql/mysql.sock" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+          echo "    tags:" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+          echo "      - 'env:${PACKAGE_TYPE}'" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+          echo "      - 'role:database'" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+          echo "options:" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+          echo "   replication: false" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+          echo "   galera_cluster: true" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+          echo "   extra_status_metrics: true" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+          echo "   extra_innodb_metrics: true" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+          echo "   extra_performance_metrics: true" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+          echo "   schema_size_metrics: true" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+          echo "   disable_innodb_metrics: false" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
+          wget -O /usr/local/bin/set_dd_tags.sh ${baseUrl}/scripts/set_dd_tags.sh
+          wget -O /etc/cron.d/set_dd_tags_cron ${baseUrl}/configs/set_dd_tags_cron
+          chmod u+x /usr/local/bin/set_dd_tags.sh
+          chmod 644 /var/log/mysql/mysqld.log
+          chmod 644 /var/log/mysql/slow-queries.log
+          systemctl restart crond datadog-agent
+        user: root
+
+  setupDatadogAgentPerNode:
+    - log: "## Finalize Datadog agent on ${this}"
+    - if (settings.mode == 'production'):
+        - cmd[${this}]: |-
+            NODE_NAME=${HOSTNAME/-*}
+            echo "hostname: ${_ROLE}.${NODE_NAME#node}" >> /etc/datadog-agent/datadog.yaml
+            sed 's/service: jahia/service: ${env.shortdomain}/' -i /etc/datadog-agent/conf.d/tomcat.d/conf.yaml
+            chmod 644 /opt/tomcat/logs/catalina.out
+            /usr/local/bin/set_dd_tags.sh
+            systemctl restart crond
+            systemctl enable datadog-agent
+          user: root
+
+success: /text/success.md
+
+

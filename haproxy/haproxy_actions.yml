@@ -1,0 +1,51 @@
+---
+actions:
+  installHaproxy:
+    - setSudoer: bl
+    - splitHaproxyConf: bl
+    - updateHaproxyConf
+    - environment.control.ApplyNodeGroupData [bl]:
+        data:
+          productName: haproxy
+          productVersion: ${nodes.bl.first.version}
+
+  splitHaproxyConf:
+    # "Hack" to split the haproxy conf file and isolate jahia backend conf
+    - cmd[${this}]: |-
+        mkdir /etc/haproxy/haproxy.cfg.d && chmod 775 /etc/haproxy/haproxy.cfg.d
+        wget -O /etc/haproxy/haproxy.cfg.d/00-global.cfg ${baseUrl}/configs/haproxy-00-global.cfg
+        wget -O /etc/haproxy/haproxy.cfg.d/10-jahia.cfg ${baseUrl}/configs/haproxy-10-jahia.cfg
+        # We empty the file instead of deleting it because of Jelastic trying to update it
+        # when scaling
+        echo "### WARNING : this config file is not used for haproxy configuration" > /etc/haproxy/haproxy.cfg
+        sed -i "s|cfgfile=.*|cfgfile=/etc/haproxy/haproxy.cfg.d|g" /etc/init.d/haproxy
+        chown -R haproxy:haproxy /etc/haproxy
+        systemctl daemon-reload
+        service haproxy restart
+      user: root
+
+  updateHaproxyConf:
+    - cmd[bl]: |-
+        # Various configuration changes
+        stats_pwd="${globals.haproxy_admin_stats_pass}"
+        sed -i "s/admin-stat-password/$stats_pwd/g" /etc/haproxy/haproxy.cfg.d/00-global.cfg
+      user: haproxy
+    - resetHaproxyBackends
+
+  removeNodeFromHaproxy:
+    - log: "going to del ${this.nodeId}"
+    - cmd[bl]: |-
+        grep -q "${env.appid}-${this.nodeId}" /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
+        if [ $? ]; then sed -i "/${env.appid}-${this.nodeId}/d" /etc/haproxy/haproxy.cfg.d/10-jahia.cfg; fi
+        sudo service haproxy reload
+      user: haproxy
+
+  resetHaproxyBackends:
+    - cmd[bl]: |-
+        sed -i -e "/$server.*:80 check cookie/d" /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
+    - forEach(nodes.cp):
+        cmd[bl]: |-
+          echo "    server ${env.appid}-${@i.id} ${@i.intIP}:80 check cookie s${@i.id}" >> /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
+    - cmd[bl]: |-
+        sudo service haproxy reload
+      user: haproxy
