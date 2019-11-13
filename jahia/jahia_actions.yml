@@ -5,7 +5,7 @@ actions:
     - if (settings.mode == 'development'):
         - installMaven: ${this.newNode}
     - setupDatadogAgentPerNode: ${this.newNode}
-    - cmd[this.newNode]: |-
+    - cmd[${this.newNode}]: |-
         if (service tomcat status); then
           echo "Now Restarting Tomcat"
           service tomcat restart
