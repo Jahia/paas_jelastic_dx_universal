@@ -13,6 +13,7 @@ actions:
           echo "Now Launching Tomcat"
           service tomcat start
         fi
+      user: root
 
   onAfterRedeployJahiaContainer:
     - copyApp: ${this}
