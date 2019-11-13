@@ -10,7 +10,7 @@ description:
     manages your entire digital ecosystem to innovate and deliver great customer
     experiences, foster internal collaboration and support dynamic business
     needs for sustainable growth.
-baseUrl: https://github.com/Jahia/paas_jelastic_dx_universal/raw/PAAS-564-cant-redeploy-or-scale
+baseUrl: https://github.com/Jahia/paas_jelastic_dx_universal/raw/v1.9
 globals:
   haproxy_admin_stats_pass: ${fn.password(20)}
   db_user: jahia-db-${fn.random}
