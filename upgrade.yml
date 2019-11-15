@@ -47,7 +47,6 @@ onInstall:
   # actions taken from dx-upgrade.yml (old upgrade file)
   - cmd [cp,proc]:
       - service tomcat stop
-      - rm -rf /data/jahia
   - api: environment.control.RedeployContainersByGroup
     nodeGroup: proc
     tag: ${settings.targetVersion}
