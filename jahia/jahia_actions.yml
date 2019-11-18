@@ -26,6 +26,7 @@ actions:
         - chkconfig --add tomcat
         - chkconfig --level 3 tomcat on
         - service tomcat start
+      user: root
     - setupDatadogAgent: ${this}
 
   initJahiaDatabase:
