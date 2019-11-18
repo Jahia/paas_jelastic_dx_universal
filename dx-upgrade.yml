@@ -10,7 +10,7 @@ description:
 onInstall:
   - cmd [cp,proc]:
       - service tomcat stop
-      - rm -rf /data/jahia
+    user: root
   - api: environment.control.RedeployContainersByGroup
     nodeGroup: proc
     tag: ${settings.targetVersion}
@@ -31,6 +31,7 @@ onInstall:
       vars: {"DX_VERSION": "${settings.targetVersion}", "PACKAGE_TYPE": "${settings.packageType}"}
   - cmd [cp,proc]:
       - service tomcat start
+    user: root
 settings:
   fields:
     - name: targetVersion
