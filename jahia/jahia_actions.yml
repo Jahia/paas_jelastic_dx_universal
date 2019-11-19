@@ -17,7 +17,7 @@ actions:
 
   onAfterRedeployJahiaContainer:
     - log: "## Stop tomcat if already running"
-    - cmd[${this.newNode}]: |-
+    - cmd[${this}]: |-
         if (service tomcat status); then
           echo "Now stoping Tomcat"
           service tomcat stop
