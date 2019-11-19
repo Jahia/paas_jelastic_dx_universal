@@ -1,6 +1,7 @@
 ---
 actions:
   onAfterBrowsingScaleOut:
+    - setSudoer: ${this.newNode}
     - copyApp: ${this.newNode}
     - if (settings.mode == 'development'):
         - installMaven: ${this.newNode}
@@ -16,6 +17,7 @@ actions:
       user: root
 
   onAfterRedeployJahiaContainer:
+    - setSudoer: ${this}
     - log: "## Stop tomcat if already running"
     - cmd[${this}]: |-
         if (service tomcat status); then
