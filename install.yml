@@ -260,6 +260,8 @@ onAfterRedeployContainer[cp]:
 onAfterRedeployContainer[proc]:
   - onAfterRedeployJahiaContainer: proc
 
+onBeforeStop:
+  - stopJahia: cp, proc
 
 onAfterClone:
   - script: |
