@@ -271,9 +271,20 @@ onAfterClone:
       res = jelastic.dev.scripting.eval("appstore", session, "InstallApp", data);
       return {"result": 0, "out": res}
 
+onAfterStart:
+  - onAfterProxySqlStart: proxy
 # -- Actions --
 
 actions:
+  onAfterProxySqlStart:
+    - cmd[${this}]:
+        /root/node-recovery.sh -n ${nodes.sqldb.first.id}
+      user: root
+    - if (nodes.sqldb.length > 1):
+        - cmd[${this}]:
+            /root/node-recovery.sh -n ${nodes.sqldb.last.id}
+          user: root
+
   setupSqlDB:
     - log: "## Setup MariaDB logrotate on ${this}"
     - cmd[sqldb]: |-
