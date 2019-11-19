@@ -16,6 +16,15 @@ actions:
       user: root
 
   onAfterRedeployJahiaContainer:
+    - log: "## Stop tomcat if already running"
+    - cmd[${this.newNode}]: |-
+        if (service tomcat status); then
+          echo "Now stoping Tomcat"
+          service tomcat stop
+        else
+          echo "Tomcat already stopped"
+        fi
+      user: root
     - copyApp: ${this}
     - if (settings.mode == 'development'):
         - installMaven: ${this}
