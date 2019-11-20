@@ -17,7 +17,7 @@ actions:
       user: root
 
   onAfterRedeployJahiaContainer:
-    - cmd:
+    - cmd[${this}]:
         - service tomcat stop
       user: root
     - setSudoer: ${this}
