@@ -11,7 +11,7 @@ onInstall:
   - cmd [cp,proc]:
       - service tomcat stop
     user: root
-  - cmd [cp]:
+  - cmd [proc]:
       - echo 'export JAHIA_UPGRADE="true"' >> /etc/locale.conf
     user: root
   - api: environment.control.RedeployContainersByGroup
