@@ -17,15 +17,8 @@ actions:
       user: root
 
   onAfterRedeployJahiaContainer:
-    - cmd[${this}]: |-
-        source /etc/locale.conf
-        echo "JAHIA_UPGRADE=$JAHIA_UPGRADE"
-        if (service tomcat status && [ "$JAHIA_UPGRADE" == "true" ]); then
-          echo "This is an upgrade, now stopping tomcat"
-          service tomcat stop
-        else
-          echo "This is a regular redeploy"
-        fi
+    - cmd:
+        - service tomcat stop
       user: root
     - setSudoer: ${this}
     - copyApp: ${this}
@@ -35,6 +28,16 @@ actions:
         cmd[${this}]:
           - sed -i "s#\(processingServer\s*=\).*#\1 false#g" $STACK_PATH/conf/digital-factory-config/jahia/jahia.node.properties
     - setupDatadogAgent: ${this}
+    - cmd[${this}]: |-
+          source /etc/locale.conf
+          echo "JAHIA_UPGRADE=$JAHIA_UPGRADE"
+          if (service tomcat status && [ "$JAHIA_UPGRADE" == "true" ]); then
+            echo "This is an upgrade, processing's tomcat will not be restarted now"
+          else
+            echo "This is a regular redeploy, restart tomcat now"
+            service tomcat start
+          fi
+      user: root
 
   initJahiaDatabase:
     - log: "## Import DX schema in database"
