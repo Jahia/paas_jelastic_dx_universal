@@ -17,27 +17,23 @@ actions:
       user: root
 
   onAfterRedeployJahiaContainer:
-    - setSudoer: ${this}
-    - log: "## Stop tomcat if already running"
     - cmd[${this}]: |-
-        if (service tomcat status); then
-          echo "Now stoping Tomcat"
+        source /etc/locale.conf
+        echo "JAHIA_UPGRADE=$JAHIA_UPGRADE"
+        if (service tomcat status && [ "$JAHIA_UPGRADE" == "true" ]); then
+          echo "This is an upgrade, now stopping tomcat"
           service tomcat stop
         else
-          echo "Tomcat already stopped"
+          echo "This is a regular redeploy"
         fi
       user: root
+    - setSudoer: ${this}
     - copyApp: ${this}
     - if (settings.mode == 'development'):
         - installMaven: ${this}
     - if ("${this}" == "cp"):
         cmd[${this}]:
           - sed -i "s#\(processingServer\s*=\).*#\1 false#g" $STACK_PATH/conf/digital-factory-config/jahia/jahia.node.properties
-    - cmd[${this}]:
-        - chkconfig --add tomcat
-        - chkconfig --level 3 tomcat on
-        - service tomcat start
-      user: root
     - setupDatadogAgent: ${this}
 
   initJahiaDatabase:
