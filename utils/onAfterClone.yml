@@ -31,6 +31,10 @@ onInstall:
   - environment.control.ApplyNodeGroupData [proc, cp]:
       data:
         envLink: ""
+  - cmd[*]: |-
+      rm -f /etc/ssh/ssh_host*
+      service sshd restart
+    user: root
 
 actions:
   repairReplication:
