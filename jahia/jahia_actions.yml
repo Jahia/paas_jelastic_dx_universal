@@ -110,7 +110,7 @@ actions:
             echo "${settings.license}" | base64 -d > /opt/tomcat/conf/digital-factory-config/jahia/license.xml
     - log: "## Configure jdbc to target Galera"
     - cmd[${this}]: |-
-        sed 's;\(url="jdbc:mariadb:\)[^"]\+\(/jahia[^"]\+\);\1loadbalance://galera_1,galera_2,galera_3\2\&amp;' -i /opt/tomcat/webapps/ROOT/META-INF/context.xml
+        sed 's;\(url="jdbc:mariadb:\)[^"]\+\(/jahia[^"]\+\);\1loadbalance://galera_1,galera_2,galera_3\2;' -i /opt/tomcat/webapps/ROOT/META-INF/context.xml
     - log: "## set jdbc timeBetweenEvictionRunsMillis to 5000 (default jdbc value)"
     - cmd[${this}]: |-
         sed 's;\(timeBetweenEvictionRunsMillis="\)[0-9]*;\15000;' -i /opt/tomcat/webapps/ROOT/META-INF/context.xml
