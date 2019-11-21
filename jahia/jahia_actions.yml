@@ -29,6 +29,10 @@ actions:
       user: root
     - setupDatadogAgent: ${this}
 
+  stopJahia:
+    cmd[${this}]: "service tomcat stop"
+    user: root
+
   initJahiaDatabase:
     - log: "## Import DX schema in database"
     - cmd[${nodes.proc.first.id}]: cat $DATA_PATH/digital-factory-data/db/sql/schema/mysql/01-create*.sql | mysql -h proxysql_1 -u$DB_USER -p$DB_PASSWORD -f jahia
