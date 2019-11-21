@@ -31,7 +31,6 @@ globals:
   dbscheme: ${settings.dbscheme}
   dbnodeType: ${settings.dbnodeType}
   dbnodes: ${settings.dbnodes}
-  is_proxysql: true
   xms: 256M
   xmx: 3584M
   java_opts:
@@ -90,7 +89,7 @@ onBeforeInstall: |
     "count": "${settings.browsingCount}",
     "cloudlets": cloudlets,
     "nodeGroup": "cp",
-    "links": "proxy:proxysql",
+    "links": "proxy:galera",
     "startServiceOnCreation": false,
     "env": {
         "DB_USER": "${globals.db_user}",
@@ -125,7 +124,7 @@ onBeforeInstall: |
     "count": "1",
     "cloudlets": 40,
     "nodeGroup": "proc",
-    "links": "proxy:proxysql",
+    "links": "proxy:galera",
     "startServiceOnCreation": false,
     "env": {
         "DB_USER": "${globals.db_user}",
@@ -154,25 +153,9 @@ onBeforeInstall: |
   }
   nodes.push(node_proc);
 
-  node_proxy = {
-    "displayName": "ProxySQL",
-    "nodeType": "proxysql",
-    "nodeGroup": "proxy",
-    "scalingMode": "stateless",
-    "cloudlets": 8,
-    "count": 2,
-    "nodeGroupData": {
-      "validation": {
-          "minCount": 2,
-          "maxCount": 2
-        }
-    }
-  }
-  nodes.push(node_proxy);
-
   dbnodes = "${globals.dbnodes}";
   if (dbnodes.length == 0) {
-    dbnodes = 2;
+    dbnodes = 3;
   }
 
   node_mariadb = {
@@ -194,7 +177,6 @@ onBeforeInstall: |
       "ADMINPANEL_ENABLED": false,
       "DATADOGAPIKEY": "${globals.datadog_key}",
       "DB_USER_DATADOG": "${globals.db_user_datadog}",
-      "IS_PROXYSQL": "${globals.is_proxysql}",
       "PHPMYADMIN_ENABLED": false,
       "DB_USER": "${globals.db_user}",
       "DB_PASS": "${globals.db_pass}",
@@ -222,10 +204,7 @@ onInstall:
   - log: "## Beginning installation of Jahia"
   - setGlobalEnvVars
 
-  - api [${nodes.proxy.join(id,)}]: env.control.AddContainerEnvVars
-    vars: {"envName": "${globals.shortdomain}", "_PROVIDE": "ProxySQL", "DX_VERSION": "${globals.dx_version}", "_ROLE": "ProxySQL", "jahia_cfg_operatingMode": "${globals.operating_mode}", "DATADOGAPIKEY": "${globals.datadog_key}"}
-
-  - setSudoer: sqldb, proxy
+  - setSudoer: sqldb
 
   - setupSqlDB
 
@@ -238,8 +217,6 @@ onInstall:
 
   - installHaproxy
 
-  - if ( '${globals.is_proxysql}' == 'true' ):
-      - setupDatadogAgentProxySql: proxy
   - setupDatadogAgentSql: sqldb
 
 onBeforeScaleIn[cp]:
@@ -308,36 +285,6 @@ actions:
         mysql -e "GRANT PROCESS ON *.* TO 'datadog'@'localhost';"
         mysql -e "GRANT SELECT ON performance_schema.* TO 'datadog'@'localhost';"
       user: root
-    - if ( globals.is_proxysql == 'true' ):
-        - log: "## Create Datadog database use on proxys"
-        - cmd[proxy]: |-
-            mysql -e "CREATE USER 'datadog'@'localhost' IDENTIFIED BY '${DB_USER_DATADOG}';"
-            mysql -e "GRANT REPLICATION CLIENT ON *.* TO 'datadog'@'localhost' WITH MAX_USER_CONNECTIONS 5;"
-            mysql -e "GRANT PROCESS ON *.* TO 'datadog'@'localhost';"
-            mysql -e "GRANT SELECT ON performance_schema.* TO 'datadog'@'localhost';"
-          user: root
-
-  setupDatadogAgentProxySql:
-    - log: "## Install Datadog agent on ${this}"
-    - if (settings.mode == 'production'):
-        cmd [${this}]: |-
-          DD_API_KEY=${globals.datadog_key} bash -c "$(curl -L https://raw.githubusercontent.com/DataDog/datadog-agent/master/cmd/agent/install_script.sh)"
-          NODE_NAME=${HOSTNAME/-*}
-          echo "hostname: ${_ROLE}.${NODE_NAME#node}" >> /etc/datadog-agent/datadog.yaml
-          sed -i 's/# logs_enabled: false/logs_enabled: true/' /etc/datadog-agent/datadog.yaml
-          echo "tags:" >> /etc/datadog-agent/datadog.yaml
-          echo " - env:${PACKAGE_TYPE}" >> /etc/datadog-agent/datadog.yaml
-          echo " - product:jahia" >> /etc/datadog-agent/datadog.yaml
-          echo " - version:${DX_VERSION}" >> /etc/datadog-agent/datadog.yaml
-          echo " - envname:${env.envName}" >> /etc/datadog-agent/datadog.yaml
-          echo " - provide:${_PROVIDE}" >> /etc/datadog-agent/datadog.yaml
-          echo " - role:${_ROLE}" >> /etc/datadog-agent/datadog.yaml
-          echo " - envmode:${jahia_cfg_operatingMode}" >> /etc/datadog-agent/datadog.yaml
-          wget -O /usr/local/bin/set_dd_tags.sh ${baseUrl}/scripts/set_dd_tags.sh
-          wget -O /etc/cron.d/set_dd_tags_cron ${baseUrl}/configs/set_dd_tags_cron
-          chmod u+x /usr/local/bin/set_dd_tags.sh
-          systemctl restart crond datadog-agent
-        user: root
 
   setupDatadogAgentSql:
     - log: "## Finalize Datadog agent setup on ${this}"
@@ -447,6 +394,8 @@ settings:
               caption: One, lonely, sad and single master
             - value: master
               caption: Master-Master with extra slaves
+            - value: galera
+              caption: Galera Cluster
 
     - caption: None
       inputType: hidden
@@ -467,6 +416,8 @@ settings:
             - value: 1
           master:
             - value: 2
+          galera:
+            - value: 3
 
     - name: shortdomain
       type: envname
