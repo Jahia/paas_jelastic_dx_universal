@@ -8,6 +8,8 @@ actions:
         data:
           productName: haproxy
           productVersion: ${nodes.bl.first.version}
+    - env.control.AddContainerEnvVars[bl]:
+      vars: {"auth_basic_enabled": "false"}
 
   splitHaproxyConf:
     # "Hack" to split the haproxy conf file and isolate jahia backend conf

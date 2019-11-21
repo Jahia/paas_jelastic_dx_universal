@@ -13,15 +13,18 @@ globals:
   base_url_branch: ${settings.base_url_branch}
   base_url: "https://github.com/Jahia/paas_jelastic_dx_universal/raw/${globals.base_url_branch}"
   haproxy_frontend_file: "/etc/haproxy/haproxy.cfg.d/00-global.cfg"
+  auth_basic_script: "/usr/local/bin/manage-auth-basic.py"
 
 onInstall:
   - cmd [bl]: |-
         yum install python3
-        wget -O /usr/local/bin/manage-auth-basic.py ${globals.base_url}/scripts/manage-auth-basic.py
-        chmod u+x /usr/local/bin/manage-auth-basic.py
-        manage-auth-basic.py "${globals.haproxy_frontend_file}" "${globals.enable_auth_basic}" "${globals.new_login}" "${globals.new_password}"
+        wget -O ${globals.auth_basic_script} ${globals.base_url}/scripts/manage-auth-basic.py
+        chmod u+x ${globals.auth_basic_script}
+        ${globals.auth_basic_script} "${globals.haproxy_frontend_file}" "${globals.enable_auth_basic}" "${globals.new_login}" "${globals.new_password}"
         service haproxy reload
     user: root
+  - env.control.AddContainerEnvVars[bl]:
+    vars: {"auth_basic_enabled": "${globals.enable_auth_basic}"}
 
 settings:
   fields:
