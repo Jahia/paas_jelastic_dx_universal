@@ -17,11 +17,11 @@ globals:
 
 onInstall:
   - cmd [bl]: |-
-        yum install python3
-        wget -O ${globals.auth_basic_script} ${globals.base_url}/scripts/manage-auth-basic.py
-        chmod u+x ${globals.auth_basic_script}
-        ${globals.auth_basic_script} "${globals.haproxy_frontend_file}" "${globals.enable_auth_basic}" "${globals.new_login}" "${globals.new_password}"
-        service haproxy reload
+      yum install python3
+      wget -O ${globals.auth_basic_script} ${globals.base_url}/scripts/manage-auth-basic.py
+      chmod u+x ${globals.auth_basic_script}
+      ${globals.auth_basic_script} "${globals.haproxy_frontend_file}" "${globals.enable_auth_basic}" "${globals.new_login}" "${globals.new_password}"
+      service haproxy reload
     user: root
   - env.control.AddContainerEnvVars[bl]:
     vars: {"auth_basic_enabled": "${globals.enable_auth_basic}"}
