@@ -12,18 +12,18 @@ onInstall:
   - api [*]: env.control.AddContainerEnvVars
     vars: {"envName": "${env.shortdomain}"}
   - resetHaproxyBackends: bl
-  - if (nodes.sqldb.length > 1):
-      - repairReplication:
-          nodeId: ${nodes.sqldb.first.id}
-          masterId: ${nodes.sqldb.last.id}
-      - repairReplication:
-          nodeId: ${nodes.sqldb.last.id}
-          masterId: ${nodes.sqldb.first.id}
-      - cmd[proxy]: /root/clone-updates.sh ${nodes.sqldb.first.id} ${nodes.sqldb.last.id}
-        user: root
-  - else:
-      - cmd[proxy]: /root/clone-updates.sh ${nodes.sqldb.first.id}
-        user: root
+  # - if (nodes.sqldb.length > 1):
+  #     - repairReplication:
+  #         nodeId: ${nodes.sqldb.first.id}
+  #         masterId: ${nodes.sqldb.last.id}
+  #     - repairReplication:
+  #         nodeId: ${nodes.sqldb.last.id}
+  #         masterId: ${nodes.sqldb.first.id}
+  #     - cmd[proxy]: /root/clone-updates.sh ${nodes.sqldb.first.id} ${nodes.sqldb.last.id}
+  #       user: root
+  # - else:
+  #     - cmd[proxy]: /root/clone-updates.sh ${nodes.sqldb.first.id}
+  #       user: root
   - cmd[proc, cp]: |-
       touch $DATA_PATH/digital-factory-data/safe-env-clone
       chown tomcat:tomcat $DATA_PATH/digital-factory-data/safe-env-clone

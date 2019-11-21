@@ -27,7 +27,7 @@ globals:
   shortdomain: ${settings.shortdomain}
   displayName: ${settings.displayName}
   jahia_docker_image: ${settings.jahiaDockerImage}
-  dbbaseUrl: https://raw.githubusercontent.com/Jahia/paas_jelastic_mysql_cluster/master
+  dbbaseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master
   dbscheme: ${settings.dbscheme}
   dbnodeType: ${settings.dbnodeType}
   dbnodes: ${settings.dbnodes}
