@@ -89,7 +89,7 @@ onBeforeInstall: |
     "count": "${settings.browsingCount}",
     "cloudlets": cloudlets,
     "nodeGroup": "cp",
-    "links": "proxy:galera",
+    "links": "sqldb:galera",
     "startServiceOnCreation": false,
     "env": {
         "DB_USER": "${globals.db_user}",
@@ -124,7 +124,7 @@ onBeforeInstall: |
     "count": "1",
     "cloudlets": 40,
     "nodeGroup": "proc",
-    "links": "proxy:galera",
+    "links": "sqldb:galera",
     "startServiceOnCreation": false,
     "env": {
         "DB_USER": "${globals.db_user}",
