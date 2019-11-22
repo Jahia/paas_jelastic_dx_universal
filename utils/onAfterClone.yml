@@ -67,8 +67,9 @@ actions:
         
   setupUser:
     cmd[${this.id}]: |-
+      source /.jelenv
       wget ${globals.PATH}/scripts/setupUser.sh -O ~/setupUser.sh &>> /var/log/run.log
-      bash ~/setupUser.sh ${globals.DB_USER} ${globals.DB_PASS} &>> /var/log/run.log
+      bash ~/setupUser.sh ${DB_USER} ${DB_PASS} &>> /var/log/run.log
     user: root
 
   setupSeeds:
