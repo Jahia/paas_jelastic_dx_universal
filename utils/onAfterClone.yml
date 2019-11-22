@@ -13,8 +13,6 @@ onInstall:
     vars: {"envName": "${env.shortdomain}"}
 
   - resetCluster: sqldb
-  - initialSetup:
-      id: "sqldb"
   - setupSeeds
   - setupInstance:
       id: "sqldb"
@@ -46,12 +44,6 @@ onInstall:
         envLink: ""
 
 actions:
-  initialSetup:
-    - setNodeDisplayName[${this.id}]: Galera
-      if (!/settings.custom_conf/.test("${globals.CUSTOM_CONF}")):
-        cmd[${this.id}]: cd /etc/mysql/conf.d && wget ${globals.CUSTOM_CONF} &>> /var/log/run.log
-        user: root
-
   setupSeeds:
     script:
     - var resp = jelastic.env.control.GetEnvInfo('${env.envName}', session);
