@@ -86,7 +86,7 @@ actions:
     nodeGroup: sqldb
   
   setupInstance:
-    forEach[${this}]:
+    forEach[sqldb]:
       cmd: |-
         sed -i "s/server_id.*/server_id = $(echo '${env.region}' | md5sum | grep -Eo "[[:digit:]]{3}"  | head -n1)/" ${globals.GALERA_CONF}
         sed -i "s/bind-address.*/bind-address = node${@i.id}/" ${globals.GALERA_CONF}
