@@ -23,7 +23,7 @@ onInstall:
   - initialSetup:
       id: "sqldb"
   - setupSeeds
-  - setupInstance: sqldb
+  - setupInstance
   - cmd[${nodes.sqldb.master.id}]: "/etc/init.d/mysql stop; sleep 5; galera_new_cluster; service httpd restart"
     user: root
   - forEach(n:nodes.sqldb):
@@ -44,9 +44,10 @@ onInstall:
   #     - cmd[proxy]: /root/clone-updates.sh ${nodes.sqldb.first.id}
   #       user: root
   - cmd[proc, cp]: |-
+      sudo service tomcat stop
       touch $DATA_PATH/digital-factory-data/safe-env-clone
-      chown tomcat:tomcat $DATA_PATH/digital-factory-data/safe-env-clone
-      rm -f /data/digital-factory-data/karaf/etc/org.jahia.modules.marketingfactory.settings-mf.cfg
+      sudo rm -f /data/digital-factory-data/karaf/etc/org.jahia.modules.marketingfactory.settings-mf.cfg
+      sudo service tomcat start
   - environment.control.ApplyNodeGroupData [proc, cp]:
       data:
         envLink: ""
@@ -87,7 +88,7 @@ actions:
   
   setupInstance:
     forEach(nodes.sqldb):
-      cmd: |-
+      cmd[${@i.id}]: |-
         sed -i "s/server_id.*/server_id = $(echo '${env.region}' | md5sum | grep -Eo "[[:digit:]]{3}"  | head -n1)/" ${globals.GALERA_CONF}
         sed -i "s/bind-address.*/bind-address = node${@i.id}/" ${globals.GALERA_CONF}
         sed -i "s/report_host.*/report_host = node${@i.id}/" ${globals.GALERA_CONF}
