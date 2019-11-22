@@ -169,6 +169,7 @@ onBeforeInstall: |
         "scheme": "${settings.dbscheme}",
         "db_user": "${globals.db_user}",
         "db_pass": "${globals.db_pass}",
+        "path": "${globals.dbbaseUrl}",
         }
     },
     "count": dbnodes,
@@ -407,17 +408,17 @@ settings:
             - value: mariadb-dockerized
 
     - caption: None
-      inputType: hidden
+      # inputType: hidden
       type: list
       name: dbnodes
-      dependsOn:
-        dbscheme:
-          single:
-            - value: 1
-          master:
-            - value: 2
-          galera:
-            - value: 3
+      default: 3
+      values:
+        - value: 1
+          caption: 1
+        - value: 2
+          caption: 2
+        - value: 3
+          caption: 3
 
     - name: shortdomain
       type: envname
@@ -446,3 +447,7 @@ settings:
       inputType: hidden
       type: string
       default: 'undefined'
+    - name: path
+      inputType: hidden
+      type: string
+      default: 'https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master'
