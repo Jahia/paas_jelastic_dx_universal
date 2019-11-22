@@ -9,8 +9,6 @@ description:
 
 globals:
   PATH: "https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master"
-  DB_USER: "${settings.db_user}"
-  DB_PASS: "${settings.db_pass}"
   CLUSTER_NAME: galera-cluster
   GALERA_CONF: "/etc/mysql/conf.d/galera.cnf"
   CUSTOM_CONF: "${settings.custom_conf}"
