@@ -20,10 +20,10 @@ onInstall:
     vars: {"envName": "${env.shortdomain}"}
 
   - resetCluster: sqldb
-  - initialSetup: sqldb
-  - setupSeeds
-  - setupInstance:
+  - initialSetup:
       id: "sqldb"
+  - setupSeeds
+  - setupInstance: sqldb
   - cmd[${nodes.sqldb.master.id}]: "/etc/init.d/mysql stop; sleep 5; galera_new_cluster; service httpd restart"
     user: root
   - forEach(n:nodes.sqldb):
