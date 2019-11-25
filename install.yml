@@ -65,6 +65,7 @@ onBeforeInstall: |
   var cloudlets = '${globals.operating_mode}' == 'production' ? 64 : 40;
   var xmx = '${globals.operating_mode}' == 'production' ? '6000M' : '${globals.xmx}';
   var dockerImage = "${globals.jahia_docker_image}";
+  var db_endpoint = '${settings.dbscheme}' == 'galera' ? 'galera' : 'mysqldb';
 
   node_haproxy = {
     "displayName": "Haproxy",
@@ -107,7 +108,7 @@ onBeforeInstall: |
         "_PROVIDE": "jahia",
         "_ROLE": "Browsing",
         "envName": "${globals.shortdomain}",
-        "DB_ENDPOINT": "mysqldb",
+        "DB_ENDPOINT": db_endpoint,
       }
   }
   if (dockerImage == "undefined") {
@@ -142,7 +143,7 @@ onBeforeInstall: |
         "_PROVIDE": "jahia",
         "_ROLE": "Processing",
         "envName": "${globals.shortdomain}",
-        "DB_ENDPOINT": "mysqldb",
+        "DB_ENDPOINT": db_endpoint,
       }
   }
   if (dockerImage == "undefined") {
