@@ -10,7 +10,7 @@ description:
     manages your entire digital ecosystem to innovate and deliver great customer
     experiences, foster internal collaboration and support dynamic business
     needs for sustainable growth.
-baseUrl: https://github.com/Jahia/paas_jelastic_dx_universal/raw/PAAS-599
+baseUrl: https://github.com/Jahia/paas_jelastic_dx_universal/raw/release/v1.9
 
 ssl: true
 skipNodeEmails: true
