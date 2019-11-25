@@ -10,7 +10,7 @@ description:
     manages your entire digital ecosystem to innovate and deliver great customer
     experiences, foster internal collaboration and support dynamic business
     needs for sustainable growth.
-baseUrl: https://github.com/Jahia/paas_jelastic_dx_universal/raw/release/v1.9
+baseUrl: https://github.com/Jahia/paas_jelastic_dx_universal/raw/PAAS-599
 
 ssl: true
 skipNodeEmails: true
@@ -49,6 +49,14 @@ onAfterClone:
       data = {
         "targetAppid": newEnv,
         "manifest": "${baseUrl}/utils/onAfterClone.yml"
+        };
+      res = jelastic.dev.scripting.eval("appstore", session, "InstallApp", data);
+      return {"result": 0, "out": res}
+  - script: |
+      var newEnv = "${event.response.env.appid}";
+      data = {
+        "targetAppid": newEnv,
+        "manifest": "${baseUrl}/update.yml"
         };
       res = jelastic.dev.scripting.eval("appstore", session, "InstallApp", data);
       return {"result": 0, "out": res}

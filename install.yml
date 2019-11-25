@@ -243,6 +243,14 @@ onAfterClone:
         };
       res = jelastic.dev.scripting.eval("appstore", session, "InstallApp", data);
       return {"result": 0, "out": res}
+  - script: |
+      var newEnv = "${event.response.env.appid}";
+      data = {
+        "targetAppid": newEnv,
+        "manifest": "${baseUrl}/update.yml"
+        };
+      res = jelastic.dev.scripting.eval("appstore", session, "InstallApp", data);
+      return {"result": 0, "out": res}
 
 onAfterStart:
   - onAfterProxySqlStart: proxy
