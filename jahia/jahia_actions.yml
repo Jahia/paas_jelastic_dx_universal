@@ -108,9 +108,13 @@ actions:
     - if (settings.license):
         - cmd[${this}]: |-
             echo "${settings.license}" | base64 -d > /opt/tomcat/conf/digital-factory-config/jahia/license.xml
-    - log: "## Configure jdbc to target Galera"
+    - log: "## Configure jdbc to target Galera if needed"
     - cmd[${this}]: |-
-        sed 's;\(url="jdbc:mariadb:\)[^"]\+\(/jahia[^"]\+\);\1loadbalance://galera_1,galera_2,galera_3\2;' -i /opt/tomcat/webapps/ROOT/META-INF/context.xml
+        if [ "$DB_ENDPOINT" == "galera" ]; then
+          sed 's;\(url="jdbc:mariadb:\)[^"]\+\(/jahia[^"]\+\);\1loadbalance://galera_1,galera_2,galera_3\2;' -i /opt/tomcat/webapps/ROOT/META-INF/context.xml
+        else
+          echo "No galera here, juste target mysqldb hostname"
+        fi
     - log: "## set jdbc timeBetweenEvictionRunsMillis to 5000 (default jdbc value)"
     - cmd[${this}]: |-
         sed 's;\(timeBetweenEvictionRunsMillis="\)[0-9]*;\15000;' -i /opt/tomcat/webapps/ROOT/META-INF/context.xml
