@@ -28,8 +28,7 @@ globals:
   displayName: ${settings.displayName}
   jahia_docker_image: ${settings.jahiaDockerImage}
   dbbaseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master
-  dbscheme: ${settings.dbscheme}
-  dbnodeType: ${settings.dbnodeType}
+  dbnodeType: mariadb-dockerized
   xms: 256M
   xmx: 3584M
   java_opts:
@@ -62,15 +61,10 @@ mixins:
 onBeforeInstall: |
   nodes = []
   var cloudlets = '${globals.operating_mode}' == 'production' ? 64 : 40;
+  var db_scheme = '${globals.operating_mode}' == 'production' ? 'galera' : 'mysqldb';
+  var db_count = '${globals.operating_mode}' == 'production' ? 3 : 1;
   var xmx = '${globals.operating_mode}' == 'production' ? '6000M' : '${globals.xmx}';
   var dockerImage = "${globals.jahia_docker_image}";
-  var db_endpoint = '${settings.dbscheme}' == 'galera' ? 'galera' : 'mysqldb';
-  switch (db_endpoint) {
-    case "mysqldb":
-      var db_count = 1
-    case "galera":
-      var db_count = 3
-  }
 
   node_haproxy = {
     "displayName": "Haproxy",
@@ -95,7 +89,7 @@ onBeforeInstall: |
     "count": "${settings.browsingCount}",
     "cloudlets": cloudlets,
     "nodeGroup": "cp",
-    "links": "sqldb:" + db_endpoint,
+    "links": "sqldb:" + db_scheme,
     "startServiceOnCreation": false,
     "env": {
         "DB_USER": "${globals.db_user}",
@@ -113,7 +107,7 @@ onBeforeInstall: |
         "_PROVIDE": "jahia",
         "_ROLE": "Browsing",
         "envName": "${globals.shortdomain}",
-        "DB_ENDPOINT": db_endpoint,
+        "DB_ENDPOINT": db_scheme,
       }
   }
   if (dockerImage == "undefined") {
@@ -130,7 +124,7 @@ onBeforeInstall: |
     "count": "1",
     "cloudlets": 40,
     "nodeGroup": "proc",
-    "links": "sqldb:" + db_endpoint,
+    "links": "sqldb:" + db_scheme,
     "startServiceOnCreation": false,
     "env": {
         "DB_USER": "${globals.db_user}",
@@ -148,7 +142,7 @@ onBeforeInstall: |
         "_PROVIDE": "jahia",
         "_ROLE": "Processing",
         "envName": "${globals.shortdomain}",
-        "DB_ENDPOINT": db_endpoint,
+        "DB_ENDPOINT": db_scheme,
       }
   }
   if (dockerImage == "undefined") {
@@ -167,7 +161,7 @@ onBeforeInstall: |
       "skipOnEnvInstall": true,
       "settings": {
         "base_url": "${globals.dbbaseUrl}",
-        "scheme": "${settings.dbscheme}",
+        "scheme": db_scheme,
         "db_user": "${globals.db_user}",
         "db_pass": "${globals.db_pass}",
         "path": "${globals.dbbaseUrl}",
@@ -183,7 +177,7 @@ onBeforeInstall: |
       "DB_USER": "${globals.db_user}",
       "DB_PASS": "${globals.db_pass}",
       "_PROVIDE": "Database",
-      "_ROLE": "${globals.dbscheme}",
+      "_ROLE": db_scheme,
       "envName": "${globals.shortdomain}",
       "jahia_cfg_operatingMode": "${globals.operating_mode}",
     }
@@ -375,34 +369,6 @@ settings:
       vtype: string
       required: true
       default: 2
-
-    - caption: DB stack
-      type: list
-      name: stack
-      default: mariadb-dockerized
-      required: true
-      values:
-        - value: mariadb-dockerized
-          caption: MariaDB
-
-    - caption: DB node type
-      type: list
-      name: dbnodeType
-      default: mariadb-dockerized
-
-    - caption: DB topology
-      type: list
-      name: dbscheme
-      required: true
-      dependsOn:
-        stack:
-          mariadb-dockerized:
-            - value: single
-              caption: One, lonely, sad and single master
-            - value: master
-              caption: Master-Master with extra slaves
-            - value: galera
-              caption: Galera Cluster
 
     - name: shortdomain
       type: envname
