@@ -10,7 +10,7 @@ description:
     manages your entire digital ecosystem to innovate and deliver great customer
     experiences, foster internal collaboration and support dynamic business
     needs for sustainable growth.
-baseUrl: https://github.com/Jahia/paas_jelastic_dx_universal/raw/release/v1.9
+baseUrl: https://github.com/Jahia/paas_jelastic_dx_universal/raw/PAAS-599
 globals:
   haproxy_admin_stats_pass: ${fn.password(20)}
   db_user: jahia-db-${fn.random}
@@ -30,7 +30,6 @@ globals:
   dbbaseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master
   dbscheme: ${settings.dbscheme}
   dbnodeType: ${settings.dbnodeType}
-  dbnodes: ${settings.dbnodes}
   xms: 256M
   xmx: 3584M
   java_opts:
@@ -66,6 +65,12 @@ onBeforeInstall: |
   var xmx = '${globals.operating_mode}' == 'production' ? '6000M' : '${globals.xmx}';
   var dockerImage = "${globals.jahia_docker_image}";
   var db_endpoint = '${settings.dbscheme}' == 'galera' ? 'galera' : 'mysqldb';
+  switch (db_endpoint) {
+    case "mysqldb":
+      var db_count = 1
+    case "galera":
+      var db_count = 3
+  }
 
   node_haproxy = {
     "displayName": "Haproxy",
@@ -90,7 +95,7 @@ onBeforeInstall: |
     "count": "${settings.browsingCount}",
     "cloudlets": cloudlets,
     "nodeGroup": "cp",
-    "links": "sqldb:galera",
+    "links": "sqldb:" + db_endpoint,
     "startServiceOnCreation": false,
     "env": {
         "DB_USER": "${globals.db_user}",
@@ -125,7 +130,7 @@ onBeforeInstall: |
     "count": "1",
     "cloudlets": 40,
     "nodeGroup": "proc",
-    "links": "sqldb:galera",
+    "links": "sqldb:" + db_endpoint,
     "startServiceOnCreation": false,
     "env": {
         "DB_USER": "${globals.db_user}",
@@ -154,11 +159,6 @@ onBeforeInstall: |
   }
   nodes.push(node_proc);
 
-  dbnodes = "${globals.dbnodes}";
-  if (dbnodes.length == 0) {
-    dbnodes = 3;
-  }
-
   node_mariadb = {
     "nodeType": "${globals.dbnodeType}",
     "nodeGroup": "sqldb",
@@ -173,7 +173,7 @@ onBeforeInstall: |
         "path": "${globals.dbbaseUrl}",
         }
     },
-    "count": dbnodes,
+    "count": db_count,
     "cloudlets": cloudlets,
     "env": {
       "ADMINPANEL_ENABLED": false,
@@ -385,6 +385,11 @@ settings:
         - value: mariadb-dockerized
           caption: MariaDB
 
+    - caption: DB node type
+      type: list
+      name: dbnodeType
+      default: mariadb-dockerized
+
     - caption: DB topology
       type: list
       name: dbscheme
@@ -398,28 +403,6 @@ settings:
               caption: Master-Master with extra slaves
             - value: galera
               caption: Galera Cluster
-
-    - caption: None
-      inputType: hidden
-      type: list
-      name: dbnodeType
-      dependsOn:
-        stack:
-          mariadb-dockerized:
-            - value: mariadb-dockerized
-
-    - caption: None
-      # inputType: hidden
-      type: list
-      name: dbnodes
-      default: 3
-      values:
-        - value: 1
-          caption: 1
-        - value: 2
-          caption: 2
-        - value: 3
-          caption: 3
 
     - name: shortdomain
       type: envname
