@@ -389,10 +389,6 @@ settings:
       required: true
       default: NoDatadog
 
-    - name: license
-      type: text
-      caption: license
-
     - name: jahiaDockerImage
       inputType: hidden
       type: string
