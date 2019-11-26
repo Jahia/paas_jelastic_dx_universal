@@ -45,6 +45,8 @@ actions:
 
   installJahia:
     - setSudoer: proc, cp
+    - cmd[proc, cp]:
+        - sed '/tomcat-env.sh$/d' -i /etc/jelastic/redeploy.conf
 
     - environment.control.ApplyNodeGroupData [proc, cp]:
         data:
