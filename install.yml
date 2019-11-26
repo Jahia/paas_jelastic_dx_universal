@@ -401,11 +401,11 @@ settings:
   fields:
     - name: productVersion
       type: string
-      caption: Jahia DX version
+      caption: Jahia version
       required: true
     - name: rootpwd
       type: string
-      caption: Jahia DX root password
+      caption: Jahia root password
       vtype: string
       required: true
     - name: toolspwd
@@ -415,7 +415,7 @@ settings:
       required: true
     - name: browsingCount
       type: string
-      caption: Number of DX browsing nodes
+      caption: Number of Jahia browsing nodes
       vtype: string
       required: true
       default: 2
