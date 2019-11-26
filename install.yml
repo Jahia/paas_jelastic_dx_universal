@@ -10,7 +10,7 @@ description:
     manages your entire digital ecosystem to innovate and deliver great customer
     experiences, foster internal collaboration and support dynamic business
     needs for sustainable growth.
-baseUrl: https://github.com/Jahia/paas_jelastic_dx_universal/raw/release/v1.9
+baseUrl: https://github.com/Jahia/paas_jelastic_dx_universal/raw/PAAS-599
 globals:
   haproxy_admin_stats_pass: ${fn.password(20)}
   db_user: jahia-db-${fn.random}
@@ -61,7 +61,7 @@ mixins:
 onBeforeInstall: |
   nodes = []
   var cloudlets = '${globals.operating_mode}' == 'production' ? 64 : 40;
-  var db_scheme = '${globals.operating_mode}' == 'production' ? 'galera' : 'mysqldb';
+  var db_scheme = '${globals.operating_mode}' == 'production' ? 'galera' : 'galera';
   var db_count = '${globals.operating_mode}' == 'production' ? 3 : 1;
   var xmx = '${globals.operating_mode}' == 'production' ? '6000M' : '${globals.xmx}';
   var dockerImage = "${globals.jahia_docker_image}";
