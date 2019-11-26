@@ -9,7 +9,7 @@ source ${hn_metadata}
 
 {
 echo "api_key: $DATADOGAPIKEY"
-echo "hostname: $_ROLE."$(hostname | sed 's/^[a-Z]\+\([0-9]\+\).*/\1/' | tr [A-Z] [a-z])
+echo "hostname: $_ROLE."$(hostname | sed 's/^[[:alpha:]]\+\([[:digit:]]\+\).*/\1/' | tr [A-Z] [a-z])
 echo "logs_enabled: true"
 echo "logs_config:"
 echo "  processing_rules:"
