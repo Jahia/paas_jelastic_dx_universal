@@ -1,4 +1,26 @@
 ---
+globals:
+  xms: 256M
+  xmx: 3584M
+  java_opts:
+    -DDB_USER=${DB_USER}
+    -DDB_PASSWORD=${DB_PASSWORD}
+    -DREDIS_PASSWORD=${REDIS_PASSWORD}
+    -DMANAGER_USER=${MANAGER_USER}
+    -DMANAGER_PASSWORD=${MANAGER_PASSWORD}
+    -DSUPER_USER_PASSWORD=${SUPER_USER_PASSWORD}
+    -DHOST_NAME=$(hostname)
+    -Dcom.sun.management.jmxremote
+    -Dcom.sun.management.jmxremote.port=7199
+    -Dcom.sun.management.jmxremote.ssl=false
+    -Dcom.sun.management.jmxremote.authenticate=false
+    -XX:MaxPermSize=512m
+    -XX:+HeapDumpOnOutOfMemoryError
+    -XX:+PrintConcurrentLocks
+    -XX:+UseParallelGC
+    -XX:SurvivorRatio=8
+    -Xmn1G
+
 actions:
   onAfterBrowsingScaleOut:
     - setSudoer: ${this.newNode}
