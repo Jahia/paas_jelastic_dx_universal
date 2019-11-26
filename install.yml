@@ -226,7 +226,7 @@ onInstall:
   - if (settings.skipStart != 'true'):
       - createJahiaDatabase
 
-  - if (settings.mode == 'production'): createDataDogUser
+  - createDataDogUser
 
   - installJahia
 
