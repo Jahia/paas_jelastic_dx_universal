@@ -20,6 +20,44 @@ mixins:
   - haproxy/haproxy_actions.yml
   - jahia/jahia_actions.yml
 
+globals:
+  haproxy_admin_stats_pass: ${fn.password(20)}
+  db_user: jahia-db-${fn.random}
+  db_pass: ${fn.password(20)}
+  db_user_datadog: ${fn.password(20)}
+  redis_pass: ${fn.password(20)}
+  mngr_user: manager
+  mngr_pass: ${settings.toolspwd}
+  su_pass: ${settings.rootpwd}
+  dx_version: ${settings.dxVersion}
+  package_type: dev
+  operating_mode: ${settings.mode}
+  datadog_key: ${settings.ddogApikey}
+  shortdomain: ${settings.shortdomain}
+  displayName: ${settings.displayName}
+  jahia_docker_image: ${settings.jahiaDockerImage}
+  dbbaseUrl: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master
+  dbnodeType: mariadb-dockerized
+  xms: 256M
+  xmx: 3584M
+  java_opts:
+    -DDB_USER=${DB_USER}
+    -DDB_PASSWORD=${DB_PASSWORD}
+    -DREDIS_PASSWORD=${REDIS_PASSWORD}
+    -DMANAGER_USER=${MANAGER_USER}
+    -DMANAGER_PASSWORD=${MANAGER_PASSWORD}
+    -DSUPER_USER_PASSWORD=${SUPER_USER_PASSWORD}
+    -DHOST_NAME=$(hostname)
+    -Dcom.sun.management.jmxremote
+    -Dcom.sun.management.jmxremote.port=7199
+    -Dcom.sun.management.jmxremote.ssl=false
+    -Dcom.sun.management.jmxremote.authenticate=false
+    -XX:MaxPermSize=512m
+    -XX:+HeapDumpOnOutOfMemoryError
+    -XX:+PrintConcurrentLocks
+    -XX:+UseParallelGC
+    -XX:SurvivorRatio=8
+    -Xmn1G
 
 # --Events --
 
