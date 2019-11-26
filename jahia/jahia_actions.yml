@@ -103,6 +103,7 @@ actions:
         #Secure cookies from cross scripting
         indent="      " && printf "$indent<cookie-config>\n$indent$indent<secure>true</secure>\n$indent$indent<http-only>true</http-only>\n$indent</cookie-config>\n" > /tmp/cookies-config
         sed -i '/<session-config>/r /tmp/cookies-config' /opt/tomcat/conf/web.xml && rm /tmp/cookies-config
+        sed -i "s/^\(.*Connector port=\"80.*HTTP.*\)$/\1\n\t\tmaxHttpHeaderSize=\"65536\"/g" /opt/tomcat/conf/server.xml
     - if (settings.license):
         - cmd[${this}]: |-
             echo "${settings.license}" | base64 -d > /opt/tomcat/conf/digital-factory-config/jahia/license.xml
