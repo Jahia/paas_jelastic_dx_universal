@@ -43,6 +43,12 @@ onAfterRedeployContainer[proc]:
   - onAfterRedeployJahiaContainer: proc
 
 
+onBeforeClone:
+  - log: "## Disable tomcat autostart before cloning env"
+  - cmd[cp, proc]:
+      - chkconfig tomcat off
+    user: root
+
 onAfterClone:
   - script: |
       var newEnv = "${event.response.env.appid}";

@@ -32,13 +32,16 @@ onInstall:
 
   - resetHaproxyBackends: bl
   - cmd[proc, cp]: |-
-      sudo service tomcat stop
       touch $DATA_PATH/digital-factory-data/safe-env-clone
       sudo rm -f /data/digital-factory-data/karaf/etc/org.jahia.modules.marketingfactory.settings-mf.cfg
       sudo service tomcat start
   - environment.control.ApplyNodeGroupData [proc, cp]:
       data:
         envLink: ""
+  - log: "## Enable tomcat autostart on the cloned env"
+  - cmd[cp, proc]:
+      - chkconfig tomcat on
+    user: root
 
 actions:
   initialSetup:
