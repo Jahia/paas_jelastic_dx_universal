@@ -34,6 +34,8 @@ onInstall:
   - cmd[proc, cp]: |-
       rm /opt/tomcat/logs/*
       touch $DATA_PATH/digital-factory-data/safe-env-clone
+      sudo rm /data/digital-factory-data/repository/workspaces/*
+      sudo rm /data/digital-factory-data/repository/revisionNode
       sudo rm -f /data/digital-factory-data/karaf/etc/org.jahia.modules.marketingfactory.settings-mf.cfg
       sudo service tomcat start
   - environment.control.ApplyNodeGroupData [proc, cp]:
