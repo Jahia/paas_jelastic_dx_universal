@@ -45,6 +45,9 @@ onInstall:
   - cmd[cp, proc]:
       - chkconfig tomcat on
     user: root
+  - api: jelastic.env.control.SetEnvDisplayName
+    displayname: "${env.shortdomain}"
+
 
 actions:
   initialSetup:
