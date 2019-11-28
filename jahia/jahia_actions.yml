@@ -41,7 +41,7 @@ actions:
 
   initJahiaDatabase:
     - log: "## Import DX schema in database"
-    - cmd[${nodes.proc.first.id}]: cat $DATA_PATH/digital-factory-data/db/sql/schema/mysql/01-create*.sql | mysql -h $DB_ENDPOINT -u$DB_USER -p$DB_PASSWORD -f jahia
+    - cmd[${nodes.proc.first.id}]: cat $DATA_PATH/digital-factory-data/db/sql/schema/mysql/*.sql | mysql -h $DB_ENDPOINT -u$DB_USER -p$DB_PASSWORD -f jahia
 
   installJahia:
     - setSudoer: proc, cp
