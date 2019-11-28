@@ -22,5 +22,3 @@ actions:
         - log: "## git repo branch is prod"
         - api [*]: env.control.AddContainerEnvVars
           vars: {"PACKAGE_TYPE": "prod"}
-    - api [*]: env.control.AddContainerEnvVars
-      vars: {"DB_ENDPOINT": "proxy"}
