@@ -108,16 +108,6 @@ actions:
         sed -i 's/\(^default.config.sync = \)cluster/\1disabled/' /data/digital-factory-data/karaf/etc/org.apache.karaf.cellar.groups.cfg
         sed -i '/<!-- Access log processes all example./i \\t<!-- Remote IP Valve -->\n \t<Valve className="org.apache.catalina.valves.RemoteIpValve" />\n' /opt/tomcat/conf/server.xml
         sed -i 's/pattern="%h /pattern="%{org.apache.catalina.AccessLog.RemoteAddr}r /' /opt/tomcat/conf/server.xml
-    - log: "## Configure jdbc to target Galera if needed"
-    - cmd[${this}]: |-
-        if [ "$DB_ENDPOINT" == "galera" ]; then
-          sed 's;\(url="jdbc:mariadb:\)[^"]\+\(/jahia[^"]\+\);\1loadbalance://galera_1,galera_2,galera_3\2;' -i /opt/tomcat/webapps/ROOT/META-INF/context.xml
-        else
-          echo "No galera here, juste target mysqldb hostname"
-        fi
-    - log: "## set jdbc timeBetweenEvictionRunsMillis to 5000 (default jdbc value)"
-    - cmd[${this}]: |-
-        sed 's;\(timeBetweenEvictionRunsMillis="\)[0-9]*;\15000;' -i /opt/tomcat/webapps/ROOT/META-INF/context.xml
 
   setupDatadogAgent:
     - log: "## Finalize Datadog agent setup on ${this}"
