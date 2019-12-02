@@ -81,8 +81,8 @@ actions:
   copyApp:
     - log: "## Determine JDK version for good _JAVA_OPTIONS envvar"
     - cmd[${this}]: |-
-        case "$(ls /usr/java/latest -l | awk '{print $NF}' | awk -F'/' '{print $NF}')" in
-          jdk1.8*)
+        case "$($JAVA_HOME/bin/java -version 2>&1 | awk 'NR==1 {print gensub("(\"|_.*)", "", "g", $3)}')" in
+          1.8*)
               j_opts='${globals.java_opts}'
               ;;
           *)
