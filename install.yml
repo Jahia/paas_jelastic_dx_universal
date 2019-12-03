@@ -60,7 +60,8 @@ mixins:
 
 onBeforeInstall: |
   nodes = []
-  var cloudlets = '${globals.operating_mode}' == 'production' ? 64 : 40;
+  var cp_cloudlets = '${globals.operating_mode}' == 'production' ? 64 : 40;
+  var db_cloudlets = '${globals.operating_mode}' == 'production' ? 40 : 32;
   var db_scheme = '${globals.operating_mode}' == 'production' ? 'galera' : 'galera';
   var db_count = '${globals.operating_mode}' == 'production' ? 3 : 1;
   var xmx = '${globals.operating_mode}' == 'production' ? '6000M' : '${globals.xmx}';
@@ -87,7 +88,7 @@ onBeforeInstall: |
   node_cp = {
     "displayName": "Browsing",
     "count": "${settings.browsingCount}",
-    "cloudlets": cloudlets,
+    "cloudlets": cp_cloudlets,
     "nodeGroup": "cp",
     "links": "sqldb:" + db_scheme,
     "startServiceOnCreation": false,
@@ -168,7 +169,7 @@ onBeforeInstall: |
         }
     },
     "count": db_count,
-    "cloudlets": cloudlets,
+    "cloudlets": db_cloudlets,
     "env": {
       "ADMINPANEL_ENABLED": false,
       "DATADOGAPIKEY": "${globals.datadog_key}",
