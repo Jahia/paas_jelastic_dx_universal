@@ -61,6 +61,7 @@ mixins:
 onBeforeInstall: |
   nodes = []
   var cp_cloudlets = '${globals.operating_mode}' == 'production' ? 64 : 40;
+  var proc_cloudlets = cp_cloudlets;
   var db_cloudlets = '${globals.operating_mode}' == 'production' ? 40 : 32;
   var db_scheme = '${globals.operating_mode}' == 'production' ? 'galera' : 'galera';
   var db_count = '${globals.operating_mode}' == 'production' ? 3 : 1;
@@ -123,7 +124,7 @@ onBeforeInstall: |
   node_proc = {
     "displayName": "Processing",
     "count": "1",
-    "cloudlets": 40,
+    "cloudlets": proc_cloudlets,
     "nodeGroup": "proc",
     "links": "sqldb:" + db_scheme,
     "startServiceOnCreation": false,
