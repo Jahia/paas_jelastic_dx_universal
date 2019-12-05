@@ -395,7 +395,3 @@ settings:
       inputType: hidden
       type: string
       default: 'undefined'
-    - name: path
-      inputType: hidden
-      type: string
-      default: 'https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/master'
