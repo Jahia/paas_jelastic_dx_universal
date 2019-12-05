@@ -1,0 +1,51 @@
+---
+type: update
+version: 0.1
+name: Jahia - set rewrite rules
+id: jahia-set-rewrite-rules
+description:
+  short: Jahia - set rewrite rules
+
+globals:
+  base_url_branch: ${settings.base_url_branch}
+  base_url: "https://github.com/Jahia/paas_jelastic_dx_universal/raw/${globals.base_url_branch}"
+  haproxy_frontend_file: "/etc/haproxy/haproxy.cfg.d/00-global.cfg"
+  haproxy_backup_file: "/var/lib/haproxy/haproxy-global-cfg.bak"
+
+onInstall:
+  - cmd [bl]: |-
+        yum install python3
+        wget -O /usr/local/bin/set-rewrite-rules.py ${globals.base_url}/scripts/set-rewrite-rules.py
+        chmod u+x /usr/local/bin/set-rewrite-rules.py
+        cp ${globals.haproxy_frontend_file} ${globals.haproxy_backup_file}
+        chown haproxy: ${globals.haproxy_backup_file}
+        /usr/local/bin/set-rewrite-rules.py "${globals.haproxy_frontend_file}" "${settings.rewrite-rules}"
+    user: root
+  # Always return true cause if the cmd return -1, jelastic script just stop...
+  - cmd [bl]: |-
+        service haproxy reload || true
+    user: root
+  - if ("${response.responses.errOut}" != ""):
+      - log: "reload failed"
+      - cmd [bl]: |-
+          mv  "${globals.haproxy_backup_file}" "${globals.haproxy_frontend_file}"
+      - return:
+          type: error
+          message: "${response.responses.errOut}"
+  - cmd [bl]: |-
+      rm "${globals.haproxy_backup_file}"
+    user: root
+  - return:
+      type: success
+
+settings:
+  fields:
+    - name: rewrite-rules
+      type: text
+      caption: rewrite-rules base64 encoded
+      default: ""
+    - name: base_url_branch
+      type: string
+      caption: base url branch
+      default: master
+      required: true

@@ -10,7 +10,7 @@ description:
     manages your entire digital ecosystem to innovate and deliver great customer
     experiences, foster internal collaboration and support dynamic business
     needs for sustainable growth.
-baseUrl: https://github.com/Jahia/paas_jelastic_dx_universal/raw/v1.9
+baseUrl: https://github.com/Jahia/paas_jelastic_dx_universal/raw/v1.10
 globals:
   haproxy_admin_stats_pass: ${fn.password(20)}
   db_user: jahia-db-${fn.random}
@@ -20,7 +20,7 @@ globals:
   mngr_user: manager
   mngr_pass: ${settings.toolspwd}
   su_pass: ${settings.rootpwd}
-  dx_version: ${settings.dxVersion}
+  dx_version: ${settings.productVersion}
   package_type: dev
   operating_mode: ${settings.mode}
   datadog_key: ${settings.ddogApikey}
@@ -36,8 +36,6 @@ globals:
     -DDB_PASSWORD=${DB_PASSWORD}
     -DREDIS_PASSWORD=${REDIS_PASSWORD}
     -DMANAGER_USER=${MANAGER_USER}
-    -DMANAGER_PASSWORD=${MANAGER_PASSWORD}
-    -DSUPER_USER_PASSWORD=${SUPER_USER_PASSWORD}
     -DHOST_NAME=$(hostname)
     -Dcom.sun.management.jmxremote
     -Dcom.sun.management.jmxremote.port=7199
@@ -97,8 +95,6 @@ onBeforeInstall: |
         "DB_USER": "${globals.db_user}",
         "DB_PASSWORD": "${globals.db_pass}",
         "MANAGER_USER": "${globals.mngr_user}",
-        "MANAGER_PASSWORD": "${globals.mngr_pass}",
-        "SUPER_USER_PASSWORD": "${globals.su_pass}",
         "REDIS_PASSWORD": "${globals.redis_pass}",
         "XMS": "${globals.xms}",
         "XMX": xmx,
@@ -132,8 +128,6 @@ onBeforeInstall: |
         "DB_USER": "${globals.db_user}",
         "DB_PASSWORD": "${globals.db_pass}",
         "MANAGER_USER": "${globals.mngr_user}",
-        "MANAGER_PASSWORD": "${globals.mngr_pass}",
-        "SUPER_USER_PASSWORD": "${globals.su_pass}",
         "REDIS_PASSWORD": "${globals.redis_pass}",
         "XMS": "${globals.xms}",
         "XMX": "${globals.xmx}",
@@ -295,7 +289,7 @@ actions:
 
   setupDatadogAgentSql:
     - log: "## Finalize Datadog agent setup on ${this}"
-    - cmd [${this}]: |-
+    - cmd[${this}]: |-
         DD_API_KEY=${globals.datadog_key} bash -c "$(curl -L https://raw.githubusercontent.com/DataDog/datadog-agent/master/cmd/agent/install_script.sh)"
         NODE_NAME=${HOSTNAME/-*}
         echo "hostname: ${_ROLE}.${NODE_NAME#node}" >> /etc/datadog-agent/datadog.yaml
@@ -358,13 +352,13 @@ actions:
 success: /text/success.md
 settings:
   fields:
-    - name: dxVersion
+    - name: productVersion
       type: string
-      caption: Jahia DX version
+      caption: Jahia version
       required: true
     - name: rootpwd
       type: string
-      caption: Jahia DX root password
+      caption: Jahia root password
       vtype: string
       required: true
     - name: toolspwd
@@ -374,7 +368,7 @@ settings:
       required: true
     - name: browsingCount
       type: string
-      caption: Number of DX browsing nodes
+      caption: Number of Jahia browsing nodes
       vtype: string
       required: true
       default: 2
@@ -396,7 +390,6 @@ settings:
       type: string
       caption: Datadog API KEY
       required: true
-      default: NoDatadog
 
     - name: jahiaDockerImage
       inputType: hidden
