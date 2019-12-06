@@ -1,0 +1,52 @@
+---
+type: update
+version: 1.5.2
+name: Jahia - after clone
+logo: /images/jahia-logo-70x70.png
+id: jahia-dx-cluster-universal-after-clone
+description:
+  short: Jahia - after clone
+
+mixins:
+  - database/galera_actions.yml
+
+onInstall:
+  - log: Start post-clone setup
+  - api [*]: env.control.AddContainerEnvVars
+    vars: {"envName": "${env.shortdomain}"}
+
+  - if (nodes.sqldb.length > 1):
+      - installGaleraCluster
+
+  - resetHaproxyBackends: bl
+  - cmd[proc, cp]: |-
+      rm /opt/tomcat/logs/*
+      touch $DATA_PATH/digital-factory-data/safe-env-clone
+      sudo rm /data/digital-factory-data/repository/workspaces/*
+      sudo rm /data/digital-factory-data/repository/revisionNode
+      sudo rm -f /data/digital-factory-data/karaf/etc/org.jahia.modules.marketingfactory.settings-mf.cfg
+      sudo service tomcat start
+  - environment.control.ApplyNodeGroupData [proc, cp]:
+      data:
+        envLink: ""
+  - cmd[*]: |-
+      rm -f /etc/ssh/ssh_host*
+      service sshd restart
+    user: root
+  - log: "## Enable tomcat autostart on the cloned env"
+  - cmd[cp, proc]:
+      - chkconfig tomcat on
+    user: root
+  - api: jelastic.env.control.SetEnvDisplayName
+    displayname: "${env.shortdomain}"
+
+
+actions:
+  resetHaproxyBackends:
+    - cmd[bl]: |-
+        sed -ie "/$server.*:80 check cookie/d" /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
+    - forEach(nodes.cp):
+        cmd[${this}]: |-
+          echo "    server ${env.appid}-${@i.id} ${@i.intIP}:80 check cookie s${@i.id}" >> /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
+          sudo service haproxy reload
+        user: haproxy

@@ -94,7 +94,7 @@ onAfterClone:
       var newEnv = "${event.response.env.appid}";
       data = {
         "targetAppid": newEnv,
-        "manifest": "${baseUrl}/utils/onAfterClone.yml"
+        "manifest": "${baseUrl}/onAfterClone.yml"
         };
       res = jelastic.dev.scripting.eval("appstore", session, "InstallApp", data);
       return {"result": 0, "out": res}
