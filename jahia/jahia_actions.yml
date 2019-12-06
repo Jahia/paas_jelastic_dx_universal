@@ -1,6 +1,7 @@
 ---
 actions:
   onAfterBrowsingScaleOut:
+    - setSudoer: ${this.newNode}
     - copyApp: ${this.newNode}
     - if (settings.mode == 'development'):
         - installMaven: ${this.newNode}
@@ -16,18 +17,27 @@ actions:
       user: root
 
   onAfterRedeployJahiaContainer:
+    - cmd[${this}]:
+        - service tomcat stop
+      user: root
+    - setSudoer: ${this}
     - copyApp: ${this}
     - if (settings.mode == 'development'):
         - installMaven: ${this}
     - if ("${this}" == "cp"):
         cmd[${this}]:
           - sed -i "s#\(processingServer\s*=\).*#\1 false#g" $STACK_PATH/conf/digital-factory-config/jahia/jahia.node.properties
-    - cmd[${this}]:
-        - chkconfig --add tomcat
-        - chkconfig --level 3 tomcat on
-        - service tomcat start
-      user: root
     - setupDatadogAgent: ${this}
+    - cmd[${this}]: |-
+          source /etc/locale.conf
+          echo "JAHIA_UPGRADE=$JAHIA_UPGRADE"
+          if (service tomcat status && [ "$JAHIA_UPGRADE" == "true" ]); then
+            echo "This is an upgrade, processing's tomcat will not be restarted now"
+          else
+            echo "This is a regular redeploy, restart tomcat now"
+            service tomcat start
+          fi
+      user: root
 
   stopJahia:
     cmd[${this}]: "service tomcat stop"
@@ -35,10 +45,13 @@ actions:
 
   initJahiaDatabase:
     - log: "## Import DX schema in database"
-    - cmd[${nodes.proc.first.id}]: cat $DATA_PATH/digital-factory-data/db/sql/schema/mysql/01-create*.sql | mysql -h proxysql_1 -u$DB_USER -p$DB_PASSWORD -f jahia
+    - cmd[${nodes.proc.first.id}]: cat $DATA_PATH/digital-factory-data/db/sql/schema/mysql/*.sql | mysql -h $DB_ENDPOINT -u$DB_USER -p$DB_PASSWORD -f jahia
 
   installJahia:
     - setSudoer: proc, cp
+    - cmd[proc, cp]:
+        - sed '/tomcat-env.sh$/d' -i /etc/jelastic/redeploy.conf
+      user: root
 
     - environment.control.ApplyNodeGroupData [proc, cp]:
         data:
@@ -72,8 +85,8 @@ actions:
   copyApp:
     - log: "## Determine JDK version for good _JAVA_OPTIONS envvar"
     - cmd[${this}]: |-
-        case "$(ls /usr/java/latest -l | awk '{print $NF}' | awk -F'/' '{print $NF}')" in
-          jdk1.8*)
+        case "$($JAVA_HOME/bin/java -version 2>&1 | awk 'NR==1 {print gensub("(\"|_.*)", "", "g", $3)}')" in
+          1.8*)
               j_opts='${globals.java_opts}'
               ;;
           *)
@@ -104,15 +117,6 @@ actions:
         indent="      " && printf "$indent<cookie-config>\n$indent$indent<secure>true</secure>\n$indent$indent<http-only>true</http-only>\n$indent</cookie-config>\n" > /tmp/cookies-config
         sed -i '/<session-config>/r /tmp/cookies-config' /opt/tomcat/conf/web.xml && rm /tmp/cookies-config
         sed -i "s/^\(.*Connector port=\"80.*HTTP.*\)$/\1\n\t\tmaxHttpHeaderSize=\"65536\"/g" /opt/tomcat/conf/server.xml
-    - if (settings.license):
-        - cmd[${this}]: |-
-            echo "${settings.license}" | base64 -d > /opt/tomcat/conf/digital-factory-config/jahia/license.xml
-    - log: "## Configure jdbc to target ProxySQL instead of mariadb and disable usePipelineAuth option from mariadb connector"
-    - cmd[${this}]: |-
-        sed 's;\(url="jdbc:mariadb:\)[^"]\+\(/jahia[^"]\+\);\1failover://proxysql_1,proxysql_2\2\&amp\;usePipelineAuth=false;' -i /opt/tomcat/webapps/ROOT/META-INF/context.xml
-    - log: "## set jdbc timeBetweenEvictionRunsMillis to 5000 (default jdbc value)"
-    - cmd[${this}]: |-
-        sed 's;\(timeBetweenEvictionRunsMillis="\)[0-9]*;\15000;' -i /opt/tomcat/webapps/ROOT/META-INF/context.xml
 
   setupDatadogAgent:
     - log: "## Finalize Datadog agent setup on ${this}"

@@ -11,12 +11,22 @@ onInstall:
   - cmd [cp,proc]:
       - service tomcat stop
     user: root
+  - cmd [proc]:
+      - echo 'export JAHIA_UPGRADE="true"' >> /etc/locale.conf
+    user: root
   - api: environment.control.RedeployContainersByGroup
     nodeGroup: proc
     tag: ${settings.targetVersion}
     useExistingVolumes: false
     skipReinstall: false
     envName: ${env.envName}
+  - cmd [proc]: |-
+        touch /data/digital-factory-data/modules/*
+        service tomcat start
+        sed '/JAHIA_UPGRADE/d' -i /etc/locale.conf
+    user: root
+  - sleep:
+      - milliseconds: 120000
   - api: environment.control.RedeployContainersByGroup
     nodeGroup: cp
     tag: ${settings.targetVersion}
@@ -29,9 +39,6 @@ onInstall:
         packageType: ${settings.packageType}
   - env.control.AddContainerEnvVars[cp, proc]:
       vars: {"DX_VERSION": "${settings.targetVersion}", "PACKAGE_TYPE": "${settings.packageType}"}
-  - cmd [cp,proc]:
-      - service tomcat start
-    user: root
 settings:
   fields:
     - name: targetVersion

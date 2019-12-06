@@ -1,5 +1,5 @@
 ---
-type: install
+type: update
 version: 1.5.2
 name: Jahia - Digital Experience Manager
 logo: /images/jahia-logo-70x70.png
@@ -10,7 +10,16 @@ description:
     manages your entire digital ecosystem to innovate and deliver great customer
     experiences, foster internal collaboration and support dynamic business
     needs for sustainable growth.
-baseUrl: https://github.com/Jahia/paas_jelastic_dx_universal/raw/v1.10
+baseUrl: https://github.com/Jahia/paas_jelastic_dx_universal/raw/v1.9
+
+ssl: true
+skipNodeEmails: true
+
+mixins:
+  - common/common_actions.yml
+  - haproxy/haproxy_actions.yml
+  - jahia/jahia_actions.yml
+
 globals:
   haproxy_admin_stats_pass: ${fn.password(20)}
   db_user: jahia-db-${fn.random}
@@ -20,7 +29,7 @@ globals:
   mngr_user: manager
   mngr_pass: ${settings.toolspwd}
   su_pass: ${settings.rootpwd}
-  dx_version: ${settings.productVersion}
+  dx_version: ${settings.dxVersion}
   package_type: dev
   operating_mode: ${settings.mode}
   datadog_key: ${settings.ddogApikey}
@@ -36,6 +45,8 @@ globals:
     -DDB_PASSWORD=${DB_PASSWORD}
     -DREDIS_PASSWORD=${REDIS_PASSWORD}
     -DMANAGER_USER=${MANAGER_USER}
+    -DMANAGER_PASSWORD=${MANAGER_PASSWORD}
+    -DSUPER_USER_PASSWORD=${SUPER_USER_PASSWORD}
     -DHOST_NAME=$(hostname)
     -Dcom.sun.management.jmxremote
     -Dcom.sun.management.jmxremote.port=7199
@@ -48,168 +59,8 @@ globals:
     -XX:SurvivorRatio=8
     -Xmn1G
 
-ssl: true
-skipNodeEmails: true
-
-mixins:
-  - common/common_actions.yml
-  - haproxy/haproxy_actions.yml
-  - jahia/jahia_actions.yml
-
-onBeforeInstall: |
-  nodes = []
-  var cp_cloudlets = '${globals.operating_mode}' == 'production' ? 64 : 40;
-  var proc_cloudlets = cp_cloudlets;
-  var db_cloudlets = '${globals.operating_mode}' == 'production' ? 40 : 32;
-  var db_scheme = '${globals.operating_mode}' == 'production' ? 'galera' : 'galera';
-  var db_count = '${globals.operating_mode}' == 'production' ? 3 : 1;
-  var xmx = '${globals.operating_mode}' == 'production' ? '6000M' : '${globals.xmx}';
-  var dockerImage = "${globals.jahia_docker_image}";
-
-  node_haproxy = {
-    "displayName": "Haproxy",
-    "nodeGroup": "bl",
-    "nodeType": "haproxy",
-    "tag": "2.0.5",
-    "count": 2,
-    "cloudlets": 8,
-    "env": {
-        "DATADOGAPIKEY": "${globals.datadog_key}",
-        "_PROVIDE": "haproxy",
-        "_ROLE": "reverse_proxy"
-      },
-    "volumes": [
-      "/etc/haproxy"
-      ]
-  }
-  nodes.push(node_haproxy);
-
-  node_cp = {
-    "displayName": "Browsing",
-    "count": "${settings.browsingCount}",
-    "cloudlets": cp_cloudlets,
-    "nodeGroup": "cp",
-    "links": "sqldb:" + db_scheme,
-    "startServiceOnCreation": false,
-    "env": {
-        "DB_USER": "${globals.db_user}",
-        "DB_PASSWORD": "${globals.db_pass}",
-        "MANAGER_USER": "${globals.mngr_user}",
-        "REDIS_PASSWORD": "${globals.redis_pass}",
-        "XMS": "${globals.xms}",
-        "XMX": xmx,
-        "DATADOGAPIKEY": "${globals.datadog_key}",
-        "DX_VERSION": "${globals.dx_version}",
-        "PACKAGE_TYPE": "${globals.package_type}",
-        "jahia_cfg_operatingMode": "${globals.operating_mode}",
-        "_PROVIDE": "jahia",
-        "_ROLE": "Browsing",
-        "envName": "${globals.shortdomain}",
-        "DB_ENDPOINT": db_scheme,
-      }
-  }
-  if (dockerImage == "undefined") {
-    node_cp['nodeType'] = "jahia";
-    node_cp['tag'] = "${globals.dx_version}";
-  } else {
-    node_cp['image']  = dockerImage;
-  }
-
-  nodes.push(node_cp);
-
-  node_proc = {
-    "displayName": "Processing",
-    "count": "1",
-    "cloudlets": proc_cloudlets,
-    "nodeGroup": "proc",
-    "links": "sqldb:" + db_scheme,
-    "startServiceOnCreation": false,
-    "env": {
-        "DB_USER": "${globals.db_user}",
-        "DB_PASSWORD": "${globals.db_pass}",
-        "MANAGER_USER": "${globals.mngr_user}",
-        "REDIS_PASSWORD": "${globals.redis_pass}",
-        "XMS": "${globals.xms}",
-        "XMX": "${globals.xmx}",
-        "DATADOGAPIKEY": "${globals.datadog_key}",
-        "DX_VERSION": "${globals.dx_version}",
-        "PACKAGE_TYPE": "${globals.package_type}",
-        "jahia_cfg_operatingMode": "${globals.operating_mode}",
-        "_PROVIDE": "jahia",
-        "_ROLE": "Processing",
-        "envName": "${globals.shortdomain}",
-        "DB_ENDPOINT": db_scheme,
-      }
-  }
-  if (dockerImage == "undefined") {
-    node_proc['nodeType'] = "jahia";
-    node_proc['tag'] = "${globals.dx_version}";
-  } else {
-    node_proc['image']  = dockerImage;
-  }
-  nodes.push(node_proc);
-
-  node_mariadb = {
-    "nodeType": "${globals.dbnodeType}",
-    "nodeGroup": "sqldb",
-    "cluster": {
-      "jps": "${globals.dbbaseUrl}/addons/auto-clustering/auto-cluster.jps",
-      "skipOnEnvInstall": true,
-      "settings": {
-        "base_url": "${globals.dbbaseUrl}",
-        "scheme": db_scheme,
-        "db_user": "${globals.db_user}",
-        "db_pass": "${globals.db_pass}",
-        "path": "${globals.dbbaseUrl}",
-        }
-    },
-    "count": db_count,
-    "cloudlets": db_cloudlets,
-    "env": {
-      "ADMINPANEL_ENABLED": false,
-      "DATADOGAPIKEY": "${globals.datadog_key}",
-      "DB_USER_DATADOG": "${globals.db_user_datadog}",
-      "PHPMYADMIN_ENABLED": false,
-      "DB_USER": "${globals.db_user}",
-      "DB_PASS": "${globals.db_pass}",
-      "_PROVIDE": "Database",
-      "_ROLE": db_scheme,
-      "envName": "${globals.shortdomain}",
-      "jahia_cfg_operatingMode": "${globals.operating_mode}",
-    }
-  }
-  nodes.push(node_mariadb);
-  var resp = {
-    result: 0,
-    nodes: nodes
-  };
-  return resp;
-
-nodes: definedInOnBeforeInstall
-
 # --Events --
 
-onUninstall:
-  removeSudoers: ${targetNodes.nodeGroup}
-
-onInstall:
-  - log: "## Beginning installation of Jahia"
-  - setGlobalEnvVars
-
-  - setSudoer: sqldb
-
-  - setupSqlDB
-
-  - if (settings.skipStart != 'true'):
-      - createJahiaDatabase
-
-  - createDataDogUser
-
-  - installJahia
-
-  - installHaproxy
-
-  - setupDatadogAgentSql: sqldb
 
 onBeforeScaleIn[cp]:
   - forEach(event.response.nodes):
@@ -239,10 +90,6 @@ onBeforeClone:
     user: root
 
 onAfterClone:
-  - log: "## Reenable tomcat autostart after cloning env"
-  - cmd[cp, proc]:
-      - chkconfig tomcat on
-    user: root
   - script: |
       var newEnv = "${event.response.env.appid}";
       data = {
@@ -289,7 +136,7 @@ actions:
 
   setupDatadogAgentSql:
     - log: "## Finalize Datadog agent setup on ${this}"
-    - cmd[${this}]: |-
+    - cmd [${this}]: |-
         DD_API_KEY=${globals.datadog_key} bash -c "$(curl -L https://raw.githubusercontent.com/DataDog/datadog-agent/master/cmd/agent/install_script.sh)"
         NODE_NAME=${HOSTNAME/-*}
         echo "hostname: ${_ROLE}.${NODE_NAME#node}" >> /etc/datadog-agent/datadog.yaml
@@ -349,49 +196,3 @@ actions:
         systemctl enable datadog-agent
       user: root
 
-success: /text/success.md
-settings:
-  fields:
-    - name: productVersion
-      type: string
-      caption: Jahia version
-      required: true
-    - name: rootpwd
-      type: string
-      caption: Jahia root password
-      vtype: string
-      required: true
-    - name: toolspwd
-      type: string
-      caption: Jahia tools password
-      vtype: string
-      required: true
-    - name: browsingCount
-      type: string
-      caption: Number of Jahia browsing nodes
-      vtype: string
-      required: true
-      default: 2
-
-    - name: shortdomain
-      type: envname
-      caption: Environment
-      required: true
-    - name: displayName
-      type: string
-    - name: mode
-      type: radio-fieldset
-      caption: Operating Mode
-      values:
-        production: production
-        development: development
-      default: production
-    - name: ddogApikey
-      type: string
-      caption: Datadog API KEY
-      required: true
-
-    - name: jahiaDockerImage
-      inputType: hidden
-      type: string
-      default: 'undefined'
