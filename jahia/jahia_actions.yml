@@ -74,8 +74,6 @@ actions:
     - if (settings.skipStart != 'true'):
         - env.control.ExecDockerRunCmd [${nodes.cp.join(id,)}]
 
-    - setupDatadogAgent: cp, proc
-
   installMaven:
     - log: "## Activate Maven on ${this}"
     - cmd[${this}]: |-
