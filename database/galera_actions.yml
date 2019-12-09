@@ -1,0 +1,50 @@
+---
+actions:
+  installGaleraCluster:
+    - resetCluster
+    - initialSetup
+    - setupSeeds
+    - forEach(i:nodes.sqldb):
+        setupInstance:
+          id: "${@i.id}"
+    - cmd[${nodes.sqldb.master.id}]: "/etc/init.d/mysql stop; sleep 5; galera_new_cluster;"
+      user: root
+    - forEach(n:nodes.sqldb):
+        if (!${@n.ismaster}):
+          cmd[${@n.id}]: "jem service restart"
+
+  setupInstance:
+    cmd[${this.id}]: |-
+      sed -i "s/server_id.*/server_id = $(echo '${env.region}' | md5sum | grep -Eo "[[:digit:]]{3}" | head -n1)/" /etc/mysql/conf.d/galera.cnf
+      sed -i "s/bind-address.*/bind-address = node${this.id}/" /etc/mysql/conf.d/galera.cnf
+      sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/galera.cnf
+      sed -i "s/wsrep_cluster_name.*/wsrep_cluster_name = galera-cluster/" /etc/mysql/conf.d/galera.cnf
+      sed -i "s/wsrep_node_name.*/wsrep_node_name = node${this.id}/" /etc/mysql/conf.d/galera.cnf
+
+  initialSetup:
+    - setNodeDisplayName[sqldb]: Galera
+    - cmd[sqldb]: |-
+        wget ${baseUrl}/configs/mysql-init.d -O /etc/init.d/mysql
+        wget ${baseUrl}/configs/galera.cnf -O /etc/mysql/conf.d/galera.cnf &>> /var/log/run.log
+      user: root
+
+  setupSeeds:
+    script: |
+      var resp = jelastic.env.control.GetEnvInfo('${env.envName}', session);
+      if (resp.result != 0) return resp;
+      var nodes = [];
+      for (var i = 0, n = resp.nodes; i < n.length; i++)
+        n[i].nodeGroup == "sqldb" ? nodes.push('node' + n[i].id) : 0
+      resp = {result:0, onAfterReturn: {}};
+      resp.onAfterReturn['cmd[sqldb]'] = 'sed -i "s|wsrep_cluster_address.*|wsrep_cluster_address = gcomm://'+ nodes.join(',') +'|g " /etc/mysql/conf.d/galera.cnf';
+      resp.onAfterReturn['user'] = 'root';
+      return resp;
+
+  resetCluster:
+    - cmd[sqldb]: |-
+        [ -f /etc/mysql/conf.d/galera.cnf ] && rm -f /etc/mysql/conf.d/galera.cnf
+        [ -f /var/lib/mysql/grastate.dat ] && rm -f /var/lib/mysql/grastate.dat
+        [ -f /var/lib/mysql/gvwstate.dat ] && rm -f /var/lib/mysql/gvwstate.dat
+        [ -f /var/lib/mysql/galera.cache ] && rm -f /var/lib/mysql/galera.cache
+        /etc/init.d/mysql stop; pkill -9 mysql; /etc/init.d/mysql start
+      user: root
