@@ -127,3 +127,15 @@ actions:
         systemctl restart crond
         systemctl enable datadog-agent
       user: root
+
+  setupDatadogAgentPerNode:
+    - log: "## Finalize Datadog agent on ${this}"
+    - cmd[${this}]: |-
+        NODE_NAME=${HOSTNAME/-*}
+        echo "hostname: ${_ROLE}.${NODE_NAME#node}" >> /etc/datadog-agent/datadog.yaml
+        sed 's/service: jahia/service: ${env.shortdomain}/' -i /etc/datadog-agent/conf.d/tomcat.d/conf.yaml
+        chmod 644 /opt/tomcat/logs/catalina.out
+        /usr/local/bin/set_dd_tags.sh
+        systemctl restart crond
+        systemctl enable datadog-agent
+      user: root
