@@ -99,9 +99,6 @@ actions:
         rm -rf $STACK_PATH/webapps/*
         cp -rf $DATA_PATH/jahia/tomcat/webapps/* $STACK_PATH/webapps
         chown -R tomcat:tomcat $STACK_PATH/webapps
-        cd /opt/tomcat/webapps/ROOT/WEB-INF/lib/
-        mngr_pwd=$(/usr/java/latest/bin/jjs -cp $(find . -name jahia-commons-*.jar):$(find . -name jasypt-*.jar) -scripting <<< "print(org.jahia.commons.encryption.EncryptionUtils.pbkdf2Digest("${globals.mngr_pass}", \"p\"))" | egrep '^(p|s2):[[:graph:]]+=$')
-        sed -i "s|^jahiaToolManagerPassword .*$|jahiaToolManagerPassword = $mngr_pwd|" $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
         sed -i "s/operatingMode/#operatingMode/" $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
         sed -i "s#\${HOST_NAME}#$HOSTNAME#g" $STACK_PATH/conf/digital-factory-config/jahia/jahia.node.properties
         echo "${globals.su_pass}" > $DATA_PATH/digital-factory-data/root.pwd
@@ -115,6 +112,23 @@ actions:
         indent="      " && printf "$indent<cookie-config>\n$indent$indent<secure>true</secure>\n$indent$indent<http-only>true</http-only>\n$indent</cookie-config>\n" > /tmp/cookies-config
         sed -i '/<session-config>/r /tmp/cookies-config' /opt/tomcat/conf/web.xml && rm /tmp/cookies-config
         sed -i "s/^\(.*Connector port=\"80.*HTTP.*\)$/\1\n\t\tmaxHttpHeaderSize=\"65536\"/g" /opt/tomcat/conf/server.xml
+    - defineToolsPwd: ${this}
+
+  defineToolsPwd:
+    - log: "## Now setting tools password"
+    - cmd[proc]: |-
+        if [ -n "$MANAGER_PASSWORD" ]; then
+          echo "$MANAGER_PASSWORD"
+        else
+          cd /opt/tomcat/webapps/ROOT/WEB-INF/lib/
+          /usr/java/latest/bin/jjs -cp $(find . -name jahia-commons-*.jar):$(find . -name jasypt-*.jar) -scripting <<< "print(org.jahia.commons.encryption.EncryptionUtils.pbkdf2Digest(\"${globals.mngr_pass}\", \"p\"))" | egrep '^(p|s2):[[:graph:]]+=$'
+        fi
+    - setGlobals:
+        toolspwd: ${response.out}
+    - api[${this}]: env.control.AddContainerEnvVars
+      vars: {"MANAGER_PASSWORD": "${globals.toolspwd}"}
+    - cmd[${this}]: |-
+         sed -i "s|^jahiaToolManagerPassword .*$|jahiaToolManagerPassword = $MANAGER_PASSWORD|" $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
 
   setupDatadogAgent:
     - log: "## Finalize Datadog agent setup on ${this}"
