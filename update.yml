@@ -54,22 +54,6 @@ ssl: true
 skipNodeEmails: true
 
 onAfterClone:
-  - log: "## Reenable tomcat autostart after cloning env"
-  - cmd[cp, proc]:
-      - chkconfig tomcat on
-    user: root
-  - log: Start post-clone setup
-  - api [*]: env.control.AddContainerEnvVars
-    vars: {"envName": "${env.shortdomain}"}
-  - environment.control.ApplyNodeGroupData [proc, cp]:
-      data:
-        envLink: ""
-  - cmd[*]: |-
-      rm -f /etc/ssh/ssh_host*
-      service sshd restart
-    user: root
-  - api: jelastic.env.control.SetEnvDisplayName
-    displayname: "${env.shortdomain}"
   - script: |
       var newEnv = "${event.response.env.appid}";
       data = {
