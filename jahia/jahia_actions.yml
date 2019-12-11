@@ -121,13 +121,12 @@ actions:
   defineToolsPwd:
     - log: "## Now setting tools password"
     - cmd[proc]: |-
-          cd /opt/tomcat/webapps/ROOT/WEB-INF/lib/
-          /usr/java/latest/bin/jjs -cp $(find . -name jahia-commons-*.jar):$(find . -name jasypt-*.jar) -scripting <<< "print(org.jahia.commons.encryption.EncryptionUtils.pbkdf2Digest(\"${${settings.toolspwd}}\", \"p\"))" | egrep '^(p|s2):[[:graph:]]+=$'
-        fi
+        cd /opt/tomcat/webapps/ROOT/WEB-INF/lib/
+        /usr/java/latest/bin/jjs -cp $(find . -name jahia-commons-*.jar):$(find . -name jasypt-*.jar) -scripting <<< "print(org.jahia.commons.encryption.EncryptionUtils.pbkdf2Digest(\"${settings.toolspwd}\", \"p\"))" | egrep '^(p|s2):[[:graph:]]+=$'
     - setGlobals:
         toolspwd: ${response.out}
     - api[proc, cp]: env.control.AddContainerEnvVars
-        vars: {"MANAGER_PASSWORD": "${globals.toolspwd}"}
+      vars: {"MANAGER_PASSWORD": "${globals.toolspwd}"}
 
   setToolsPwd:
     - cmd[${this}]: |-

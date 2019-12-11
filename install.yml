@@ -163,7 +163,6 @@ onBeforeInstall: |
       "DB_PASS": "${globals.db_pass}",
       "_PROVIDE": "Database",
       "_ROLE": db_scheme,
-  mngr_pass: ${settings.toolspwd}
       "envName": "${globals.shortdomain}",
       "jahia_cfg_operatingMode": "${globals.operating_mode}",
     }
