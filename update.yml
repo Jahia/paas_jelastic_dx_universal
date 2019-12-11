@@ -123,6 +123,7 @@ onBeforeClone:
   - log: "## Disable tomcat autostart before cloning env"
   - cmd[cp, proc]:
       - chkconfig tomcat off
+      - nohup bash -c "sleep 300 ; chkconfig tomcat on" &
     user: root
 
 onAfterClone:

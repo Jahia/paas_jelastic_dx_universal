@@ -62,6 +62,18 @@ actions:
           packageType: ${globals.package_type}
 
     - initJahiaDatabase
+    - log: "## Determine JDK version for good _JAVA_OPTIONS envvar"
+    - cmd[proc, cp]: |-
+        case "$($JAVA_HOME/bin/java -version 2>&1 | awk 'NR==1 {print gensub("(\"|_.*)", "", "g", $3)}')" in
+          1.8*)
+              j_opts='${globals.java_opts}'
+              ;;
+          *)
+              j_opts='${globals.java_opts} -Xlog:gc::time,uptime,level,pid,tid,tags'
+              ;;
+        esac
+        sed -e '2isource /.jelenv' -e "s/\(^JAVA_OPTS=.*\)\(\"$\)/\1 ${j_opts}\2/" -i /opt/tomcat/conf/tomcat-env.sh
+
     - copyApp: proc, cp
     - cmd[proc]: |-
         echo "${settings.rootpwd}" > $DATA_PATH/digital-factory-data/root.pwd
@@ -88,18 +100,6 @@ actions:
         sed -i 's,#\(mvnPath =\s*\).*$,\1'$mvn_path',' /opt/tomcat/conf/digital-factory-config/jahia/jahia.properties
 
   copyApp:
-    - log: "## Determine JDK version for good _JAVA_OPTIONS envvar"
-    - cmd[${this}]: |-
-        case "$($JAVA_HOME/bin/java -version 2>&1 | awk 'NR==1 {print gensub("(\"|_.*)", "", "g", $3)}')" in
-          1.8*)
-              j_opts='${globals.java_opts}'
-              ;;
-          *)
-              j_opts='${globals.java_opts} -Xlog:gc::time,uptime,level,pid,tid,tags'
-              ;;
-        esac
-        sed -e '2isource /.jelenv' -e "s/\(^JAVA_OPTS=.*\)\(\"$\)/\1 ${j_opts}\2/" -i /opt/tomcat/conf/tomcat-env.sh
-
     - log: "## Copying DX and settings is properties"
     - cmd[${this}]: |-
         [ "$_ROLE" == "Browsing" ] && sed -i "s#\(processingServer\s*=\).*#\1 false#g" $STACK_PATH/conf/digital-factory-config/jahia/jahia.node.properties
@@ -116,7 +116,7 @@ actions:
         #Secure cookies from cross scripting
         indent="      " && printf "$indent<cookie-config>\n$indent$indent<secure>true</secure>\n$indent$indent<http-only>true</http-only>\n$indent</cookie-config>\n" > /tmp/cookies-config
         sed -i '/<session-config>/r /tmp/cookies-config' /opt/tomcat/conf/web.xml && rm /tmp/cookies-config
-        sed -i "s/^\(.*Connector port=\"80.*HTTP.*\)$/\1\n\t\tmaxHttpHeaderSize=\"65536\"/g" /opt/tomcat/conf/server.xml
+        sed -e '/maxHttpHeaderSize/d' -e "s/^\(.*Connector port=\"80.*HTTP.*\)$/\1\n\t\tmaxHttpHeaderSize=\"65536\"/g" -i /opt/tomcat/conf/server.xml
 
   defineToolsPwd:
     - log: "## Now setting tools password"

@@ -250,13 +250,10 @@ onBeforeClone:
   - log: "## Disable tomcat autostart before cloning env"
   - cmd[cp, proc]:
       - chkconfig tomcat off
+      - nohup bash -c "sleep 300 ; chkconfig tomcat on" &
     user: root
 
 onAfterClone:
-  - log: "## Reenable tomcat autostart after cloning env"
-  - cmd[cp, proc]:
-      - chkconfig tomcat on
-    user: root
   - script: |
       var newEnv = "${event.response.env.appid}";
       data = {
