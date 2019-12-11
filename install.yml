@@ -19,7 +19,6 @@ globals:
   redis_pass: ${fn.password(20)}
   mngr_user: manager
   mngr_pass: ${settings.toolspwd}
-  su_pass: ${settings.rootpwd}
   dx_version: ${settings.productVersion}
   package_type: dev
   operating_mode: ${settings.mode}
@@ -164,6 +163,7 @@ onBeforeInstall: |
       "DB_PASS": "${globals.db_pass}",
       "_PROVIDE": "Database",
       "_ROLE": db_scheme,
+  mngr_pass: ${settings.toolspwd}
       "envName": "${globals.shortdomain}",
       "jahia_cfg_operatingMode": "${globals.operating_mode}",
     }
@@ -178,7 +178,42 @@ onBeforeInstall: |
 nodes: definedInOnBeforeInstall
 
 # --Events --
+onBeforeChangeTopology:
+  - log: "## grab values in order to set good globals"
+  - script: |
+     function log(message){
+       return jelastic.marketplace.console.WriteLog(appid, session, message);
+     }
+     var envvars_list = [
+                          "MANAGER_PASSWORD",
+                        ]
+     var resp = jelastic.env.control.GetContainerEnvVars("${env.envName}",
+                                                         session,
+                                                         ${nodes.proc.master.id})
 
+     if (resp.result != 0) return {"result":1, "no_processing":"true"};
+
+     var values = {}
+
+     for(var i = 0, sizei = envvars_list.length; i < sizei ; i++){
+       var size_norm = sizei - 1
+       var envvar = envvars_list[i]
+       log(i + "/" + size_norm + " " + envvar)
+
+       if(envvar in resp.object){
+         log(envvar + " exist on processing, is value is: " + resp.object[envvar])
+         values[envvar] = resp.object[envvar]
+         }
+       else {
+         log(envvar + " doesn't exist on processing")
+         values[envvar] = ""
+       }
+     }
+     return {"result":0, "no_processing": "true", "values": values}
+  - setGlobals:
+      mngr_pass: ${response.values.MANAGER_PASSWORD}
+  - log: "## here is the new globals values:"
+  - log: "globals.mngr_pass: ${globals.mngr_pass}"
 onUninstall:
   removeSudoers: ${targetNodes.nodeGroup}
 
