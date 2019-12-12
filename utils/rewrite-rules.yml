@@ -7,15 +7,26 @@ description:
   short: Jahia - set rewrite rules
 
 globals:
-  base_url_branch: ${settings.base_url_branch}
-  base_url: "https://github.com/Jahia/paas_jelastic_dx_universal/raw/${globals.base_url_branch}"
   haproxy_frontend_file: "/etc/haproxy/haproxy.cfg.d/00-global.cfg"
   haproxy_backup_file: "/var/lib/haproxy/haproxy-global-cfg.bak"
 
 onInstall:
+  - if ('${settings.operation}' == "get"):
+      - getRewritesRules
+      - return:
+          type: success
+          message: "${globals.rewrites}"
+
+  - script: |-
+      var newUrl = "${baseUrl}".split('/')
+      newUrl.pop();
+      newUrl.pop();
+      return {result: 0, "universal_url": newUrl.join('/')};
+  - set:
+      universal_url: ${response.universal_url}
   - cmd [bl]: |-
         yum install python3
-        wget -O /usr/local/bin/set-rewrite-rules.py ${globals.base_url}/scripts/set-rewrite-rules.py
+        wget -O /usr/local/bin/set-rewrite-rules.py ${this.universal_url}/scripts/set-rewrite-rules.py
         chmod u+x /usr/local/bin/set-rewrite-rules.py
         cp ${globals.haproxy_frontend_file} ${globals.haproxy_backup_file}
         chown haproxy: ${globals.haproxy_backup_file}
@@ -26,26 +37,38 @@ onInstall:
         service haproxy reload || true
     user: root
   - if ("${response.responses.errOut}" != ""):
+      - set:
+          error-out: "${response.responses.out} -- ${response.responses.errOut}"
       - log: "reload failed"
       - cmd [bl]: |-
           mv  "${globals.haproxy_backup_file}" "${globals.haproxy_frontend_file}"
+      - getRewritesRules
       - return:
           type: error
-          message: "${response.responses.errOut}"
+          message: "${this.error-out}"
+          current-rules: "${globals.rewrites}"
+
   - cmd [bl]: |-
       rm "${globals.haproxy_backup_file}"
     user: root
   - return:
       type: success
 
+actions:
+  getRewritesRules:
+    - cmd[${nodes.bl.first.id}]: |-
+        start=$(grep -n "START_REWRITES" /etc/haproxy/haproxy.cfg.d/00-global.cfg |cut -d":" -f1)
+        end=$(grep -n "END_REWRITES" /etc/haproxy/haproxy.cfg.d/00-global.cfg |cut -d":" -f1)
+        grep -A$((end - start)) "START_REWRITES"  /etc/haproxy/haproxy.cfg.d/00-global.cfg|grep -v "[START|END]_REWRITES"|base64
+    - setGlobals:
+        rewrites: ${response.out}
 settings:
   fields:
+    - name: operation
+      type: text
+      caption: get or set rewrite rules
+      default: "get"
     - name: rewrite-rules
       type: text
       caption: rewrite-rules base64 encoded
       default: ""
-    - name: base_url_branch
-      type: string
-      caption: base url branch
-      default: master
-      required: true
