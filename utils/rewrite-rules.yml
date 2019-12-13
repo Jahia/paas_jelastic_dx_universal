@@ -22,11 +22,11 @@ onInstall:
       newUrl.pop();
       newUrl.pop();
       return {result: 0, "universal_url": newUrl.join('/')};
-  - set:
+  - setGlobals:
       universal_url: ${response.universal_url}
   - cmd [bl]: |-
         yum install python3
-        wget -O /usr/local/bin/set-rewrite-rules.py ${this.universal_url}/scripts/set-rewrite-rules.py
+        wget -O /usr/local/bin/set-rewrite-rules.py ${globals.universal_url}/scripts/set-rewrite-rules.py
         chmod u+x /usr/local/bin/set-rewrite-rules.py
         cp ${globals.haproxy_frontend_file} ${globals.haproxy_backup_file}
         chown haproxy: ${globals.haproxy_backup_file}
