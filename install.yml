@@ -19,7 +19,6 @@ globals:
   redis_pass: ${fn.password(20)}
   mngr_user: manager
   mngr_pass: ${settings.toolspwd}
-  su_pass: ${settings.rootpwd}
   dx_version: ${settings.productVersion}
   package_type: dev
   operating_mode: ${settings.mode}
@@ -178,7 +177,6 @@ onBeforeInstall: |
 nodes: definedInOnBeforeInstall
 
 # --Events --
-
 onUninstall:
   removeSudoers: ${targetNodes.nodeGroup}
 

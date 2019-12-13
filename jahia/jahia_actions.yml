@@ -3,6 +3,7 @@ actions:
   onAfterBrowsingScaleOut:
     - setSudoer: ${this.newNode}
     - copyApp: ${this.newNode}
+    - setToolsPwd: ${this.newNode}
     - if (settings.mode == 'development'):
         - installMaven: ${this.newNode}
     - setupDatadogAgentPerNode: ${this.newNode}
@@ -22,6 +23,7 @@ actions:
       user: root
     - setSudoer: ${this}
     - copyApp: ${this}
+    - setToolsPwd: ${this}
     - if (settings.mode == 'development'):
         - installMaven: ${this}
     - if ("${this}" == "cp"):
@@ -49,9 +51,6 @@ actions:
 
   installJahia:
     - setSudoer: proc, cp
-    - cmd[proc, cp]:
-        - sed '/tomcat-env.sh$/d' -i /etc/jelastic/redeploy.conf
-      user: root
 
     - environment.control.ApplyNodeGroupData [proc, cp]:
         data:
@@ -60,7 +59,24 @@ actions:
           packageType: ${globals.package_type}
 
     - initJahiaDatabase
+    - log: "## Determine JDK version for good _JAVA_OPTIONS envvar"
+    - cmd[proc, cp]: |-
+        case "$($JAVA_HOME/bin/java -version 2>&1 | awk 'NR==1 {print gensub("(\"|_.*)", "", "g", $3)}')" in
+          1.8*)
+              j_opts='${globals.java_opts}'
+              ;;
+          *)
+              j_opts='${globals.java_opts} -Xlog:gc::time,uptime,level,pid,tid,tags'
+              ;;
+        esac
+        sed -e '2isource /.jelenv' -e "s/\(^JAVA_OPTS=.*\)\(\"$\)/\1 ${j_opts}\2/" -i /opt/tomcat/conf/tomcat-env.sh
+
     - copyApp: proc, cp
+    - cmd[proc]: |-
+        echo "${settings.rootpwd}" > $DATA_PATH/digital-factory-data/root.pwd
+      user: tomcat
+    - defineToolsPwd
+    - setToolsPwd: proc, cp
     - if (settings.mode == 'development'):
         - installMaven: proc, cp
 
@@ -81,31 +97,14 @@ actions:
         sed -i 's,#\(mvnPath =\s*\).*$,\1'$mvn_path',' /opt/tomcat/conf/digital-factory-config/jahia/jahia.properties
 
   copyApp:
-    - log: "## Determine JDK version for good _JAVA_OPTIONS envvar"
-    - cmd[${this}]: |-
-        case "$($JAVA_HOME/bin/java -version 2>&1 | awk 'NR==1 {print gensub("(\"|_.*)", "", "g", $3)}')" in
-          1.8*)
-              j_opts='${globals.java_opts}'
-              ;;
-          *)
-              j_opts='${globals.java_opts} -Xlog:gc::time,uptime,level,pid,tid,tags'
-              ;;
-        esac
-        sed -e '2isource /.jelenv' -e "s/\(^JAVA_OPTS=.*\)\(\"$\)/\1 ${j_opts}\2/" -i /opt/tomcat/conf/tomcat-env.sh
-
     - log: "## Copying DX and settings is properties"
     - cmd[${this}]: |-
         [ "$_ROLE" == "Browsing" ] && sed -i "s#\(processingServer\s*=\).*#\1 false#g" $STACK_PATH/conf/digital-factory-config/jahia/jahia.node.properties
         rm -rf $STACK_PATH/webapps/*
         cp -rf $DATA_PATH/jahia/tomcat/webapps/* $STACK_PATH/webapps
         chown -R tomcat:tomcat $STACK_PATH/webapps
-        cd /opt/tomcat/webapps/ROOT/WEB-INF/lib/
-        mngr_pwd=$(/usr/java/latest/bin/jjs -cp $(find . -name jahia-commons-*.jar):$(find . -name jasypt-*.jar) -scripting <<< "print(org.jahia.commons.encryption.EncryptionUtils.pbkdf2Digest("${globals.mngr_pass}", \"p\"))" | egrep '^(p|s2):[[:graph:]]+=$')
-        sed -i "s|^jahiaToolManagerPassword .*$|jahiaToolManagerPassword = $mngr_pwd|" $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
         sed -i "s/operatingMode/#operatingMode/" $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
         sed -i "s#\${HOST_NAME}#$HOSTNAME#g" $STACK_PATH/conf/digital-factory-config/jahia/jahia.node.properties
-        echo "${globals.su_pass}" > $DATA_PATH/digital-factory-data/root.pwd
-        chown -R tomcat:tomcat $DATA_PATH/digital-factory-data/root.pwd
         sed -i "2i JMX_OPTS=\-XX:+UseParallelGC" /opt/tomcat/conf/tomcat-env.sh
         sed -i 's/\(^default.config.sync = \)cluster/\1disabled/' /data/digital-factory-data/karaf/etc/org.apache.karaf.cellar.groups.cfg
         sed -i '/<!-- Access log processes all example./i \\t<!-- Remote IP Valve -->\n \t<Valve className="org.apache.catalina.valves.RemoteIpValve" protocolHeader="X-Forwarded-Proto" />\n' /opt/tomcat/conf/server.xml
@@ -114,7 +113,21 @@ actions:
         #Secure cookies from cross scripting
         indent="      " && printf "$indent<cookie-config>\n$indent$indent<secure>true</secure>\n$indent$indent<http-only>true</http-only>\n$indent</cookie-config>\n" > /tmp/cookies-config
         sed -i '/<session-config>/r /tmp/cookies-config' /opt/tomcat/conf/web.xml && rm /tmp/cookies-config
-        sed -i "s/^\(.*Connector port=\"80.*HTTP.*\)$/\1\n\t\tmaxHttpHeaderSize=\"65536\"/g" /opt/tomcat/conf/server.xml
+        sed -e '/maxHttpHeaderSize/d' -e "s/^\(.*Connector port=\"80.*HTTP.*\)$/\1\n\t\tmaxHttpHeaderSize=\"65536\"/g" -i /opt/tomcat/conf/server.xml
+
+  defineToolsPwd:
+    - log: "## Now setting tools password"
+    - cmd[proc]: |-
+        cd /opt/tomcat/webapps/ROOT/WEB-INF/lib/
+        /usr/java/latest/bin/jjs -cp $(find . -name jahia-commons-*.jar):$(find . -name jasypt-*.jar) -scripting <<< "print(org.jahia.commons.encryption.EncryptionUtils.pbkdf2Digest(\"${settings.toolspwd}\", \"p\"))" | egrep '^(p|s2):[[:graph:]]+=$'
+    - setGlobals:
+        toolspwd: ${response.out}
+    - api[proc, cp]: env.control.AddContainerEnvVars
+      vars: {"MANAGER_PASSWORD": "${globals.toolspwd}"}
+
+  setToolsPwd:
+    - cmd[${this}]: |-
+         sed -i "s|^jahiaToolManagerPassword .*$|jahiaToolManagerPassword = $MANAGER_PASSWORD|" $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
 
   setupDatadogAgent:
     - log: "## Finalize Datadog agent setup on ${this}"

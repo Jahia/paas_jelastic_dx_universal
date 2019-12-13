@@ -10,7 +10,7 @@ description:
     manages your entire digital ecosystem to innovate and deliver great customer
     experiences, foster internal collaboration and support dynamic business
     needs for sustainable growth.
-baseUrl: https://github.com/Jahia/paas_jelastic_dx_universal/raw/v1.9
+baseUrl: https://github.com/Jahia/paas_jelastic_dx_universal/raw/v1.10
 
 ssl: true
 skipNodeEmails: true
@@ -29,8 +29,6 @@ globals:
   db_user_datadog: ${fn.password(20)}
   redis_pass: ${fn.password(20)}
   mngr_user: manager
-  mngr_pass: ${settings.toolspwd}
-  su_pass: ${settings.rootpwd}
   dx_version: ${settings.dxVersion}
   package_type: dev
   operating_mode: ${settings.mode}
@@ -61,9 +59,8 @@ globals:
     -XX:SurvivorRatio=8
     -Xmn1G
 
+
 # --Events --
-
-
 onBeforeScaleIn[cp]:
   - forEach(event.response.nodes):
       - removeNodeFromHaproxy:
@@ -92,6 +89,10 @@ onBeforeClone:
     user: root
 
 onAfterClone:
+  - log: "## Reenable tomcat autostart after cloning env"
+  - cmd[cp, proc]:
+      - chkconfig tomcat on
+    user: root
   - script: |
       var newEnv = "${event.response.env.appid}";
       data = {
