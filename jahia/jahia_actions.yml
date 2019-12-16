@@ -73,7 +73,7 @@ actions:
 
     - copyApp: proc, cp
     - cmd[proc]: |-
-        echo "${settings.rootpwd}" > $DATA_PATH/digital-factory-data/root.pwd
+        base64 -d <<< "${settings.rootpwd.toBase64()}" > $DATA_PATH/digital-factory-data/root.pwd
       user: tomcat
     - defineToolsPwd
     - setToolsPwd: proc, cp
@@ -118,8 +118,13 @@ actions:
   defineToolsPwd:
     - log: "## Now setting tools password"
     - cmd[proc]: |-
-        cd /opt/tomcat/webapps/ROOT/WEB-INF/lib/
-        /usr/java/latest/bin/jjs -cp $(find . -name jahia-commons-*.jar):$(find . -name jasypt-*.jar) -scripting <<< "print(org.jahia.commons.encryption.EncryptionUtils.pbkdf2Digest(\"${settings.toolspwd}\", \"p\"))" | egrep '^(p|s2):[[:graph:]]+=$'
+        if [ ! -f /usr/local/bin/reset-jahia-tools-manager-password.py ]; then
+          wget -O /usr/local/bin/reset-jahia-tools-manager-password.py ${baseUrl}/scripts/reset-jahia-tools-manager-password.py
+          chmod u+x /usr/local/bin/reset-jahia-tools-manager-password.py
+        fi
+        /usr/local/bin/reset-jahia-tools-manager-password.py "${settings.toolspwd.toBase64()}" $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
+        awk '$1=="jahiaToolManagerPassword" {print $NF}' $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
+      user: root
     - setGlobals:
         toolspwd: ${response.out}
     - api[proc, cp]: env.control.AddContainerEnvVars
