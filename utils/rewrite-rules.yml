@@ -46,7 +46,7 @@ onInstall:
       - return:
           type: error
           message: "${this.error-out}"
-          current-rules: "${globals.rewrites}"
+          currentRules: "${globals.rewrites}"
 
   - cmd [bl]: |-
       rm "${globals.haproxy_backup_file}"
