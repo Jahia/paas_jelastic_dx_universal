@@ -18,6 +18,6 @@ new_salt = b2a_base64(salt, newline=False).decode("utf-8")
 
 with fileinput.FileInput(file_path, inplace=True, backup='.bak') as file:
     for line in file:
-        if line.startswith('jahiaToolManagerPassword ='):
+        if line.startswith('jahiaToolManagerPassword'):
             line = "jahiaToolManagerPassword = p:" + new_salt + "$" + new_password_hash + "\n"
         print(line, end='')
