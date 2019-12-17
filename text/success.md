@@ -5,7 +5,7 @@
 
 ### Manager User 
 - Login: ${globals.mngr_user}
-- Password: ${globals.mngr_pass}
+- Password: ${settings.toolspwd}
 - [${env.protocol}://${env.domain}/tools/](${env.protocol}://${env.domain}/tools/) 
 
 ### DB User 

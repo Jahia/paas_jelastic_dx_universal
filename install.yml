@@ -18,7 +18,6 @@ globals:
   db_user_datadog: ${fn.password(20)}
   redis_pass: ${fn.password(20)}
   mngr_user: manager
-  mngr_pass: ${settings.toolspwd}
   dx_version: ${settings.productVersion}
   package_type: dev
   operating_mode: ${settings.mode}
