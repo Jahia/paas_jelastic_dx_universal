@@ -55,13 +55,72 @@ skipNodeEmails: true
 
 onAfterClone:
   - script: |
-      var newEnv = "${event.response.env.appid}";
-      data = {
-        "targetAppid": newEnv,
+      var newEnvAppid = "${event.response.env.appid}";
+      var newEnvName = "${event.response.env.envName}";
+      var data = {
+        "targetAppid": newEnvAppid,
         "manifest": "${baseUrl}/update.yml"
         };
+
       res = jelastic.dev.scripting.eval("appstore", session, "InstallApp", data);
-      return {"result": 0, "out": res}
+      return {"result": 0, "out": res, "envName": newEnvName}
+  - script: |
+      var newEnv = "${response.envName}";
+      var jahiaEnvVars = {
+        "MYSQLDB_ENV_envName": newEnv,
+        "MYSQLDB_envName": newEnv,
+        "envName": newEnv
+        };
+
+      resCp = jelastic.env.control.addcontainerenvvars(newEnv, session, "cp", jahiaEnvVars);
+      resProc = jelastic.env.control.addcontainerenvvars(newEnv, session, "proc", jahiaEnvVars);
+      // The only envvar on Mariadb nodes is envName
+      resSqldb = jelastic.env.control.addcontainerenvvars(newEnv, session, "sqldb", "{'envName': " + newEnv+ "}");
+
+      return {"result": 0, "out": resCp + resProc + resSqldb, "envName": newEnv}
+
+  # This script purpose is to update the _JAVA_OPTIONS envvar which is only set on cp and proc nodes
+  # as it could contain a node name for "-DHOST_NAME" option (even it should be a function '$(hostname)')
+  # So we first need to get the envvar before updating it as we don't know the other parameters values
+  - script [cp,proc]: |
+      var newEnv = "${response.envName}";
+      var res;
+
+      /*
+        A "quick" explanation: don't ask me why, but the getcontainerenvvarsbygroup method doesn't work,
+        it only returns {result: 0}, but no data, even if it works very well when called outside of Jelastic
+        On the other hand, getcontainerenvvars works well, but it requires a nodeId, and I couldn't
+        figure out how to obtain it (the id of the first node for example) inside of this script
+        with nodeGroup parameter, so I had to hardcode a nodeGroup (proc), which won't be a problem as the
+        _JAVA_OPTIONS parameter is the same on proc as on cp nodes.
+      */
+      var envVars = jelastic.env.control.getcontainerenvvars("${env.envName}", session, "${nodes.proc.first.id}");
+
+      // Same as JSON.parse (but JSON doesn't exist on Jelastic's javascript engine)
+      var envVarsJson = eval('(' + envVars + ')');
+
+      // Ko if getcontainerenvvars failed
+      if (envVarsJson.object == "undefined") {
+        return {"result": 1, "out": envVarsJson};
+      }
+      if (typeof envVarsJson.object._JAVA_OPTIONS == 'undefined') {
+        return {"result": 0, "out": "No _JAVA_OPTIONS parameter, nothing to do."};
+      }
+
+      var split_javaopts = envVarsJson.object._JAVA_OPTIONS.split(" ");
+      var javaopts = "";
+      var j;
+      for (j = 0; j < split_javaopts.length; j++) {
+        // If -DHOST_NAME exists, replace current value with Linux hostname function result
+        if(split_javaopts[j].indexOf("DHOST_NAME") !== -1) {
+          split_javaopts[j] = "-DHOST_NAME=$(hostname)";
+        }
+        javaopts += " " + split_javaopts[j];
+      }
+      javaopts = javaopts.slice(1);
+
+      res = jelastic.env.control.addcontainerenvvars(newEnv, session, nodeGroup, {"_JAVA_OPTIONS": javaopts});
+      return res;
 
 onAfterServiceScaleOut[cp]:
   forEach(event.response.nodes):
