@@ -32,7 +32,7 @@ onInstall:
         fi
         cp ${globals.haproxy_frontend_file} ${globals.haproxy_backup_file}
         chown haproxy: ${globals.haproxy_backup_file}
-        /usr/local/bin/set-rewrite-rules.py "${globals.haproxy_frontend_file}" "${settings.rewrite-rules}"
+        python3 /usr/local/bin/set-rewrite-rules.py "${globals.haproxy_frontend_file}" "${settings.rewrite-rules}"
     user: root
   # Always return true cause if the cmd return -1, jelastic script just stop...
   - cmd [bl]: |-
