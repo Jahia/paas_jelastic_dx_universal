@@ -61,7 +61,7 @@ actions:
     - cmd[${nodes.bl.first.id}]: |-
         start=$(grep -n "START_REWRITES" /etc/haproxy/haproxy.cfg.d/00-global.cfg |cut -d":" -f1)
         end=$(grep -n "END_REWRITES" /etc/haproxy/haproxy.cfg.d/00-global.cfg |cut -d":" -f1)
-        grep -A$((end - start)) "START_REWRITES"  /etc/haproxy/haproxy.cfg.d/00-global.cfg|grep -v "[START|END]_REWRITES"|base64
+        grep -A$((end - start)) "START_REWRITES"  /etc/haproxy/haproxy.cfg.d/00-global.cfg|grep -v "[START|END]_REWRITES" |iconv -f utf-8 -t iso-8859-1 |base64
     - setGlobals:
         rewrites: ${response.out}
 settings:
