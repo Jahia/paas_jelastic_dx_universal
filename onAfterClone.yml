@@ -57,11 +57,14 @@ actions:
     - cmd[cp,proc]: |-
         sed -i 's/^\( *service: \).*/\1${env.envName}/' /etc/datadog-agent/conf.d/tomcat.d/conf.yaml
         systemctl restart datadog-agent
+      user: root
     - cmd[db]: |-
         sed -i 's/^\( *service: \).*/\1${env.envName}/' /etc/datadog-agent/conf.d/mysql.d/conf.yaml
         systemctl restart datadog-agent
+      user: root
     - cmd[bl]: |-
         if [ -d /etc/datadog-agent ]; then
           sed -i 's/^\( *service: \).*/\1${env.envName}/' /etc/datadog-agent/conf.d/haproxy.d/conf.yaml
           systemctl restart datadog-agent
         fi
+      user: root
