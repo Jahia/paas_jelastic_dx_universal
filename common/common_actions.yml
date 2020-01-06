@@ -22,3 +22,9 @@ actions:
         - log: "## git repo branch is prod"
         - api [*]: env.control.AddContainerEnvVars
           vars: {"PACKAGE_TYPE": "prod"}
+
+  setJournaldLimit:
+    - cmd[*]: |-
+        sed -i 's/.*SystemMaxUse=.*/SystemMaxUse=200M/g' /etc/systemd/journald.conf
+        systemctl restart systemd-journald.service
+      user: root
