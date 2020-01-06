@@ -25,13 +25,24 @@ onInstall:
   - setGlobals:
       universal_url: ${response.universal_url}
   - cmd [bl]: |-
-        yum install python3
-        wget -O /usr/local/bin/set-rewrite-rules.py ${globals.universal_url}/scripts/set-rewrite-rules.py
-        chmod u+x /usr/local/bin/set-rewrite-rules.py
+        if [ ! -f "/usr/local/bin/set-rewrite-rules.py" ]; then
+          yum install python3
+          wget -O /usr/local/bin/set-rewrite-rules.py ${globals.universal_url}/scripts/set-rewrite-rules.py
+          chmod u+x /usr/local/bin/set-rewrite-rules.py
+        fi
         cp ${globals.haproxy_frontend_file} ${globals.haproxy_backup_file}
         chown haproxy: ${globals.haproxy_backup_file}
-        /usr/local/bin/set-rewrite-rules.py "${globals.haproxy_frontend_file}" "${settings.rewrite-rules}"
     user: root
+  - cmd [bl]: |-
+        python3 /usr/local/bin/set-rewrite-rules.py "${globals.haproxy_frontend_file}" "${settings.rewrite-rules.toBase64()}"
+    user: root
+  - if ("${response.responses.errOut}" != ""):
+      - getRewritesRules
+      - return:
+          type: error
+          message: "An error occured when setting rewrite rules."
+          currentRules: "${globals.rewrites}"
+
   # Always return true cause if the cmd return -1, jelastic script just stop...
   - cmd [bl]: |-
         service haproxy reload || true
@@ -59,7 +70,7 @@ actions:
     - cmd[${nodes.bl.first.id}]: |-
         start=$(grep -n "START_REWRITES" /etc/haproxy/haproxy.cfg.d/00-global.cfg |cut -d":" -f1)
         end=$(grep -n "END_REWRITES" /etc/haproxy/haproxy.cfg.d/00-global.cfg |cut -d":" -f1)
-        grep -A$((end - start)) "START_REWRITES"  /etc/haproxy/haproxy.cfg.d/00-global.cfg|grep -v "[START|END]_REWRITES"|base64
+        grep -A$((end - start)) "START_REWRITES"  /etc/haproxy/haproxy.cfg.d/00-global.cfg|grep -v "[START|END]_REWRITES" |iconv -f utf-8 -t iso-8859-1 |base64
     - setGlobals:
         rewrites: ${response.out}
 settings:
