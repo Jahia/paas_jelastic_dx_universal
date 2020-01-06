@@ -39,6 +39,7 @@ onInstall:
     user: root
   - api: jelastic.env.control.SetEnvDisplayName
     displayname: "${env.shortdomain}"
+  - updateDatadogConf
 
 
 actions:
@@ -50,3 +51,12 @@ actions:
           echo "    server ${env.appid}-${@i.id} ${@i.intIP}:80 check cookie s${@i.id}" >> /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
           sudo service haproxy reload
         user: haproxy
+
+  updateDatadogConf:
+    - log: "## Updating datadog-agent conf"
+    - api[*]:
+        method: environment.control.ExecCmdByGroup
+        params:
+          userName: root
+          commandList:
+            - command: "[ -d /etc/datadog-agent ] && sed -i 's/^\\( *service: \\).*/\\1${env.envName}/' /etc/datadog-agent/conf.d/*/conf.yaml && systemctl restart datadog-agent"
