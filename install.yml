@@ -182,6 +182,7 @@ onUninstall:
 onInstall:
   - log: "## Beginning installation of Jahia"
   - setGlobalEnvVars
+  - setJournaldLimit
   - installDatabase
   - installJahia
   - installHaproxy
