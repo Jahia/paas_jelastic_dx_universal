@@ -25,7 +25,7 @@ onInstall:
       yum install python3
       wget -O ${globals.auth_basic_script} ${globals.universal_url}/scripts/manage-auth-basic.py
       chmod u+x ${globals.auth_basic_script}
-      ${globals.auth_basic_script} "${globals.haproxy_frontend_file}" "${globals.enable_auth_basic}" "${globals.new_login}" "${globals.new_password}"
+      ${globals.auth_basic_script} "${globals.haproxy_frontend_file}" "${globals.enable_auth_basic}" "${globals.new_login}" "${globals.new_password.toBase64()}"
       service haproxy reload
     user: root
   - env.control.AddContainerEnvVars[bl]:
@@ -43,4 +43,4 @@ settings:
     - name: pwd
       type: string
       inputType: password
-      caption: Auth basic password (base64 encoded)
+      caption: Auth basic password
