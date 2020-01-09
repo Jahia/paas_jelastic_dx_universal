@@ -27,7 +27,7 @@ globals:
   jahia_docker_image: ${settings.jahiaDockerImage}
   dbnodeType: mariadb-dockerized
   xms: 256M
-  xmx: 3584M
+  xmx: 2584M
   java_opts:
     -DDB_USER=${DB_USER}
     -DDB_PASSWORD=${DB_PASSWORD}
@@ -62,7 +62,7 @@ onBeforeInstall: |
   var db_cloudlets = '${globals.operating_mode}' == 'production' ? 40 : 32;
   var db_scheme = '${globals.operating_mode}' == 'production' ? 'galera' : 'galera';
   var db_count = '${globals.operating_mode}' == 'production' ? 3 : 1;
-  var xmx = '${globals.operating_mode}' == 'production' ? '6000M' : '${globals.xmx}';
+  var xmx = '${globals.operating_mode}' == 'production' ? '5000M' : '${globals.xmx}';
   var dockerImage = "${globals.jahia_docker_image}";
 
   node_haproxy = {
