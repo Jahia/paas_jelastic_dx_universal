@@ -27,7 +27,7 @@ globals:
   jahia_docker_image: ${settings.jahiaDockerImage}
   dbnodeType: mariadb-dockerized
   xms: 256M
-  xmx: 3584M
+  xmx: 2584M
   java_opts:
     -DDB_USER=${DB_USER}
     -DDB_PASSWORD=${DB_PASSWORD}
@@ -62,7 +62,8 @@ onBeforeInstall: |
   var db_cloudlets = '${globals.operating_mode}' == 'production' ? 40 : 32;
   var db_scheme = '${globals.operating_mode}' == 'production' ? 'galera' : 'galera';
   var db_count = '${globals.operating_mode}' == 'production' ? 3 : 1;
-  var xmx = '${globals.operating_mode}' == 'production' ? '6000M' : '${globals.xmx}';
+  var xmx_browsing = '${globals.operating_mode}' == 'production' ? '5000M' : '${globals.xmx}';
+  var xmx_processing = '${globals.operating_mode}' == 'production' ? '3584M' : '${globals.xmx}';
   var dockerImage = "${globals.jahia_docker_image}";
 
   node_haproxy = {
@@ -96,7 +97,7 @@ onBeforeInstall: |
         "MANAGER_USER": "${globals.mngr_user}",
         "REDIS_PASSWORD": "${globals.redis_pass}",
         "XMS": "${globals.xms}",
-        "XMX": xmx,
+        "XMX": xmx_browsing,
         "DATADOGAPIKEY": "${globals.datadog_key}",
         "DX_VERSION": "${globals.dx_version}",
         "PACKAGE_TYPE": "${globals.package_type}",
@@ -129,7 +130,7 @@ onBeforeInstall: |
         "MANAGER_USER": "${globals.mngr_user}",
         "REDIS_PASSWORD": "${globals.redis_pass}",
         "XMS": "${globals.xms}",
-        "XMX": "${globals.xmx}",
+        "XMX": xmx_processing,
         "DATADOGAPIKEY": "${globals.datadog_key}",
         "DX_VERSION": "${globals.dx_version}",
         "PACKAGE_TYPE": "${globals.package_type}",
