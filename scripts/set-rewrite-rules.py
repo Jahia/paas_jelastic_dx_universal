@@ -5,7 +5,7 @@ import sys
 from binascii import a2b_base64
 
 file_path = sys.argv[1]
-rewrite_rules = a2b_base64(str.encode(sys.argv[2])).decode("ISO-8859-1")
+rewrite_rules = a2b_base64(str.encode(sys.argv[2])).decode('utf8')
 
 with fileinput.FileInput(file_path, inplace=True) as file:
     inside_rewrites = False
