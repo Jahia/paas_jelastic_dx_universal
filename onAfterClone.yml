@@ -59,4 +59,6 @@ actions:
         params:
           userName: root
           commandList:
-            - command: "[ -d /etc/datadog-agent ] && sed -i 's/^\\( *service: \\).*/\\1${env.envName}/' /etc/datadog-agent/conf.d/*/conf.yaml && systemctl restart datadog-agent"
+            - command: "if [ ! -d /etc/datadog-agent ]; then exit 0; fi; \
+                sed -i 's/^\\( *service: \\).*/\\1${env.envName}/' /etc/datadog-agent/conf.d/*/conf.yaml; \
+                systemctl restart datadog-agent"
