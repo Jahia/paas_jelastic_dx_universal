@@ -71,12 +71,13 @@ actions:
           packageType: ${settings.packageType}
 
   bulkCpUpgrade:
-  - api: environment.control.RedeployContainersByGroup
-    nodeGroup: cp
-    tag: ${globals.targetDockerTag}
-    useExistingVolumes: ${globals.useExistingVolumes}
-    skipReinstall: false
-    envName: ${env.envName}
+    - api: environment.control.RedeployContainersByGroup
+      nodeGroup: cp
+      tag: ${globals.targetDockerTag}
+      useExistingVolumes: ${globals.useExistingVolumes}
+      skipReinstall: false
+      envName: ${env.envName}
+    - startupJahiaHealthCheck: cp
 
   rollingCpUpgrade:
     - forEach (nodes.cp):
@@ -89,6 +90,7 @@ actions:
           useExistingVolumes: ${globals.useExistingVolumes}
           skipReinstall: false
           envName: ${env.envName}
+        - startupJahiaHealthCheck: ${@i.id}
 
 settings:
   fields:
