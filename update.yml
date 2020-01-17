@@ -71,11 +71,31 @@ onAfterServiceScaleOut[cp]:
           newNode: ${@i.id}
   - resetHaproxyBackends
 
+# There is no proper way to merge these events as Cloudscripting
+# does not allow to put several nodeGroups as target of an event
+onBeforeRedeployContainer[cp]:
+  - if ('${event.params.nodeGroup.print()}' != ''):
+      - keepTomcatEnvConfOnRedeploy: ${event.params.nodeGroup}
+  - elif ('${event.params.nodeId.print()}' != ''):
+      - keepTomcatEnvConfOnRedeploy: ${event.params.nodeId}
+
 onAfterRedeployContainer[cp]:
-  - onAfterRedeployJahiaContainer: cp
+  - if ('${event.params.nodeGroup.print()}' != ''):
+      - onAfterRedeployJahiaContainer: ${event.params.nodeGroup}
+  - elif ('${event.params.nodeId.print()}' != ''):
+      - onAfterRedeployJahiaContainer: ${event.params.nodeId}
+
+onBeforeRedeployContainer[proc]:
+  - if ('${event.params.nodeGroup.print()}' != ''):
+      - keepTomcatEnvConfOnRedeploy: ${event.params.nodeGroup}
+  - elif ('${event.params.nodeId.print()}' != ''):
+      - keepTomcatEnvConfOnRedeploy: ${event.params.nodeId}
 
 onAfterRedeployContainer[proc]:
-  - onAfterRedeployJahiaContainer: proc
+  - if ('${event.params.nodeGroup.print()}' != ''):
+      - onAfterRedeployJahiaContainer: ${event.params.nodeGroup}
+  - elif ('${event.params.nodeId.print()}' != ''):
+      - onAfterRedeployJahiaContainer: ${event.params.nodeId}
 
 onBeforeStop:
   - stopJahia: cp, proc

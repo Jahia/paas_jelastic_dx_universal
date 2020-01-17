@@ -157,3 +157,14 @@ actions:
         systemctl restart crond
         systemctl enable datadog-agent
       user: root
+
+
+  # Make sure that the /opt/tomcat/conf/tomcatenv.sh is persisted when redeploying a cp/proc node
+  keepTomcatEnvConfOnRedeploy:
+    - log: "## Checking Jelastic redeploy.conf"
+    - cmd [${this}]: |-
+        if grep -q "tomcat-env.sh" /etc/jelastic/redeploy.conf; then
+          exit 0;
+        fi
+        echo "/opt/tomcat/conf/tomcat-env.sh" >> /etc/jelastic/redeploy.conf
+      user: root

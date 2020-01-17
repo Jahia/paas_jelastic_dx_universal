@@ -7,48 +7,107 @@ id: jahia-upgrade
 description:
   short: Jahia - Upgrade
 
+mixins:
+  - jahia/jahia_actions.yml
+
 onInstall:
-  - cmd [cp,proc]:
-      - service tomcat stop
-    user: root
-  - cmd [proc]:
-      - echo 'export JAHIA_UPGRADE="true"' >> /etc/locale.conf
-    user: root
-  - api: environment.control.RedeployContainersByGroup
-    nodeGroup: proc
-    tag: ${settings.targetVersion}
-    useExistingVolumes: false
-    skipReinstall: false
-    envName: ${env.envName}
-  - cmd [proc]: |-
-        touch /data/digital-factory-data/modules/*
-        service tomcat start
+  # By default we assume it is a (rolling) redeploy only
+  - setGlobals:
+      targetDockerTag: ${nodes.proc.first.version}
+      upgradeJahia: false
+      useExistingVolumes: true
+  # If a Jahia version/docker tag was passed as parameter
+  - if ('${settings.targetVersion.print()}' != ''):
+      - setGlobals:
+          targetDockerTag: ${settings.targetVersion}
+      # If it is a new version of Jahia
+      - if ('${globals.targetDockerTag}' != '${nodes.proc.first.version}'):
+          setGlobals:
+            upgradeJahia: true
+            useExistingVolumes: false
+  - if (!${settings.rollingUpgrade}):
+      # If bulk upgrade, then every tomcat nodes need to be stopped
+      - cmd [cp]:
+          - service tomcat stop
+        user: root
+      - procUpgrade
+      - bulkCpUpgrade
+  - else:
+      - procUpgrade
+      - rollingCpUpgrade
+  - env.control.AddContainerEnvVars[cp, proc]:
+      vars: {"DX_VERSION": "${globals.targetJahiaVersion}", "PACKAGE_TYPE": "${settings.packageType}"}
+
+actions:
+  procUpgrade:
+    - cmd [proc]:
+        - service tomcat stop
+      user: root
+    - cmd [proc]:
+        - echo 'export JAHIA_UPGRADE="${globals.upgradeJahia}"' >> /etc/locale.conf
+      user: root
+    - api: environment.control.RedeployContainersByGroup
+      nodeGroup: proc
+      tag: ${globals.targetDockerTag}
+      useExistingVolumes: ${globals.useExistingVolumes}
+      skipReinstall: false
+      envName: ${env.envName}
+    - cmd [proc]: |-
+        if [[ "${globals.upgradeJahia}" == "true" ]]; then
+          touch /data/digital-factory-data/modules/*
+          service tomcat start
+        fi
         sed '/JAHIA_UPGRADE/d' -i /etc/locale.conf
-    user: root
-  - sleep:
-      - milliseconds: 120000
+      user: root
+    - startupJahiaHealthCheck: ${nodes.proc.first.id}
+    # Get the Jahia version, which could be different of the name of the docker image
+    # e.g.: docker image tag "7.3.3.0_PAAS-444"
+    - api [${nodes.proc.first.id}]: environment.control.GetNodeInfo
+    - setGlobals:
+        targetJahiaVersion: ${response.node.customitem.nodeVersion}
+    - env.control.ApplyNodeGroupData[proc]:
+        data:
+          productVersion: ${globals.targetJahiaVersion}
+          packageType: ${settings.packageType}
+
+  bulkCpUpgrade:
   - api: environment.control.RedeployContainersByGroup
     nodeGroup: cp
-    tag: ${settings.targetVersion}
-    useExistingVolumes: false
+    tag: ${globals.targetDockerTag}
+    useExistingVolumes: ${globals.useExistingVolumes}
     skipReinstall: false
     envName: ${env.envName}
-  - env.control.ApplyNodeGroupData[proc]:
-      data:
-        productVersion: ${settings.targetVersion}
-        packageType: ${settings.packageType}
-  - env.control.AddContainerEnvVars[cp, proc]:
-      vars: {"DX_VERSION": "${settings.targetVersion}", "PACKAGE_TYPE": "${settings.packageType}"}
+
+  rollingCpUpgrade:
+    - forEach (nodes.cp):
+        - cmd [${@i.id}]:
+            - service tomcat stop
+          user: root
+        - api: environment.control.RedeployContainerById
+          nodeId: ${@i.id}
+          tag: ${globals.targetDockerTag}
+          useExistingVolumes: ${globals.useExistingVolumes}
+          skipReinstall: false
+          envName: ${env.envName}
+
 settings:
   fields:
     - name: targetVersion
       type: string
       caption: DX Target Version
       vtype: text
-      required: true
+      required: false
+      tooltip: Optional. If you don't specify a version, the current Jahia version of the target environment will be selected.
     - name: packageType
       type: string
       caption: Package Type
       default: dev
       vtype: text
       required: true
+      tooltip: Required. Should be "dev" or "prod".
+    - name: rollingUpgrade
+      type: toggle
+      caption: Rolling upgrade ?
+      value: false
+      required: true
+      tooltip: Redeploying cp nodes one at a time. Used for redeploying with the same Jahia version to run new image.
