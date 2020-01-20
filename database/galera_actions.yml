@@ -28,6 +28,13 @@ actions:
         wget ${baseUrl}/configs/galera.cnf -O /etc/mysql/conf.d/galera.cnf &>> /var/log/run.log
       user: root
 
+  stopGalera:
+    forEach(nodes.sqldb):
+      log: "Stopping MariaDB on node ${@i.id}..."
+      cmd[${@i.id}]: |-
+        service mysql stop
+        cat /var/lib/mysql/grastate.dat
+
   setupSeeds:
     script: |
       var resp = jelastic.env.control.GetEnvInfo('${env.envName}', session);

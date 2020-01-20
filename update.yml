@@ -79,6 +79,7 @@ onAfterRedeployContainer[proc]:
 
 onBeforeStop:
   - stopJahia: cp, proc
+  - stopGalera
 
 onBeforeClone:
   - log: "## Disable tomcat autostart before cloning env"
