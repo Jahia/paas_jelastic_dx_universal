@@ -15,7 +15,7 @@ onInstall:
   - if ('${settings.rollingUpgrade.print()}' == ''):
       setGlobals:
         rollingUpgrade: false
-  - else: 
+  - else:
       setGlobals:
         rollingUpgrade: ${settings.rollingUpgrade}
   # By default we assume it is a (rolling) redeploy only
@@ -34,7 +34,7 @@ onInstall:
         useExistingVolumes: false
   # As a reminder, when updating the value of a global variable inside an "if" block,
   # the new value won't be taken in account if testing it inside a nested "if" block.
-  # 
+  #
   ## Upgrades
   - if (!${globals.rollingUpgrade}):
       # If bulk upgrade, then every tomcat nodes need to be stopped
@@ -46,7 +46,7 @@ onInstall:
   - else:
       - procUpgrade
       - rollingCpUpgrade
-  # 
+  #
   ## Post-actions
   # Get the Jahia version, which could be different of the name of the docker image
   # e.g.: docker image tag "7.3.3.0_PAAS-444"
@@ -74,6 +74,18 @@ actions:
       useExistingVolumes: ${globals.useExistingVolumes}
       skipReinstall: false
       envName: ${env.envName}
+    # restore-module-state is not compatible with rolling upgrade
+    - if (!${settings.rollingUpgrade}):
+        - cmd [proc]: |-
+            if [ $(echo $DX_VERSION | sed 's/\.//g') -gt 7311  ]; then
+              rm -fr /data/digital-factory-data/bundles-deployed/*
+              sudo -u tomcat touch "/data/digital-factory-data/[persisted-bundles].dorestore"
+              echo "restore-module-state have been asked"
+              ls -l /data/digital-factory-data/*.dorestore
+            else
+              echo "Can't use restore-module-state here"
+            fi
+          user: root
     - cmd [proc]: |-
         if [[ "${globals.upgradeJahia}" == "true" ]]; then
           touch /data/digital-factory-data/modules/*
