@@ -157,3 +157,72 @@ actions:
         systemctl restart crond
         systemctl enable datadog-agent
       user: root
+
+  # Two arguments:
+  #   - target: Mandatory, the target nodeId or nodeGroup. If the duration is not specified, the target
+  #     can be passed as a parameter directly after the action name, e.g.: startupJahiaHealthCheck: <target>
+  #   - duration: Optional, duration in seconds. Default value of 24 hours if not specified
+  startupJahiaHealthCheck:
+    # The .print() call surrounded by simple quotes is the only working way I found to test if the variable exists
+    - if ('${this.print()}' != ''):
+        set:
+          duration: 86400
+          target: ${this}
+    - else:
+        set:
+          duration: ${this.duration}
+          target: ${this.target}
+    - log: "## Health check on Jahia startup, target: ${this.target}, duration : ${this.duration} seconds"
+    - cmd [${this.target}]: |-
+        if ! tomcat_pid=$(pgrep -u tomcat -f java); then
+          echo "[ERROR] Tomcat process not found, please check." >&2
+          exit 1
+        fi
+        #
+        if [ ! -f /var/log/tomcat/jahia.log ]; then
+          echo "[ERROR] Jahia log file not found, it seems there is a problem with tomcat instance, please check." >&2
+          exit 2
+        fi
+        #
+        startup_line=$(grep -n "s t a r t i n g" /opt/tomcat/logs/catalina.out | tail -n1 | cut -d":" -f1)
+        timeout=$(($(date +%s)+${this.duration}))
+        # Number of minutes allowed for Jahia login page to be reachable once tomcat startup is finished
+        jahia_running_timeout=5
+        #
+        while [ $(date +%s) -lt $timeout ]; do
+          # First we test if Jahia is up with a curl request.
+          curl_resp=$(curl -s -m 1 http://127.0.0.1:8080/cms/login)
+          if grep -q "password" <<< $(echo $curl_resp); then
+            exit 0
+          fi
+          #
+          # If it isn't, we first check tomcat process status
+          if ! ps --pid $tomcat_pid > /dev/null; then
+            echo "[ERROR] Tomcat process no more running, please check." >&2
+            exit 3
+          fi
+          # Then we check Jahia startup status, all
+          tail -n +${startup_line} /opt/tomcat/logs/catalina.out | grep -q "Server startup in"
+          if [ $? -eq 0 ]; then
+            if [ $jahia_running_timeout -eq 0 ]; then
+              echo "[ERROR] Tomcat startup is finished but login page is not working, please check." >&2
+              exit 4
+            fi
+            ((jahia_running_timeout-=1))
+          fi
+          #
+          sleep 60
+        done
+        #
+        echo "[ERROR] Timeout, the Tomcat process is still running but Jahia is not started yet" >&2
+        exit 5
+
+  # Make sure that the /opt/tomcat/conf/tomcatenv.sh is persisted when redeploying a cp/proc node
+  keepTomcatEnvConfOnRedeploy:
+    - log: "## Checking Jelastic redeploy.conf"
+    - cmd [${this}]: |-
+        if grep -q "tomcat-env.sh" /etc/jelastic/redeploy.conf; then
+          exit 0;
+        fi
+        echo "/opt/tomcat/conf/tomcat-env.sh" >> /etc/jelastic/redeploy.conf
+      user: root
