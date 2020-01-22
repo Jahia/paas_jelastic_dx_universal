@@ -11,6 +11,13 @@ mixins:
   - jahia/jahia_actions.yml
 
 onInstall:
+  ## Globals definition
+  - if ('${settings.rollingUpgrade.print()}' == ''):
+      setGlobals:
+        rollingUpgrade: false
+  - else: 
+      setGlobals:
+        rollingUpgrade: ${settings.rollingUpgrade}
   # By default we assume it is a (rolling) redeploy only
   - setGlobals:
       targetDockerTag: ${nodes.proc.first.version}
@@ -20,12 +27,16 @@ onInstall:
   - if ('${settings.targetVersion.print()}' != ''):
       - setGlobals:
           targetDockerTag: ${settings.targetVersion}
-      # If it is a new version of Jahia
-      - if ('${globals.targetDockerTag}' != '${nodes.proc.first.version}'):
-          setGlobals:
-            upgradeJahia: true
-            useExistingVolumes: false
-  - if (!${settings.rollingUpgrade}):
+  # If it is a new version of Jahia
+  - if ('${globals.targetDockerTag}' != '${nodes.proc.first.version}'):
+      setGlobals:
+        upgradeJahia: true
+        useExistingVolumes: false
+  # As a reminder, when updating the value of a global variable inside an "if" block,
+  # the new value won't be taken in account if testing it inside a nested "if" block.
+  # 
+  ## Upgrades
+  - if (!${globals.rollingUpgrade}):
       # If bulk upgrade, then every tomcat nodes need to be stopped
       - cmd [cp]:
           - service tomcat stop
@@ -35,6 +46,17 @@ onInstall:
   - else:
       - procUpgrade
       - rollingCpUpgrade
+  # 
+  ## Post-actions
+  # Get the Jahia version, which could be different of the name of the docker image
+  # e.g.: docker image tag "7.3.3.0_PAAS-444"
+  - api [${nodes.proc.first.id}]: environment.control.GetNodeInfo
+  - setGlobals:
+      targetJahiaVersion: ${response.node.version}
+  - env.control.ApplyNodeGroupData[proc]:
+      data:
+        productVersion: ${globals.targetJahiaVersion}
+        packageType: ${settings.packageType}
   - env.control.AddContainerEnvVars[cp, proc]:
       vars: {"DX_VERSION": "${globals.targetJahiaVersion}", "PACKAGE_TYPE": "${settings.packageType}"}
 
@@ -60,15 +82,6 @@ actions:
         sed '/JAHIA_UPGRADE/d' -i /etc/locale.conf
       user: root
     - startupJahiaHealthCheck: ${nodes.proc.first.id}
-    # Get the Jahia version, which could be different of the name of the docker image
-    # e.g.: docker image tag "7.3.3.0_PAAS-444"
-    - api [${nodes.proc.first.id}]: environment.control.GetNodeInfo
-    - setGlobals:
-        targetJahiaVersion: ${response.node.customitem.nodeVersion}
-    - env.control.ApplyNodeGroupData[proc]:
-        data:
-          productVersion: ${globals.targetJahiaVersion}
-          packageType: ${settings.packageType}
 
   bulkCpUpgrade:
     - api: environment.control.RedeployContainersByGroup
@@ -111,5 +124,5 @@ settings:
       type: toggle
       caption: Rolling upgrade ?
       value: false
-      required: true
+      required: false
       tooltip: Redeploying cp nodes one at a time. Used for redeploying with the same Jahia version to run new image.
