@@ -1,0 +1,100 @@
+---
+type: update
+version: 1.5.2
+name: Jahia - after clone
+logo: /images/jahia-logo-70x70.png
+id: jahia-dx-cluster-universal-after-clone
+description:
+  short: Jahia - after clone
+
+onInstall:
+  - log: Start post-clone setup
+  - updateEnvVarsOnClone
+  - cmd[proc, cp]: |-
+      rm -rf /opt/tomcat/logs/*
+      touch $DATA_PATH/digital-factory-data/safe-env-clone
+      sudo rm -rf /data/digital-factory-data/repository/workspaces/*
+      sudo rm -f /data/digital-factory-data/repository/revisionNode
+      sudo rm -f /data/digital-factory-data/karaf/etc/org.jahia.modules.marketingfactory.settings-mf.cfg
+      sudo service tomcat start
+  - cmd[*]: |-
+      rm -f /etc/ssh/ssh_host*
+      service sshd restart
+    user: root
+  - log: "## Enable tomcat autostart on the cloned env"
+  - cmd[cp, proc]:
+      - chkconfig tomcat on
+    user: root
+  - api: jelastic.env.control.SetEnvDisplayName
+    displayname: "${env.shortdomain}"
+  - updateDatadogConf
+
+
+actions:
+  updateEnvVarsOnClone:
+    - api[cp,proc]:
+        method: env.control.AddContainerEnvVars
+        params:
+          envName: ${env.shortdomain}
+          vars:
+            "MYSQLDB_ENV_envName": ${env.shortdomain}
+            "MYSQLDB_envName": ${env.shortdomain}
+            "envName": ${env.shortdomain}
+    - api[sqldb]:
+        method: env.control.AddContainerEnvVars
+        params:
+          envName: ${env.shortdomain}
+          vars:
+            "envName": ${env.shortdomain}
+
+    # This script purpose is to update the _JAVA_OPTIONS envvar which is only set on cp and proc nodes
+    # as it could contain a node name for "-DHOST_NAME" option (even it should be a function '$(hostname)')
+    # So we first need to get the envvar before updating it as we don't know the other parameters values
+    - script [cp,proc]: |
+        /*
+          A "quick" explanation: don't ask me why, but the getcontainerenvvarsbygroup method doesn't work,
+          it only returns {result: 0}, but no data, even if it works very well when called outside of Jelastic
+          On the other hand, getcontainerenvvars works well, but it requires a nodeId, and I couldn't
+          figure out how to obtain it (the id of the first node for example) inside of this script
+          with nodeGroup parameter, so I had to hardcode a nodeGroup (proc), which won't be a problem as the
+          _JAVA_OPTIONS parameter is the same on proc as on cp nodes.
+        */
+        var envVars = jelastic.env.control.getcontainerenvvars("${env.shortdomain}", session, "${nodes.proc.first.id}");
+
+        // Same as JSON.parse (but JSON doesn't exist on Jelastic's javascript engine)
+        var envVarsJson = eval('(' + envVars + ')');
+
+        // Ko if getcontainerenvvars failed
+        if (envVarsJson.object == "undefined") {
+          return {"result": 1, "out": envVarsJson};
+        }
+        if (typeof envVarsJson.object._JAVA_OPTIONS == 'undefined') {
+          return {"result": 0, "out": "No _JAVA_OPTIONS parameter, nothing to do."};
+        }
+
+        var split_javaopts = envVarsJson.object._JAVA_OPTIONS.split(" ");
+        var javaopts = "";
+        var j;
+        for (j = 0; j < split_javaopts.length; j++) {
+          // If -DHOST_NAME exists, replace current value with Linux hostname function result
+          if(split_javaopts[j].indexOf("DHOST_NAME") !== -1) {
+            split_javaopts[j] = "-DHOST_NAME=$(hostname)";
+          }
+          javaopts += " " + split_javaopts[j];
+        }
+        javaopts = javaopts.slice(1);
+
+        var res;
+        res = jelastic.env.control.addcontainerenvvars("${env.shortdomain}", session, nodeGroup, {"_JAVA_OPTIONS": javaopts});
+        return res;
+
+  updateDatadogConf:
+    - log: "## Updating datadog-agent conf"
+    - api[*]:
+        method: environment.control.ExecCmdByGroup
+        params:
+          userName: root
+          commandList:
+            - command: "if [ ! -d /etc/datadog-agent ]; then exit 0; fi; \
+                sed -i 's/^\\( *service: \\).*/\\1${env.envName}/' /etc/datadog-agent/conf.d/*/conf.yaml; \
+                systemctl restart datadog-agent"
