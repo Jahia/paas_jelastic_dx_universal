@@ -77,7 +77,7 @@ actions:
     # restore-module-state is not compatible with rolling upgrade
     - if (!${globals.rollingUpgrade}):
         - cmd [proc]: |-
-            if [ $(echo $DX_VERSION | sed 's/\.//g') -gt 7320  ]; then
+            if [ $(echo $DX_VERSION | sed 's/\.//g') -ge 7320  ]; then
               rm -fr /data/digital-factory-data/bundles-deployed/*
               sudo -u tomcat touch "/data/digital-factory-data/[persisted-bundles].dorestore"
               echo "restore-module-state have been asked"
