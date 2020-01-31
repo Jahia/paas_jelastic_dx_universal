@@ -75,7 +75,7 @@ actions:
       skipReinstall: false
       envName: ${env.envName}
     # restore-module-state is not compatible with rolling upgrade
-    - if (!${settings.rollingUpgrade}):
+    - if (!${globals.rollingUpgrade}):
         - cmd [proc]: |-
             if [ $(echo $DX_VERSION | sed 's/\.//g') -gt 7320  ]; then
               rm -fr /data/digital-factory-data/bundles-deployed/*
