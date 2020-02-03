@@ -43,6 +43,12 @@ actions:
         sudo service haproxy reload
       user: haproxy
 
+  addNodeToHaproxy:
+    - cmd[bl]: |-
+        echo "    server ${env.appid}-${this.nodeId} ${this.nodeIp}:80 check cookie s${this.nodeId}" >> /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
+        sudo service haproxy reload
+      user: haproxy
+
   resetHaproxyBackends:
     - cmd[bl]: |-
         sed -i -e "/$server.*:80 check cookie/d" /etc/haproxy/haproxy.cfg.d/10-jahia.cfg

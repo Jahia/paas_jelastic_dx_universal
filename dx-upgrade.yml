@@ -9,6 +9,7 @@ description:
 
 mixins:
   - jahia/jahia_actions.yml
+  - haproxy/haproxy_actions.yml
 
 onInstall:
   ## Globals definition
@@ -38,6 +39,10 @@ onInstall:
   ## Upgrades
   - if (!${globals.rollingUpgrade}):
       # If bulk upgrade, then every tomcat nodes need to be stopped
+      - forEach(nodes.cp):
+          removeNodeFromHaproxy:
+            nodeId: ${@i.id}
+            nodeIp: ${@i.intIP}
       - cmd [cp]:
           - service tomcat stop
         user: root
@@ -106,6 +111,8 @@ actions:
 
   rollingCpUpgrade:
     - forEach (nodes.cp):
+        - removeNodeFromHaproxy:
+            nodeId: ${@i.id}
         - cmd [${@i.id}]:
             - service tomcat stop
           user: root
