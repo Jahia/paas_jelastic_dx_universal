@@ -76,7 +76,8 @@ onBeforeInstall: |
     "env": {
         "DATADOGAPIKEY": "${globals.datadog_key}",
         "_PROVIDE": "haproxy",
-        "_ROLE": "reverse_proxy"
+        "_ROLE": "reverse_proxy",
+        "envName": "${globals.shortdomain}"
       },
     "volumes": [
       "/etc/haproxy"
@@ -189,6 +190,7 @@ onInstall:
   - installHaproxy
   - setupDatadogAgentSql: sqldb
   - setupDatadogAgent: cp, proc
+  - setupDatadogAgentHaproxy
 
 onBeforeScaleIn[cp]:
   - forEach(event.response.nodes):

@@ -58,3 +58,28 @@ actions:
     - cmd[bl]: |-
         sudo service haproxy reload
       user: haproxy
+
+  setupDatadogAgentHaproxy:
+    - log: "## Finalize Datadog agent setup on ${this}"
+    - cmd [bl]: |-
+        DD_API_KEY=${globals.datadog_key} bash -c "$(curl -L https://raw.githubusercontent.com/DataDog/datadog-agent/master/cmd/agent/install_script.sh)"
+        NODE_NAME=${HOSTNAME/-*}
+        echo "hostname: $(echo $_ROLE| sed 's/_//g').${NODE_NAME#node}" >> /etc/datadog-agent/datadog.yaml
+        sed -i 's/# logs_enabled: false/logs_enabled: true/' /etc/datadog-agent/datadog.yaml
+        echo "tags:" >> /etc/datadog-agent/datadog.yaml
+        echo " - env:${PACKAGE_TYPE}" >> /etc/datadog-agent/datadog.yaml
+        echo " - product:jahia" >> /etc/datadog-agent/datadog.yaml
+        echo " - version:${DX_VERSION}" >> /etc/datadog-agent/datadog.yaml
+        echo " - envname:${env.envName}" >> /etc/datadog-agent/datadog.yaml
+        echo " - provide:${_PROVIDE}" >> /etc/datadog-agent/datadog.yaml
+        echo " - role:${_ROLE}" >> /etc/datadog-agent/datadog.yaml
+        echo " - envmode:${jahia_cfg_operatingMode}" >> /etc/datadog-agent/datadog.yaml
+        wget -O /etc/datadog-agent/conf.d/haproxy.d/conf.yaml ${baseUrl}/configs/dd_agent_haproxy_conf.yml
+        sed -i 's/my_awesome_password/${globals.haproxy_admin_stats_pass}/g' /etc/datadog-agent/conf.d/haproxy.d/conf.yaml
+        wget -O /usr/local/bin/set_dd_tags.sh ${baseUrl}/scripts/set_dd_tags.sh
+        wget -O /etc/cron.d/set_dd_tags_cron ${baseUrl}/configs/set_dd_tags_cron
+        chmod u+x /usr/local/bin/set_dd_tags.sh
+        wget -O /etc/rsyslog.d/haproxy.conf ${baseUrl}/configs/rsyslog_haproxy
+        chown root:dd-agent /var/log/haproxy/* && chmod 640 /var/log/haproxy/*
+        systemctl restart rsyslog crond datadog-agent
+      user: root
