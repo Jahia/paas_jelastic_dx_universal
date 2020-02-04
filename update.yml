@@ -71,19 +71,41 @@ onAfterServiceScaleOut[cp]:
           newNode: ${@i.id}
   - resetHaproxyBackends
 
+onBeforeRestartContainer[cp]:
+  removeNodeFromHaproxy:
+    nodeId: ${event.params.nodeId}
+
+onAfterRestartContainer[cp]:
+  forEach(nodes.cp):
+    if ("${event.params.nodeId}" == ${@i.id}):
+      addNodeToHaproxy:
+        nodeId: ${@i.id}
+        nodeIp: ${@i.intIP}
+
 # There is no proper way to merge these events as Cloudscripting
 # does not allow to put several nodeGroups as target of an event
 onBeforeRedeployContainer[cp]:
   - if ('${event.params.nodeGroup.print()}' != ''):
+      - forEach(nodes.cp):
+          removeNodeFromHaproxy:
+            nodeId: ${@i.id}
       - keepTomcatEnvConfOnRedeploy: ${event.params.nodeGroup}
   - elif ('${event.params.nodeId.print()}' != ''):
+      - removeNodeFromHaproxy:
+          nodeId: ${event.params.nodeId}
       - keepTomcatEnvConfOnRedeploy: ${event.params.nodeId}
 
 onAfterRedeployContainer[cp]:
   - if ('${event.params.nodeGroup.print()}' != ''):
       - onAfterRedeployJahiaContainer: ${event.params.nodeGroup}
+      - resetHaproxyBackends
   - elif ('${event.params.nodeId.print()}' != ''):
       - onAfterRedeployJahiaContainer: ${event.params.nodeId}
+      - forEach(nodes.cp):
+          if ("${event.params.nodeId}" == "${@i.id}"):
+            addNodeToHaproxy:
+              nodeId: ${@i.id}
+              nodeIp: ${@i.intIP}
 
 onBeforeRedeployContainer[proc]:
   - if ('${event.params.nodeGroup.print()}' != ''):
