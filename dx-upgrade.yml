@@ -21,6 +21,16 @@ onInstall:
     skipReinstall: false
     envName: ${env.envName}
   - cmd [proc]: |-
+      if [ $(echo $DX_VERSION | sed 's/\.//g') -ge 7320 ]; then
+        rm -fr /data/digital-factory-data/bundles-deployed/*
+        sudo -u tomcat touch "/data/digital-factory-data/[persisted-bundles].dorestore"
+        echo "restore-module-state have been asked"
+        ls -l /data/digital-factory-data/*.dorestore
+      else
+        echo "Can't use restore-module-state here"
+      fi
+    user: root
+  - cmd [proc]: |-
         touch /data/digital-factory-data/modules/*
         service tomcat start
         sed '/JAHIA_UPGRADE/d' -i /etc/locale.conf
