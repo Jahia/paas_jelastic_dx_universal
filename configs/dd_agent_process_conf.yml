@@ -1,0 +1,6 @@
+---
+
+init_config:
+instances:
+  - name: haproxy
+    search_string: ["haproxy"]

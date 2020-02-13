@@ -76,6 +76,7 @@ actions:
         echo " - envmode:${jahia_cfg_operatingMode}" >> /etc/datadog-agent/datadog.yaml
         wget -O /etc/datadog-agent/conf.d/haproxy.d/conf.yaml ${baseUrl}/configs/dd_agent_haproxy_conf.yml
         sed -i 's/my_awesome_password/${globals.haproxy_admin_stats_pass}/g' /etc/datadog-agent/conf.d/haproxy.d/conf.yaml
+        wget -O /etc/datadog-agent/conf.d/process.d/conf.yaml ${baseUrl}/configs/dd_agent_process_conf.yml
         wget -O /usr/local/bin/set_dd_tags.sh ${baseUrl}/scripts/set_dd_tags.sh
         wget -O /etc/cron.d/set_dd_tags_cron ${baseUrl}/configs/set_dd_tags_cron
         chmod u+x /usr/local/bin/set_dd_tags.sh
