@@ -4,6 +4,8 @@ actions:
     - setSudoer: sqldb
     - log: "## Setup MariaDB logrotate on ${this}"
     - cmd[sqldb]: |-
+        printf "[mysqld]\nkey_buffer_size = 128M\nmyisam_sort_buffer_size = 128M" > /etc/mysql/conf.d/mysql.cnf
+        mysql -e "set global key_buffer_size = 128*1024*1024; set global myisam_sort_buffer_size = 128*1024*1024;"
         wget -O /etc/logrotate.d/mysql ${baseUrl}/configs/logrotate_mysql
         logrotate -f /etc/logrotate.d/mysql
       user: root
