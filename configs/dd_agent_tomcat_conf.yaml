@@ -6,7 +6,7 @@ logs:
        service: jahia
        sourcecategory: catalina
      - type: file
-       path: /opt/tomcat/logs/localhost_access_log.*.txt
+       path: /opt/tomcat/logs/jahia_access_log
        source: tomcat
        service: jahia
        sourcecategory: access_log
