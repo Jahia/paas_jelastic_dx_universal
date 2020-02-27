@@ -66,10 +66,10 @@ actions:
               j_opts='${globals.java_opts}'
               ;;
           *)
-              j_opts='${globals.java_opts} -Xlog:gc::time,uptime,level,pid,tid,tags'
+              j_opts='${globals.java_opts} -Xlog:gc:file=/opt/tomcat/logs/gc.log:time,uptime,level,pid,tid,tags'
               ;;
         esac
-        sed -e '2isource /.jelenv' -e "s/\(^JAVA_OPTS=.*\)\(\"$\)/\1 ${j_opts}\2/" -i /opt/tomcat/conf/tomcat-env.sh
+        sed -e '2isource /.jelenv' -e "s#\(^JAVA_OPTS=.*\)\(\"$\)#\1 ${j_opts}\2#" -i /opt/tomcat/conf/tomcat-env.sh
 
     - copyApp: proc, cp
     - cmd[proc]: |-
