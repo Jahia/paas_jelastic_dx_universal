@@ -103,7 +103,11 @@ actions:
         echo "expandImportedFilesOnDisk = true" >> $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
         rm -rf $STACK_PATH/webapps/*
         #COPS-18 workaround, switch from loadbalance to sequential
-        sed 's/loadbalance/sequential/' -i /$DATA_PATH/jahia/tomcat/webapps/ROOT/META-INF/context.xml
+        replace="sequential:"
+        if [[ $DX_VERSION == 7.2* ]]; then
+          replace=""
+        fi
+        sed "s/loadbalance:/$replace/" -i /$DATA_PATH/jahia/tomcat/webapps/ROOT/META-INF/context.xml
         cp -rf $DATA_PATH/jahia/tomcat/webapps/* $STACK_PATH/webapps
         chown -R tomcat:tomcat $STACK_PATH/webapps
         sed -i "s/operatingMode/#operatingMode/" $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
