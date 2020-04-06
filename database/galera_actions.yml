@@ -32,8 +32,8 @@ actions:
     forEach(nodes.sqldb):
       log: "Stopping MariaDB on node ${@i.id}..."
       cmd[${@i.id}]: |-
-        service mysql stop
-        cat /var/lib/mysql/grastate.dat
+        service mysql stop || exit 1
+        cat /var/lib/mysql/grastate.dat || exit 0
 
   setupSeeds:
     script: |
