@@ -33,7 +33,9 @@ actions:
       log: "Stopping MariaDB on node ${@i.id}..."
       cmd[${@i.id}]: |-
         service mysql stop || exit 1
-        cat /var/lib/mysql/grastate.dat || exit 0
+        if [[ "${globals.operating_mode}" == "production" ]]; then
+            cat /var/lib/mysql/grastate.dat
+        fi
 
   setupSeeds:
     script: |
