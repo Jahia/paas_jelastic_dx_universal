@@ -33,7 +33,7 @@ actions:
       log: "Stopping MariaDB on node ${@i.id}..."
       cmd[${@i.id}]: |-
         service mysql stop || exit 1
-        if [[ "${globals.operating_mode}" == "production" ]]; then
+        if [[ $(awk -F'=' '$1=="jahia_cfg_operatingMode" {print $2}' /.jelenv) == "production" ]]; then
             cat /var/lib/mysql/grastate.dat
         fi
 
