@@ -2,6 +2,9 @@
 
 ## actual version: v1.9
 
+### v1.11.2 (2020-04-29)
+* [BUG]: PAAS-953 fix marker file used for clone backup for Jahia under 7.2.3.2
+
 ### v1.9 (2019-09-18)
 * [IMPROVEMENT]: PAAS-381 add package to update jahia tools password
 * [IMPROVEMENT]: PAAS-379 add package to update jahia root password
