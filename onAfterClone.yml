@@ -30,6 +30,8 @@ onInstall:
       sudo rm /data/digital-factory-data/repository/revisionNode
       sudo rm -f /data/digital-factory-data/karaf/etc/org.jahia.modules.marketingfactory.settings-mf.cfg
       sed -i "s/\(.*serverId.*=\).*/\1 $HOSTNAME/g" /opt/tomcat/conf/digital-factory-config/jahia/jahia.node.properties
+      query="delete from JR_J_LOCAL_REVISIONS"
+      mysql -h $DB_ENDPOINT -u $DB_USER -p$DB_PASSWORD -s jahia -e "$query"
       sudo service tomcat start
   - environment.control.ApplyNodeGroupData [proc, cp]:
       data:
