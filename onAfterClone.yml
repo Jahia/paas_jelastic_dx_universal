@@ -19,9 +19,16 @@ onInstall:
       - installGaleraCluster
 
   - resetHaproxyBackends: bl
+  - cmd[proc]: |-
+      query="delete from JR_J_LOCAL_REVISIONS"
+      mysql -h $DB_ENDPOINT -u $DB_USER -p$DB_PASSWORD -s jahia -e "$query"
   - cmd[proc, cp]: |-
       rm /opt/tomcat/logs/*
-      touch $DATA_PATH/digital-factory-data/safe-env-clone
+      if [ $(echo $DX_VERSION | sed 's/\.//g') -lt 7232 ]; then
+        touch $DATA_PATH/digital-factory-data/backup-restore
+      else
+        touch $DATA_PATH/digital-factory-data/safe-env-clone
+      fi
       sudo rm /data/digital-factory-data/repository/workspaces/*
       sudo rm /data/digital-factory-data/repository/revisionNode
       sudo rm -f /data/digital-factory-data/karaf/etc/org.jahia.modules.marketingfactory.settings-mf.cfg
