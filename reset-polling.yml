@@ -23,7 +23,7 @@ actions:
     - cmd [${this}]: |-
         ## [Reset Polling] - 1/1
         touch /tmp/polling
-        echo '### An error occurred during ${settings.feature} at ${settings.datetime} ###' >> /tmp/polling
+        echo '### An error occurred during ${settings.feature} on ${settings.datetime} ###' >> /tmp/polling
 
 settings:
   fields:
