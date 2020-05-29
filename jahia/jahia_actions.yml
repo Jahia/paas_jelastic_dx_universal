@@ -233,3 +233,14 @@ actions:
         fi
         echo "/opt/tomcat/conf/tomcat-env.sh" >> /etc/jelastic/redeploy.conf
       user: root
+
+  # Make sure that the JCR indices are persisted when redeploying a cp/proc node
+  keepJCRIndicesOnRedeploy:
+    - log: "## Checking Jelastic redeploy.conf"
+    - cmd [${this}]: |-
+        if grep -q "/repository/" /etc/jelastic/redeploy.conf; then
+          exit 0;
+        fi
+        echo "/data/digital-factory-data/repository/index" >> /etc/jelastic/redeploy.conf
+        echo "/data/digital-factory-data/repository/workspaces" >> /etc/jelastic/redeploy.conf
+      user: root

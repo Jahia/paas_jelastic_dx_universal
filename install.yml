@@ -223,10 +223,12 @@ onBeforeRedeployContainer[cp]:
           removeNodeFromHaproxy:
             nodeId: ${@i.id}
       - keepTomcatEnvConfOnRedeploy: ${event.params.nodeGroup}
+      - keepJCRIndicesOnRedeploy: ${event.params.nodeGroup}
   - elif ('${event.params.nodeId.print()}' != ''):
       - removeNodeFromHaproxy:
           nodeId: ${event.params.nodeId}
       - keepTomcatEnvConfOnRedeploy: ${event.params.nodeId}
+      - keepJCRIndicesOnRedeploy: ${event.params.nodeId}
 
 onAfterRedeployContainer[cp]:
   - if ('${event.params.nodeGroup.print()}' != ''):
@@ -243,8 +245,10 @@ onAfterRedeployContainer[cp]:
 onBeforeRedeployContainer[proc]:
   - if ('${event.params.nodeGroup.print()}' != ''):
       - keepTomcatEnvConfOnRedeploy: ${event.params.nodeGroup}
+      - keepJCRIndicesOnRedeploy: ${event.params.nodeGroup}
   - elif ('${event.params.nodeId.print()}' != ''):
       - keepTomcatEnvConfOnRedeploy: ${event.params.nodeId}
+      - keepJCRIndicesOnRedeploy: ${event.params.nodeId}
 
 onAfterRedeployContainer[proc]:
   - if ('${event.params.nodeGroup.print()}' != ''):
