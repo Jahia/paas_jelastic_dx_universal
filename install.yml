@@ -256,6 +256,12 @@ onAfterRedeployContainer[proc]:
   - elif ('${event.params.nodeId.print()}' != ''):
       - onAfterRedeployJahiaContainer: ${event.params.nodeId}
 
+onAfterRedeployContainer[bl]:
+  - if ('${event.params.nodeGroup.print()}' != ''):
+      - splitHaproxyConf: ${event.params.nodeGroup}
+  - elif ('${event.params.nodeId.print()}' != ''):
+      - splitHaproxyConf: ${event.params.nodeId}
+
 onBeforeStop:
   - stopJahia: cp, proc
   - stopGalera

@@ -2,6 +2,7 @@
 actions:
   installHaproxy:
     - setSudoer: bl
+    - retrieveHaproxyConf: bl
     - splitHaproxyConf: bl
     - updateHaproxyConf
     - environment.control.ApplyNodeGroupData [bl]:
@@ -11,13 +12,16 @@ actions:
     - env.control.AddContainerEnvVars[bl]:
       vars: {"auth_basic_enabled": "false"}
 
-  splitHaproxyConf:
-    # "Hack" to split the haproxy conf file and isolate jahia backend conf
+  retrieveHaproxyConf:
     - cmd[${this}]: |-
         wget -O /etc/haproxy/502.http ${baseUrl}/configs/502.http
         mkdir /etc/haproxy/haproxy.cfg.d && chmod 775 /etc/haproxy/haproxy.cfg.d
         wget -O /etc/haproxy/haproxy.cfg.d/00-global.cfg ${baseUrl}/configs/haproxy-00-global.cfg
         wget -O /etc/haproxy/haproxy.cfg.d/10-jahia.cfg ${baseUrl}/configs/haproxy-10-jahia.cfg
+
+  splitHaproxyConf:
+    # "Hack" to split the haproxy conf file and isolate jahia backend conf
+    - cmd[${this}]: |-
         # We empty the file instead of deleting it because of Jelastic trying to update it
         # when scaling
         echo "### WARNING : this config file is not used for haproxy configuration" > /etc/haproxy/haproxy.cfg
