@@ -18,6 +18,7 @@ actions:
         mkdir /etc/haproxy/haproxy.cfg.d && chmod 775 /etc/haproxy/haproxy.cfg.d
         wget -O /etc/haproxy/haproxy.cfg.d/00-global.cfg ${baseUrl}/configs/haproxy-00-global.cfg
         wget -O /etc/haproxy/haproxy.cfg.d/10-jahia.cfg ${baseUrl}/configs/haproxy-10-jahia.cfg
+      user: root
 
   splitHaproxyConf:
     # "Hack" to split the haproxy conf file and isolate jahia backend conf
