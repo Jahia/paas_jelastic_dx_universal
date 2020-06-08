@@ -258,9 +258,21 @@ onAfterRedeployContainer[proc]:
 
 onAfterRedeployContainer[bl]:
   - if ('${event.params.nodeGroup.print()}' != ''):
+      - setSudoer: ${event.params.nodeGroup}
       - splitHaproxyConf: ${event.params.nodeGroup}
+      - setupDatadogAgentHaproxy: ${event.params.nodeGroup}
+      - environment.control.ApplyNodeGroupData [bl]:
+          data:
+            productName: haproxy
+            productVersion: ${nodes.bl.first.version}
   - elif ('${event.params.nodeId.print()}' != ''):
+      - setSudoer: ${event.params.nodeId}
       - splitHaproxyConf: ${event.params.nodeId}
+      - setupDatadogAgentHaproxy: ${event.params.nodeId}
+      - environment.control.ApplyNodeGroupData [bl]:
+          data:
+            productName: haproxy
+            productVersion: ${nodes.bl.first.version}
 
 onBeforeStop:
   - stopJahia: cp, proc
