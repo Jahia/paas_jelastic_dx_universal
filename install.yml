@@ -153,6 +153,7 @@ onBeforeInstall: |
   node_mariadb = {
     "nodeType": "${globals.dbnodeType}",
     "nodeGroup": "sqldb",
+    "tag": "10.4.12",
     "count": db_count,
     "cloudlets": db_cloudlets,
     "env": {
