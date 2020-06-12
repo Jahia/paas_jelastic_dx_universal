@@ -30,10 +30,11 @@ actions:
 
   stopGalera:
     forEach(nodes.sqldb):
-      log: "Stopping MariaDB on node ${@i.id}..."
-      cmd[${@i.id}]: |-
-        service mysql stop || exit 1
-        cat /var/lib/mysql/grastate.dat || true
+      - log: "Stopping MariaDB on node ${@i.id}..."
+      - cmd[${@i.id}]: |-
+          service mysql stop || exit 1
+          cat /var/lib/mysql/grastate.dat || true
+        user: root
 
   setupSeeds:
     script: |

@@ -4,6 +4,10 @@ actions:
     - setSudoer: sqldb
     - log: "## Setup MariaDB logrotate on ${this}"
     - cmd[sqldb]: |-
+        # Securing possible blocking issues with jelastic/mariadb:10.4.13 with next 3 lines
+        sudo -u mysql mysql -e "alter user root@localhost identified via unix_socket;"
+        [ -f /etc/mysql/conf.d/master.cnf ] && rm -f /etc/mysql/conf.d/master.cnf
+        [ -f /etc/mysql/conf.d/slave.cnf ] && rm -f /etc/mysql/conf.d/slave.cnf
         printf "[mysqld]\nkey_buffer_size = 128M\nmyisam_sort_buffer_size = 128M" > /etc/mysql/conf.d/mysql.cnf
         mysql -e "set global key_buffer_size = 128*1024*1024; set global myisam_sort_buffer_size = 128*1024*1024;"
         wget -O /etc/logrotate.d/mysql ${baseUrl}/configs/logrotate_mysql
