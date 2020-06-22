@@ -85,7 +85,6 @@ actions:
             if [ $(echo $DX_VERSION | sed 's/\.//g') -ge 7320  ]; then
               rm -fr /data/digital-factory-data/bundles-deployed/*
               sudo -u tomcat touch "/data/digital-factory-data/[persisted-bundles].dorestore"
-              sudo -u tomcat touch "/data/digital-factory-data/[persisted-configurations].dorestore"
               echo "restore-module-state have been asked"
               ls -l /data/digital-factory-data/*.dorestore
             else
@@ -108,11 +107,6 @@ actions:
       useExistingVolumes: ${globals.useExistingVolumes}
       skipReinstall: false
       envName: ${env.envName}
-    - cmd [cp]: |-
-        if [ $(echo $DX_VERSION | sed 's/\.//g') -ge 7320  ]; then
-          touch "/data/digital-factory-data/[persisted-configurations].dorestore"
-          chown tomcat: "/data/digital-factory-data/[persisted-configurations].dorestore"
-        fi
     - startupJahiaHealthCheck: cp
 
   rollingCpUpgrade:
@@ -128,11 +122,6 @@ actions:
           useExistingVolumes: ${globals.useExistingVolumes}
           skipReinstall: false
           envName: ${env.envName}
-        - cmd [cp]: |-
-            if [ $(echo $DX_VERSION | sed 's/\.//g') -ge 7320  ]; then
-              touch "/data/digital-factory-data/[persisted-configurations].dorestore"
-              chown tomcat: "/data/digital-factory-data/[persisted-configurations].dorestore"
-            fi
         - startupJahiaHealthCheck: ${@i.id}
 
 settings:
