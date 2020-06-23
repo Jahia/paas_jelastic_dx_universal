@@ -31,6 +31,11 @@ actions:
           - sed -i "s#\(processingServer\s*=\).*#\1 false#g" $STACK_PATH/conf/digital-factory-config/jahia/jahia.node.properties
     - setupDatadogAgent: ${this}
     - cmd[${this}]: |-
+          if [ $(echo $DX_VERSION | sed 's/\.//g') -ge 7320 ]; then
+            touch "/data/digital-factory-data/[persisted-configurations].dorestore"
+            chown tomcat: "/data/digital-factory-data/[persisted-configurations].dorestore"
+          fi
+    - cmd[${this}]: |-
           source /etc/locale.conf
           echo "JAHIA_UPGRADE=$JAHIA_UPGRADE"
           if [ "$JAHIA_UPGRADE" == "true" ]; then
