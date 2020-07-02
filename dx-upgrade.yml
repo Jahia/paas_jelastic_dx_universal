@@ -67,8 +67,9 @@ onInstall:
 
 actions:
   procUpgrade:
-    - cmd [proc]:
-        - service tomcat stop
+    - cmd [proc]: |-
+        ## [Upgrade] - 1/2
+        service tomcat stop
       user: root
     - cmd [proc]:
         - echo 'export JAHIA_UPGRADE="${globals.upgradeJahia}"' >> /etc/locale.conf
@@ -101,6 +102,9 @@ actions:
     - startupJahiaHealthCheck: ${nodes.proc.first.id}
 
   bulkCpUpgrade:
+    - cmd [proc]: |-
+        ## [Upgrade] - 2/2
+        exit 0
     - api: environment.control.RedeployContainersByGroup
       nodeGroup: cp
       tag: ${globals.targetDockerTag}
@@ -110,6 +114,9 @@ actions:
     - startupJahiaHealthCheck: cp
 
   rollingCpUpgrade:
+    - cmd [proc]: |-
+        ## [Upgrade] - 2/2
+        exit 0
     - forEach (nodes.cp):
         - removeNodeFromHaproxy:
             nodeId: ${@i.id}
