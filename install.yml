@@ -275,6 +275,14 @@ onAfterRedeployContainer[bl]:
             productName: haproxy
             productVersion: ${nodes.bl.first.version}
 
+onAfterRedeployContainer[sqldb]:
+  - if ('${event.params.nodeGroup.print()}' != ''):
+      - setSudoer: ${event.params.nodeGroup}
+      - setupDatadogAgentSql: ${event.params.nodeGroup}
+  - elif ('${event.params.nodeId.print()}' != ''):
+      - setSudoer: ${event.params.nodeId}
+      - setupDatadogAgentSql: ${event.params.nodeId}
+
 onBeforeStop:
   - stopJahia: cp, proc
   - stopGalera
