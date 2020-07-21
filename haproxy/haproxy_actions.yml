@@ -66,7 +66,7 @@ actions:
 
   setupDatadogAgentHaproxy:
     - log: "## Finalize Datadog agent setup on ${this}"
-    - cmd [bl]: |-
+    - cmd[${this}]: |-
         DD_API_KEY=$(sed -n 's/DATADOGAPIKEY=\(.*\)/\1/p' < /.jelenv) bash -c "$(curl -L https://raw.githubusercontent.com/DataDog/datadog-agent/master/cmd/agent/install_script.sh)"
         NODE_NAME=${HOSTNAME/-*}
         echo "hostname: $(echo $_ROLE| sed 's/_//g').${NODE_NAME#node}" >> /etc/datadog-agent/datadog.yaml
@@ -80,7 +80,8 @@ actions:
         echo " - role:${_ROLE}" >> /etc/datadog-agent/datadog.yaml
         echo " - envmode:${jahia_cfg_operatingMode}" >> /etc/datadog-agent/datadog.yaml
         wget -O /etc/datadog-agent/conf.d/haproxy.d/conf.yaml ${baseUrl}/configs/dd_agent_haproxy_conf.yml
-        sed -i 's/my_awesome_password/${globals.haproxy_admin_stats_pass}/g' /etc/datadog-agent/conf.d/haproxy.d/conf.yaml
+        STATS_PWD=$(grep "stats auth admin" /etc/haproxy/haproxy.cfg.d/00-global.cfg | head -n1 | cut -d":" -f2)
+        sed -i "s/my_awesome_password/${STATS_PWD}/g" /etc/datadog-agent/conf.d/haproxy.d/conf.yaml
         wget -O /etc/datadog-agent/conf.d/process.d/conf.yaml ${baseUrl}/configs/dd_agent_process_conf.yml
         wget -O /usr/local/bin/set_dd_tags.sh ${baseUrl}/scripts/set_dd_tags.sh
         wget -O /etc/cron.d/set_dd_tags_cron ${baseUrl}/configs/set_dd_tags_cron
