@@ -191,7 +191,7 @@ onInstall:
   - installHaproxy
   - setupDatadogAgentSql: sqldb
   - setupDatadogAgent: cp, proc
-  - setupDatadogAgentHaproxy
+  - setupDatadogAgentHaproxy: bl
 
 onBeforeScaleIn[cp]:
   - forEach(event.response.nodes):
