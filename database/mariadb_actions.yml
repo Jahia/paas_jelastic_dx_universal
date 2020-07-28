@@ -4,6 +4,8 @@ actions:
     - setSudoer: sqldb
     - log: "## Setup MariaDB logrotate on ${this}"
     - cmd[sqldb]: |-
+        mkdir /etc/systemd/system/{mysql,mariadb}.service.d
+        echo -e "[Service]\nLimitNOFILE=524290" > /etc/systemd/system/{mysql,mariadb}.service.d/override.conf
         # Securing possible blocking issues with jelastic/mariadb:10.4.13 with next 3 lines
         sudo -u mysql mysql -e "alter user root@localhost identified via unix_socket;"
         [ -f /etc/mysql/conf.d/master.cnf ] && rm -f /etc/mysql/conf.d/master.cnf
