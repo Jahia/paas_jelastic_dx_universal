@@ -14,19 +14,27 @@ actions:
           cmd[${@n.id}]: "jem service restart"
 
   setupInstance:
-    cmd[${this.id}]: |-
-      sed -i "s/server_id.*/server_id = $(echo '${env.region}' | md5sum | grep -Eo "[[:digit:]]{3}" | head -n1)/" /etc/mysql/conf.d/galera.cnf
-      sed -i "s/bind-address.*/bind-address = node${this.id}/" /etc/mysql/conf.d/galera.cnf
-      sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/galera.cnf
-      sed -i "s/wsrep_cluster_name.*/wsrep_cluster_name = galera-cluster/" /etc/mysql/conf.d/galera.cnf
-      sed -i "s/wsrep_node_name.*/wsrep_node_name = node${this.id}/" /etc/mysql/conf.d/galera.cnf
+    - cmd[${this.id}]: |-
+        sed -i "s/server_id.*/server_id = $(echo '${env.region}' | md5sum | grep -Eo "[[:digit:]]{3}" | head -n1)/" /etc/mysql/conf.d/galera.cnf
+        sed -i "s/bind-address.*/bind-address = node${this.id}/" /etc/mysql/conf.d/galera.cnf
+        sed -i "s/report_host.*/report_host = node${this.id}/" /etc/mysql/conf.d/galera.cnf
+        sed -i "s/wsrep_cluster_name.*/wsrep_cluster_name = galera-cluster/" /etc/mysql/conf.d/galera.cnf
+        sed -i "s/wsrep_node_name.*/wsrep_node_name = node${this.id}/" /etc/mysql/conf.d/galera.cnf
+    - if ("${response.errOut}" != ""):
+        - return:
+            type: error
+            message: "An error occurred during galera cluster setup."
 
   initialSetup:
     - setNodeDisplayName[sqldb]: Galera
     - cmd[sqldb]: |-
-        wget ${baseUrl}/configs/mysql-init.d -O /etc/init.d/mysql
-        wget ${baseUrl}/configs/galera.cnf -O /etc/mysql/conf.d/galera.cnf &>> /var/log/run.log
+        wget -q ${baseUrl}/configs/mysql-init.d -O /etc/init.d/mysql
+        wget -q ${baseUrl}/configs/galera.cnf -O /etc/mysql/conf.d/galera.cnf &>> /var/log/run.log
       user: root
+    - if ("${response.errOut}" != ""):
+        - return:
+            type: error
+            message: "An error occurred during galera cluster setup."
 
   stopGalera:
     forEach(nodes.sqldb):
@@ -56,3 +64,7 @@ actions:
         [ -f /var/lib/mysql/galera.cache ] && rm -f /var/lib/mysql/galera.cache
         /etc/init.d/mysql stop; pkill -9 mysql; /etc/init.d/mysql start
       user: root
+    - if ("${response.errOut}" != ""):
+        - return:
+            type: error
+            message: "An error occurred during galera cluster init."

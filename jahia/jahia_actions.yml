@@ -139,17 +139,25 @@ actions:
           if [[ "$_ROLE" == "Browsing" ]]; then
             echo "org.jahia.ehcachemanager.big.maxBytesLocalHeap=2500M" >> $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
           fi
+    - if ("${response.errOut}" != ""):
+        - return:
+            type: error
+            message: "An error occurred when installing jahia."
 
   defineToolsPwd:
     - log: "## Now setting tools password"
     - cmd[proc]: |-
         if [ ! -f /usr/local/bin/reset-jahia-tools-manager-password.py ]; then
-          wget -O /usr/local/bin/reset-jahia-tools-manager-password.py ${baseUrl}/scripts/reset-jahia-tools-manager-password.py
+          wget -qO /usr/local/bin/reset-jahia-tools-manager-password.py ${baseUrl}/scripts/reset-jahia-tools-manager-password.py
           chmod u+x /usr/local/bin/reset-jahia-tools-manager-password.py
         fi
         /usr/local/bin/reset-jahia-tools-manager-password.py "${settings.toolspwd.toBase64()}" $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
         awk '$1=="jahiaToolManagerPassword" {print $NF}' $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
       user: root
+    - if ("${response.errOut}" != ""):
+        - return:
+            type: error
+            message: "An error occurred when defining tools password."
     - setGlobals:
         toolspwd: ${response.out}
     - api[proc, cp]: env.control.AddContainerEnvVars
