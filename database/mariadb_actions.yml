@@ -41,10 +41,13 @@ actions:
   createDataDogUser:
     - log: "## Create Datadog database user"
     - cmd[${nodes.sqldb.master.id}]: |-
-        mysql -e "CREATE USER 'datadog'@'localhost' IDENTIFIED BY '${DB_USER_DATADOG}';"
-        mysql -e "GRANT REPLICATION CLIENT ON *.* TO 'datadog'@'localhost' WITH MAX_USER_CONNECTIONS 5;"
-        mysql -e "GRANT PROCESS ON *.* TO 'datadog'@'localhost';"
-        mysql -e "GRANT SELECT ON performance_schema.* TO 'datadog'@'localhost';"
+        exists=$(mysql -sNe "select count(*) from  mysql.user where User='datadog' and Host='localhost';")
+        if [ $exists -lt 1 ]; then
+          mysql -e "CREATE USER 'datadog'@'localhost' IDENTIFIED BY '${DB_USER_DATADOG}';"
+          mysql -e "GRANT REPLICATION CLIENT ON *.* TO 'datadog'@'localhost' WITH MAX_USER_CONNECTIONS 5;"
+          mysql -e "GRANT PROCESS ON *.* TO 'datadog'@'localhost';"
+          mysql -e "GRANT SELECT ON performance_schema.* TO 'datadog'@'localhost';"
+        fi
       user: root
     - if ("${response.errOut}" != ""):
         - return:
