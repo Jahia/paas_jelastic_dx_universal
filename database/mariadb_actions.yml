@@ -12,9 +12,14 @@ actions:
         [ -f /etc/mysql/conf.d/slave.cnf ] && rm -f /etc/mysql/conf.d/slave.cnf
         printf "[mysqld]\nkey_buffer_size = 128M\nmyisam_sort_buffer_size = 128M" > /etc/mysql/conf.d/mysql.cnf
         mysql -e "set global key_buffer_size = 128*1024*1024; set global myisam_sort_buffer_size = 128*1024*1024;"
-        wget -O /etc/logrotate.d/mysql ${baseUrl}/configs/logrotate_mysql
+        wget -qO /etc/logrotate.d/mysql ${baseUrl}/configs/logrotate_mysql
         logrotate -f /etc/logrotate.d/mysql
       user: root
+    - if ("${response.errOut}" != ""):
+        - return:
+            type: error
+            message: "An error occurred during mariadb setup."
+
     - if (nodes.sqldb.length > 1):
         - installGaleraCluster
     - if (settings.skipStart != 'true'):
@@ -28,21 +33,32 @@ actions:
         mysql -e "grant all privileges on jahia.* to '${globals.db_user}'@'%' identified by '${globals.db_pass}';"
         mysql -e "flush privileges;"
       user: root
+    - if ("${response.errOut}" != ""):
+        - return:
+            type: error
+            message: "An error occurred when creating jahia database."
 
   createDataDogUser:
     - log: "## Create Datadog database user"
     - cmd[${nodes.sqldb.master.id}]: |-
-        mysql -e "CREATE USER 'datadog'@'localhost' IDENTIFIED BY '${DB_USER_DATADOG}';"
-        mysql -e "GRANT REPLICATION CLIENT ON *.* TO 'datadog'@'localhost' WITH MAX_USER_CONNECTIONS 5;"
-        mysql -e "GRANT PROCESS ON *.* TO 'datadog'@'localhost';"
-        mysql -e "GRANT SELECT ON performance_schema.* TO 'datadog'@'localhost';"
+        exists=$(mysql -sNe "select count(*) from  mysql.user where User='datadog' and Host='localhost';")
+        if [ $exists -lt 1 ]; then
+          mysql -e "CREATE USER 'datadog'@'localhost' IDENTIFIED BY '${DB_USER_DATADOG}';"
+          mysql -e "GRANT REPLICATION CLIENT ON *.* TO 'datadog'@'localhost' WITH MAX_USER_CONNECTIONS 5;"
+          mysql -e "GRANT PROCESS ON *.* TO 'datadog'@'localhost';"
+          mysql -e "GRANT SELECT ON performance_schema.* TO 'datadog'@'localhost';"
+        fi
       user: root
+    - if ("${response.errOut}" != ""):
+        - return:
+            type: error
+            message: "An error occurred when creating datadog database."
 
   setupDatadogAgentSql:
     - createDataDogUser
     - log: "## Finalize Datadog agent setup on ${this}"
     - cmd [${this}]: |-
-        DD_API_KEY=$(sed -n 's/DATADOGAPIKEY=\(.*\)/\1/p' < /.jelenv) bash -c "$(curl -L https://raw.githubusercontent.com/DataDog/datadog-agent/master/cmd/agent/install_script.sh)"
+        DD_API_KEY=$(sed -n 's/DATADOGAPIKEY=\(.*\)/\1/p' < /.jelenv) bash -c "$(curl -sL https://raw.githubusercontent.com/DataDog/datadog-agent/master/cmd/agent/install_script.sh)"
         NODE_NAME=${HOSTNAME/-*}
         echo "hostname: ${_ROLE}.${NODE_NAME#node}" >> /etc/datadog-agent/datadog.yaml
         sed -i 's/# logs_enabled: false/logs_enabled: true/' /etc/datadog-agent/datadog.yaml
@@ -85,10 +101,14 @@ actions:
         echo "       extra_performance_metrics: true" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
         echo "       schema_size_metrics: true" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
         echo "       disable_innodb_metrics: false" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
-        wget -O /usr/local/bin/set_dd_tags.sh ${baseUrl}/scripts/set_dd_tags.sh
-        wget -O /etc/cron.d/set_dd_tags_cron ${baseUrl}/configs/set_dd_tags_cron
+        wget -qO /usr/local/bin/set_dd_tags.sh ${baseUrl}/scripts/set_dd_tags.sh
+        wget -qO /etc/cron.d/set_dd_tags_cron ${baseUrl}/configs/set_dd_tags_cron
         chmod u+x /usr/local/bin/set_dd_tags.sh
         chmod 644 /var/log/mysql/mysqld.log
-        chmod 644 /var/log/mysql/slow-queries.log
+        chmod 644 /var/log/mysql/slow-queries.log  > /dev/null 2>&1
         systemctl restart crond datadog-agent
       user: root
+    - if ("${response.errOut}" != ""):
+        - return:
+            type: error
+            message: "An error occurred when installing datadog agent on a mariadb node."
