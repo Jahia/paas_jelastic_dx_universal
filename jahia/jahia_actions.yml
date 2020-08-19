@@ -146,22 +146,19 @@ actions:
 
   defineToolsPwd:
     - log: "## Now setting tools password"
-    - cmd[proc]: |-
+    - cmd[proc, cp]: |-
         if [ ! -f /usr/local/bin/reset-jahia-tools-manager-password.py ]; then
           wget -qO /usr/local/bin/reset-jahia-tools-manager-password.py ${baseUrl}/scripts/reset-jahia-tools-manager-password.py
           chmod u+x /usr/local/bin/reset-jahia-tools-manager-password.py
         fi
         /usr/local/bin/reset-jahia-tools-manager-password.py "${settings.toolspwd.toBase64()}" $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
-        awk '$1=="jahiaToolManagerPassword" {print $NF}' $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
+        sed -ie '/jahiaToolManagerPassword=\(.*\)/d' /.jelenv
+        awk '$1=="jahiaToolManagerPassword" {print "MANAGER_PASSWORD="$NF}' $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties >> /.jelenv
       user: root
     - if ("${response.errOut}" != ""):
         - return:
             type: error
             message: "An error occurred when defining tools password."
-    - setGlobals:
-        toolspwd: ${response.out}
-    - api[proc, cp]: env.control.AddContainerEnvVars
-      vars: {"MANAGER_PASSWORD": "${globals.toolspwd}"}
 
   setToolsPwd:
     - cmd[${this}]: |-
