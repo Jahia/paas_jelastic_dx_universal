@@ -5,6 +5,7 @@ actions:
     - retrieveHaproxyConf: bl
     - splitHaproxyConf: bl
     - updateHaproxyConf
+    - configureProcessingDirectAccessHaproxy
     - environment.control.ApplyNodeGroupData [bl]:
         data:
           productName: haproxy
@@ -18,6 +19,7 @@ actions:
         mkdir /etc/haproxy/haproxy.cfg.d && chmod 775 /etc/haproxy/haproxy.cfg.d
         wget -qO /etc/haproxy/haproxy.cfg.d/00-global.cfg ${baseUrl}/configs/haproxy-00-global.cfg
         wget -qO /etc/haproxy/haproxy.cfg.d/10-jahia.cfg ${baseUrl}/configs/haproxy-10-jahia.cfg
+        wget -qO /etc/haproxy/haproxy.cfg.d/11-proc.cfg ${baseUrl}/configs/haproxy-11-proc.cfg
       user: root
     - if ("${response.errOut}" != ""):
         - return:
@@ -61,6 +63,12 @@ actions:
         echo "    server ${env.appid}-${this.nodeId} ${this.nodeIp}:80 check cookie s${this.nodeId}" >> /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
         sudo service haproxy reload
       user: haproxy
+
+  configureProcessingDirectAccessHaproxy:
+    - cmd[bl]: |-
+        echo "    server ${env.appid}-${nodes.proc.first.id} ${nodes.proc.first.intIP}:80 check cookie s${nodes.proc.first.id}" >> /etc/haproxy/haproxy.cfg.d/11-proc.cfg
+        sed -i 's/beg sPROCESSING_NODE_ID/beg s${nodes.proc.first.id}/g' /etc/haproxy/haproxy.cfg.d/00-global.cfg
+        sudo service haproxy reload
 
   resetHaproxyBackends:
     - cmd[bl]: |-
