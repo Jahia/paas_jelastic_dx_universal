@@ -13,6 +13,9 @@ mixins:
 
 onInstall:
   ## Globals definition
+  - cmd [proc]: |-
+      ## [Upgrade] - 1/2
+      exit 0
   - if ('${settings.rollingUpgrade.print()}' == ''):
       setGlobals:
         rollingUpgrade: false
@@ -68,7 +71,6 @@ onInstall:
 actions:
   procUpgrade:
     - cmd [proc]: |-
-        ## [Upgrade] - 1/2
         service tomcat stop
       user: root
     - cmd [proc]:
