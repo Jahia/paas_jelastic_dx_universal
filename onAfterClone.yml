@@ -54,19 +54,14 @@ actions:
   resetHaproxyBackends:
     - cmd[bl]: |-
         sed -ie "/$server.*:80 check cookie/d" /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
-        sed -ie "/$server.*:80 check cookie/d" /etc/haproxy/haproxy.cfg.d/11-proc.cfg
-        sed -ie "/use_backend proc if { cook(JSESSIONID),lower -m beg/d" /etc/haproxy/haproxy.cfg.d/00-global.cfg
     - forEach(nodes.cp):
         cmd[${this}]: |-
           echo "    server ${env.appid}-${@i.id} ${@i.intIP}:80 check cookie s${@i.id}" >> /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
-          sudo service haproxy reload
-        user: haproxy
-    - forEach(nodes.proc):
-        cmd[${this}]: |-
-          echo "    server ${env.appid}-${@i.id} ${@i.intIP}:80 check cookie s${@i.id}" >> /etc/haproxy/haproxy.cfg.d/11-proc.cfg
-          sed -ie '/default_backend bk_jahia/i\    use_backend proc if { cook(JSESSIONID),lower -m beg s${@i.id} }' /etc/haproxy/haproxy.cfg.d/00-global.cfg
-          sudo service haproxy reload
-        user: haproxy
+    - cmd[bl]: |-
+        sed -ie 's/^.*server.*:80 check cookie.*$/\    server ${env.appid}-${nodes.proc.first.id} ${nodes.proc.first.intIP}:80 check cookie s${nodes.proc.first.id}/' /etc/haproxy/haproxy.cfg.d/11-proc.cfg
+        sed -ie 's/^.*use_backend proc if { cook(JSESSIONID),lower -m beg.*$/\    use_backend proc if { cook(JSESSIONID),lower -m beg s${nodes.proc.first.id} }/' /etc/haproxy/haproxy.cfg.d/00-global.cfg
+        sudo service haproxy reload
+      user: haproxy
 
 
   updateDatadogConf:
