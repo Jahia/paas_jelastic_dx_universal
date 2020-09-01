@@ -53,7 +53,12 @@ onInstall:
 actions:
   resetHaproxyBackends:
     - cmd[bl]: |-
-        sed -ie "/$server.*:80 check cookie/d" /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
+        sed -e "/$server.*:80 check cookie/d" \
+            -i /etc/haproxy/haproxy.cfg.d/{10-jahia,11-proc}.cfg
+        echo "    server ${env.appid}-${nodes.proc.first.id} ${nodes.proc.first.intIP}:80 check cookie s${nodes.proc.first.id}" \
+            >> /etc/haproxy/haproxy.cfg.d/11-proc.cfg
+        sed -e 's/cook(JSESSIONID),lower -m beg s.*/cook(JSESSIONID),lower -m beg s${nodes.proc.first.id} }/' \
+            -i /etc/haproxy/haproxy.cfg.d/00-global.cfg
     - forEach(nodes.cp):
         cmd[${this}]: |-
           echo "    server ${env.appid}-${@i.id} ${@i.intIP}:80 check cookie s${@i.id}" >> /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
