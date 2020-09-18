@@ -10,13 +10,17 @@ description:
 mixins:
   - database/galera_actions.yml
 
+globals:
+  galeraLogPosition: 0
+  galeraMasterNode: "0"
+
 onInstall:
   - log: Start post-clone setup
   - api [*]: env.control.AddContainerEnvVars
     vars: {"envName": "${env.shortdomain}"}
 
   - if (nodes.sqldb.length > 1):
-      - installGaleraCluster
+    - letsEscapeTheIfDarkDimensionToSetupGaleraCluster
 
   - resetHaproxyBackends: bl
   - cmd[proc]: |-
@@ -75,3 +79,39 @@ actions:
             - command: "if [ ! -d /etc/datadog-agent ]; then exit 0; fi; \
                 sed -i 's/^\\( *service: \\).*/\\1${env.envName}/' /etc/datadog-agent/conf.d/*/conf.yaml; \
                 systemctl restart datadog-agent"
+
+  setGaleraMaster:
+    - cmd[${this}]: |-
+        mysqld --wsrep-recover 2>&1 | awk -F: '/Recovered position/ {print $NF}'
+    - if ("${response.out}" > "${globals.galeraLogPosition}"):
+        - setGlobals:
+            galeraLogPosition: "${response.out}"
+            galeraMasterNode: "${this}"
+    - if ("${response.errOut}" != ""):
+        - return:
+            type: error
+            message: "An error occurred while configuring mysql replication."
+
+
+  letsEscapeTheIfDarkDimensionToSetupGaleraCluster:
+    - cmd[sqldb]: |-
+        /etc/init.d/mysql stop; pkill -9 mysql
+        [ -f /etc/mysql/conf.d/galera.cnf ] && rm -f /etc/mysql/conf.d/galera.cnf
+        [ -f /var/lib/mysql/grastate.dat ] && rm -f /var/lib/mysql/grastate.dat
+        [ -f /var/lib/mysql/gvwstate.dat ] && rm -f /var/lib/mysql/gvwstate.dat
+        [ -f /var/lib/mysql/galera.cache ] && rm -f /var/lib/mysql/galera.cache
+        exit 0
+      user: root
+    - initialSetup
+    - setupSeeds
+    - forEach(i:nodes.sqldb):
+        setupInstance:
+          id: "${@i.id}"
+        setGaleraMaster: ${@i.id}
+
+    - cmd[${globals.galeraMasterNode}]: galera_new_cluster
+      user: root
+    - forEach(n:nodes.sqldb):
+      - if ("${@n.id}" != "${globals.galeraMasterNode}"):
+           - cmd[${@n.id}]: service mysql start
+             user: root
