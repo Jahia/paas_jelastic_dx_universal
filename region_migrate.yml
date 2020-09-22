@@ -1,0 +1,169 @@
+type: update
+baseUrl: https://raw.githubusercontent.com/Jahia/paas_jelastic_dx_universal/master
+name: DX - Region Migrate
+id: dx-region-migrate
+description:
+  short: DX - Region Migrate
+
+mixins:
+  - database/galera_actions.yml
+  
+globals:
+  - maxtry: 10
+
+onInstall:
+  - checkMigrationPossibility
+  - disableTomcat
+  - if (nodes.sqldb.length > 1):
+      - disableGalera
+  - stopEnvironment
+  - waitForState:
+      state: stopped
+  - migrateEnvironment
+  - startEnvironment
+  - waitForState:
+      state: running        
+  - updateUnomiLink
+  - if (nodes.sqldb.length > 1):
+      - setupSeeds: sqldb
+      - enableGalera
+  - enableTomcat
+  - resetHaproxyBackends: bl
+
+actions:
+
+  checkMigrationPossibility:
+    - api:
+      - method: environment.control.CheckMigrationPossibility
+        params:
+        envname: ${env.envName}
+        hardwareNodeGroup: ${settings.region}
+        
+  stopEnvironment:
+    - api:
+      - method: environment.control.StopEnv
+        params:
+          envName: ${env.envName} 
+          
+  migrateEnvironment:
+    - api:
+      - method: environment.control.Migrate
+        params:
+          isOnline: false
+          envName: ${env.envName}
+          hardwareNodeGroup: ${settings.region}
+          
+  startEnvironment:
+    - api:
+      - method: environment.control.StartEnv
+        params:
+          envName: ${env.envName}
+          
+  disableGalera:
+    - cmd[sqldb]: |-
+        chkconfig mysql off
+      user: root
+      
+  enableGalera:
+    - cmd[sqldb]: |-
+        service mysql start
+        chkconfig mysql on
+      user: root
+      
+  disableTomcat:
+    - cmd[proc, cp]: |-
+        chkconfig tomcat off
+      user: root
+      
+  enableTomcat:
+    - cmd[proc, cp]: |-
+        service tomcat start
+        chkconfig tomcat on
+      user: root
+      
+  resetHaproxyBackends:
+    - cmd[bl]: |-
+        sed -e "/$server.*:80 check cookie/d" \
+            -i /etc/haproxy/haproxy.cfg.d/{10-jahia,11-proc}.cfg
+        echo "    server ${env.appid}-${nodes.proc.first.id} ${nodes.proc.first.intIP}:80 check cookie s${nodes.proc.first.id}" \
+            >> /etc/haproxy/haproxy.cfg.d/11-proc.cfg
+    - forEach(nodes.cp):
+        cmd[${this}]: |-
+          echo "    server ${env.appid}-${@i.id} ${@i.intIP}:80 check cookie s${@i.id}" >> /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
+          sudo service haproxy reload
+        user: haproxy
+        
+  updateUnomiLink:
+    - script: |
+        const envs = jelastic.env.control.GetEnvInfo('${env.envName}', session);
+        
+        const unomi_linked = envs.nodeGroups.filter(function (nodeGroup) { 
+          return nodeGroup.name == "cp";
+        })
+        .map(function (nodeGroup) {
+          return nodeGroup.envLink;
+        });
+
+        if (!unomi_linked) { 
+          return {"result": 0, "out": "No unomi env linked"} 
+        };
+        
+        const ips_to_add = envs.nodes.filter(function (node) {
+          return node.nodeGroup == "cp" || node.nodeGroup == "proc";
+        })
+        .map(function (node) {
+          return node.intIP;
+        })
+        .join(',');
+        
+        const add_container_env_vars = jelastic.env.control.AddContainerEnvVars(unomi_linked,
+          session,
+          nodeGroup='cp',
+          vars={'UNOMI_THIRDPARTY_PROVIDER1_IPADDRESSES': ips_to_add}
+        );
+        
+        if (add_container_env_vars.result != 0){
+          return add_container_env_vars;
+        }
+        
+        const restart_cp_node_group = jelastic.env.control.RestartServices(
+          unomi_linked,
+          session,
+          nodeGroup='cp'
+        );
+        
+        return restart_cp_node_group.result == 0 ? 
+          {"result": 0, "RestartService": restart_cp_node_group, "AddContainerEnvVars": add_container_env_vars } :
+          {"result": 1, "RestartService": restart_cp_node_group, "AddContainerEnvVars": add_container_env_vars } 
+        
+  waitForState:
+    - if("${this.state}" == "running"):
+        - set:
+            state_int: 1
+    - else:
+        - set:
+            state_int: 2
+    - api: environment.control.getenvinfo
+    - if (${response.env.status} != ${this.state_int}):
+        - log: "not yet ${this.state} (${global.maxtry} try remaining)"
+        - sleep: 1000
+        - script: |-
+            return {"result": 0, "maxtry": ${globals.maxtry} - 1};
+        - if (${response.maxtry} == 0):
+            - return:
+                type: error
+                message: "WAITING FOR RUNNING TIMEOUT, LAST KNOWN ENV STATUS IS: ${response.env.status}"
+        - else:
+            - setGlobals:
+                maxtry: ${response.maxtry}
+        - waitForState:
+            state: ${this.state}
+    - else:
+        - log: "${env.envName} have reached the ${this.state} state :)"
+        
+settings:
+  fields:
+    - name: region
+      type: regionlist
+      caption: Targeted Region
+      required: true
