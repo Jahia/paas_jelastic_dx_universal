@@ -16,6 +16,11 @@ onInstall:
   - disableTomcat
   - if (nodes.sqldb.length > 1):
       - disableGalera
+  - getEnvLinked
+  - if ("${global.unomi_env_linked}"):
+    - getCurrentIps
+    - setGlobals:
+        ips_before_migration: "${response.ips}"
   - stopEnvironment
   - waitForState:
       state: stopped
@@ -23,7 +28,14 @@ onInstall:
   - startEnvironment
   - waitForState:
       state: running        
-  - updateUnomiLink
+  - if ("${global.unomi_env_linked}"):
+    - getCurrentIps
+    - setGlobals:
+        ips_after_migration: "${response.ips}"
+    - getUnomiAllowedIps
+    - updateAllowedIpsList
+    - updateUnomiContainerVars
+    - reloadUnomiService
   - if (nodes.sqldb.length > 1):
       - setupSeeds: sqldb
       - enableGalera
@@ -93,49 +105,112 @@ actions:
           sudo service haproxy reload
         user: haproxy
         
-  updateUnomiLink:
+  getEnvLinked:
     - script: |
-        const envs = jelastic.env.control.GetEnvInfo('${env.envName}', session);
-        
-        const unomi_linked = envs.nodeGroups.filter(function (nodeGroup) { 
-          return nodeGroup.name == "cp";
-        })
-        .map(function (nodeGroup) {
-          return nodeGroup.envLink;
-        });
+        const envName = "${env.envName}";
+              envs = jelastic.env.control.GetEnvInfo(envName, session);
+     
+              unomi_linked = envs.nodeGroups.filter(function (nodeGroup) { 
+                               return nodeGroup.name == "cp";
+                             })
+                             .pop()
+                             .envLink;
 
-        if (!unomi_linked) { 
-          return {"result": 0, "out": "No unomi env linked"} 
-        };
+        return unomi_linked? 
+          {"result": 0, value: unomi_linked, "is_linked": true, "out": "Found a linked env"} : 
+          {"result": 0, value: "none", "is_linked": false, "out": "No unomi env linked"};
         
-        const ips_to_add = envs.nodes.filter(function (node) {
-          return node.nodeGroup == "cp" || node.nodeGroup == "proc";
-        })
-        .map(function (node) {
-          return node.intIP;
-        })
-        .join(',');
+    - setGlobals:
+        unomi_env_name: ${response.value}
+        unomi_env_linked: ${response.is_linked}
+
+  getUnomiAllowedIps:
+    - script: |
+        const unomi_env_name = "${globals.unomi_env_name}";
+        const nodes_infos =  jelastic.env.control.GetEnvInfo(
+                               unomi_env_name,
+                               session
+                             )
+                             .nodes;
         
-        const add_container_env_vars = jelastic.env.control.AddContainerEnvVars(unomi_linked,
-          session,
-          nodeGroup='cp',
-          vars={'UNOMI_THIRDPARTY_PROVIDER1_IPADDRESSES': ips_to_add}
-        );
+              node_id = nodes_infos.filter(function (node) { 
+                          return node.nodeGroup == "cp";
+                        })
+                        .pop()
+                        .id
+
+              container_env_vars = jelastic.env.control.GetContainerEnvVars(
+                                     unomi_env_name,
+                                     session,
+                                     node_id
+                                   );
         
-        if (add_container_env_vars.result != 0){
-          return add_container_env_vars;
-        }
+              allowed_ips = container_env_vars
+                              .object
+                              .get("UNOMI_THIRDPARTY_PROVIDER1_IPADDRESSES");
+       
+        return {"result": 0, "value": allowed_ips};
         
-        const restart_cp_node_group = jelastic.env.control.RestartServices(
-          unomi_linked,
-          session,
-          nodeGroup='cp'
-        );
+    - setGlobals:
+        unomi_allowed_ips: ${response.value}
+  getCurrentIps:
+    - script: |
+        const envName = "${env.envName}";
+              nodes_infos = jelastic.env.control.GetEnvInfo(
+                              envName=envName,
+                              session=session
+                            )
+                            .nodes;
+                            
+              current_ips = nodes_infos
+                            .filter(function (node) {
+                               return node.nodeGroup == "cp" ||
+                                      node.nodeGroup == "proc";
+                             })
+                             .map(function (node) {
+                               return node.intIP;
+                             });
+
+        return {"result": 0, "ips": current_ips.join(",")};
+
+  updateAllowedIpsList:
+    - script: |
+        const unomi_allowed_ips = ("${globals.unomi_allowed_ips}").split(',');
+              jahia_current_ips = ("${globals.ips_after_migration}").split(',');
+              jahia_previous_ips = "${globals.ips_before_migration}";
         
-        return restart_cp_node_group.result == 0 ? 
-          {"result": 0, "RestartService": restart_cp_node_group, "AddContainerEnvVars": add_container_env_vars } :
-          {"result": 1, "RestartService": restart_cp_node_group, "AddContainerEnvVars": add_container_env_vars } 
+              unomi_foreign_ips = unomi_allowed_ips.filter(function(allowed_ip){
+                                    return jahia_previous_ips.indexOf(allowed_ip) < 0;
+                                  });
+                                  
+              unomi_ips_to_allow = unomi_foreign_ips.concat(jahia_current_ips);
+             
+        return {"result": 0, "value": unomi_ips_to_allow.join(",")};
+    - setGlobals:
+        unomi_ips_to_allow: ${response.value}
         
+  updateUnomiContainerVars:
+    - script: |
+        const unomi_linked_env_name = "${globals.unomi_env_name}";
+              unomi_ip_to_allow = "${globals.unomi_ips_to_allow}";
+        
+        return add_container_env_vars = jelastic.env.control.AddContainerEnvVars(
+                                         unomi_linked_env_name,
+                                         session,
+                                         nodeGroup='cp',
+                                         vars={'UNOMI_THIRDPARTY_PROVIDER1_IPADDRESSES': unomi_ip_to_allow}
+                                       );
+        
+  reloadUnomiService:
+    - script: |
+    
+        const unomi_linked_env_name = "${globals.unomi_env_name}";
+        
+        return restart_cp_node_group = jelastic.env.control.RestartServices(
+                                        unomi_linked_env_name,
+                                        session,
+                                        nodeGroup='cp'
+                                      );
   waitForState:
     - if("${this.state}" == "running"):
         - set:
