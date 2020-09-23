@@ -105,11 +105,25 @@ actions:
     - initialSetup
     - setupSeeds
     - forEach(i:nodes.sqldb):
-        setupInstance:
-          id: "${@i.id}"
-        setGaleraMaster: ${@i.id}
+        - setupInstance:
+            id: "${@i.id}"
+        - cmd[${@i.id}]: "systemctl daemon-reload"
+          user: root
+        - setGaleraMaster: ${@i.id}
 
-    - cmd[${globals.galeraMasterNode}]: galera_new_cluster
+    - cmd[${globals.galeraMasterNode}]: |-
+        galera_new_cluster
+        n=120
+        res=1
+        while [ $res -eq 1 ]; do
+            if [ $n -lt 1 ]; then
+                echo "Database didn't start"
+                exit 1
+            fi
+            mysql -e "show databases"
+            res=$?
+            sleep 1
+        done
       user: root
     - forEach(n:nodes.sqldb):
       - if ("${@n.id}" != "${globals.galeraMasterNode}"):
