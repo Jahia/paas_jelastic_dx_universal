@@ -43,7 +43,6 @@ onInstall:
   - resetHaproxyBackends: bl
 
 actions:
-
   checkMigrationPossibility:
     - api:
       - method: environment.control.CheckMigrationPossibility
@@ -119,7 +118,6 @@ actions:
         return unomi_linked? 
           {"result": 0, value: unomi_linked, "is_linked": true, "out": "Found a linked env"} : 
           {"result": 0, value: "none", "is_linked": false, "out": "No unomi env linked"};
-        
     - setGlobals:
         unomi_env_name: ${response.value}
         unomi_env_linked: ${response.is_linked}
@@ -150,9 +148,9 @@ actions:
                                      .get("UNOMI_THIRDPARTY_PROVIDER1_IPADDRESSES");
        
         return {"result": 0, "value": allowed_ips};
-        
     - setGlobals:
         unomi_allowed_ips: ${response.value}
+
   getCurrentIps:
     - script: |
         const envName     = "${env.envName}";
@@ -211,6 +209,7 @@ actions:
                                         session,
                                         nodeGroup='cp'
                                       );
+
   waitForState:
     - if("${this.state}" == "running"):
         - set:
