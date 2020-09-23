@@ -1,9 +1,9 @@
 type: update
 baseUrl: https://raw.githubusercontent.com/Jahia/paas_jelastic_dx_universal/master
-name: DX - Region Migrate
-id: dx-region-migrate
+name: Jahia - Region Migrate
+id: jahia-region-migrate
 description:
-  short: DX - Region Migrate
+  short: Jahia - Region Migrate
 
 mixins:
   - database/galera_actions.yml
