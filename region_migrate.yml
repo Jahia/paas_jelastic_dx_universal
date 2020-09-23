@@ -1,0 +1,243 @@
+type: update
+baseUrl: https://raw.githubusercontent.com/Jahia/paas_jelastic_dx_universal/master
+name: Jahia - Region Migrate
+id: jahia-region-migrate
+description:
+  short: Jahia - Region Migrate
+
+mixins:
+  - database/galera_actions.yml
+  
+globals:
+  - maxtry: 10
+
+onInstall:
+  - checkMigrationPossibility
+  - disableTomcat
+  - if (nodes.sqldb.length > 1):
+      - disableGalera
+  - getEnvLinked
+  - if ("${global.unomi_env_linked}"):
+    - getCurrentIps
+    - setGlobals:
+        ips_before_migration: "${response.ips}"
+  - stopEnvironment
+  - waitForState:
+      state: stopped
+  - migrateEnvironment
+  - startEnvironment
+  - waitForState:
+      state: running        
+  - if ("${global.unomi_env_linked}"):
+    - getCurrentIps
+    - setGlobals:
+        ips_after_migration: "${response.ips}"
+    - getUnomiAllowedIps
+    - updateAllowedIpsList
+    - updateUnomiContainerVars
+    - reloadUnomiService
+  - if (nodes.sqldb.length > 1):
+      - setupSeeds: sqldb
+      - enableGalera
+  - enableTomcat
+  - resetHaproxyBackends: bl
+
+actions:
+  checkMigrationPossibility:
+    - api:
+      - method: environment.control.CheckMigrationPossibility
+        params:
+        envname: ${env.envName}
+        hardwareNodeGroup: ${settings.region}
+        
+  stopEnvironment:
+    - api:
+      - method: environment.control.StopEnv
+        params:
+          envName: ${env.envName} 
+          
+  migrateEnvironment:
+    - api:
+      - method: environment.control.Migrate
+        params:
+          isOnline: false
+          envName: ${env.envName}
+          hardwareNodeGroup: ${settings.region}
+          
+  startEnvironment:
+    - api:
+      - method: environment.control.StartEnv
+        params:
+          envName: ${env.envName}
+          
+  disableGalera:
+    - cmd[sqldb]: |-
+        chkconfig mysql off
+      user: root
+      
+  enableGalera:
+    - cmd[sqldb]: |-
+        service mysql start
+        chkconfig mysql on
+      user: root
+      
+  disableTomcat:
+    - cmd[proc, cp]: |-
+        chkconfig tomcat off
+      user: root
+      
+  enableTomcat:
+    - cmd[proc, cp]: |-
+        service tomcat start
+        chkconfig tomcat on
+      user: root
+      
+  resetHaproxyBackends:
+    - cmd[bl]: |-
+        sed -e "/$server.*:80 check cookie/d" \
+            -i /etc/haproxy/haproxy.cfg.d/{10-jahia,11-proc}.cfg
+        echo "    server ${env.appid}-${nodes.proc.first.id} ${nodes.proc.first.intIP}:80 check cookie s${nodes.proc.first.id}" \
+            >> /etc/haproxy/haproxy.cfg.d/11-proc.cfg
+    - forEach(nodes.cp):
+        cmd[${this}]: |-
+          echo "    server ${env.appid}-${@i.id} ${@i.intIP}:80 check cookie s${@i.id}" >> /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
+          sudo service haproxy reload
+        user: haproxy
+        
+  getEnvLinked:
+    - script: |
+        const envName      = "${env.envName}";
+              envs         = jelastic.env.control.GetEnvInfo(envName, session);
+     
+              unomi_linked = envs.nodeGroups.filter(function (nodeGroup) { 
+                               return nodeGroup.name == "cp";
+                             })
+                             .pop()
+                             .envLink;
+
+        return unomi_linked? 
+          {"result": 0, value: unomi_linked, "is_linked": true, "out": "Found a linked env"} : 
+          {"result": 0, value: "none", "is_linked": false, "out": "No unomi env linked"};
+    - setGlobals:
+        unomi_env_name: ${response.value}
+        unomi_env_linked: ${response.is_linked}
+
+  getUnomiAllowedIps:
+    - script: |
+        const unomi_env_name     = "${globals.unomi_env_name}";
+        const nodes_infos        =  jelastic.env.control.GetEnvInfo(
+                                      unomi_env_name,
+                                      session
+                                    )
+                                    .nodes;
+        
+              node_id            = nodes_infos.filter(function (node) { 
+                                     return node.nodeGroup == "cp";
+                                   })
+                                   .pop()
+                                   .id
+
+              container_env_vars = jelastic.env.control.GetContainerEnvVars(
+                                     unomi_env_name,
+                                     session,
+                                     node_id
+                                   );
+        
+              allowed_ips        = container_env_vars
+                                     .object
+                                     .get("UNOMI_THIRDPARTY_PROVIDER1_IPADDRESSES");
+       
+        return {"result": 0, "value": allowed_ips};
+    - setGlobals:
+        unomi_allowed_ips: ${response.value}
+
+  getCurrentIps:
+    - script: |
+        const envName     = "${env.envName}";
+              nodes_infos = jelastic.env.control.GetEnvInfo(
+                              envName,
+                              session
+                            )
+                            .nodes;
+                            
+              current_ips = nodes_infos
+                            .filter(function (node) {
+                               return node.nodeGroup == "cp" ||
+                                      node.nodeGroup == "proc";
+                             })
+                             .map(function (node) {
+                               return node.intIP;
+                             });
+
+        return {"result": 0, "ips": current_ips.join(",")};
+
+  updateAllowedIpsList:
+    - script: |
+        const unomi_allowed_ips  = ("${globals.unomi_allowed_ips}").split(',');
+              jahia_current_ips  = ("${globals.ips_after_migration}").split(',');
+              jahia_previous_ips = "${globals.ips_before_migration}";
+        
+              unomi_foreign_ips  = unomi_allowed_ips.filter(function(allowed_ip){
+                                    return jahia_previous_ips.indexOf(allowed_ip) < 0;
+                                  });
+                                  
+              unomi_ips_to_allow = unomi_foreign_ips.concat(jahia_current_ips);
+             
+        return {"result": 0, "value": unomi_ips_to_allow.join(",")};
+    - setGlobals:
+        unomi_ips_to_allow: ${response.value}
+        
+  updateUnomiContainerVars:
+    - script: |
+        const unomi_linked_env_name   = "${globals.unomi_env_name}";
+              unomi_ip_to_allow       = "${globals.unomi_ips_to_allow}";
+        
+        return add_container_env_vars = jelastic.env.control.AddContainerEnvVars(
+                                         unomi_linked_env_name,
+                                         session,
+                                         nodeGroup='cp',
+                                         vars={'UNOMI_THIRDPARTY_PROVIDER1_IPADDRESSES': unomi_ip_to_allow}
+                                       );
+        
+  reloadUnomiService:
+    - script: |
+    
+        const unomi_linked_env_name  = "${globals.unomi_env_name}";
+        
+        return restart_cp_node_group = jelastic.env.control.RestartServices(
+                                        unomi_linked_env_name,
+                                        session,
+                                        nodeGroup='cp'
+                                      );
+
+  waitForState:
+    - if("${this.state}" == "running"):
+        - set:
+            state_int: 1
+    - else:
+        - set:
+            state_int: 2
+    - api: environment.control.getenvinfo
+    - if (${response.env.status} != ${this.state_int}):
+        - log: "not yet ${this.state} (${global.maxtry} try remaining)"
+        - sleep: 1000
+        - script: |-
+            return {"result": 0, "maxtry": ${globals.maxtry} - 1};
+        - if (${response.maxtry} == 0):
+            - return:
+                type: error
+                message: "WAITING FOR RUNNING TIMEOUT, LAST KNOWN ENV STATUS IS: ${response.env.status}"
+        - else:
+            - setGlobals:
+                maxtry: ${response.maxtry}
+        - waitForState:
+            state: ${this.state}
+    - else:
+        - log: "${env.envName} have reached the ${this.state} state :)"
+        
+settings:
+  fields:
+    - name: region
+      type: regionlist
+      caption: Targeted Region
+      required: true
