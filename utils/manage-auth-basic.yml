@@ -1,10 +1,10 @@
 ---
 type: update
-version: 0.1
-name: Jahia - set auth basic
+version: 1.5.2
+name: Jahia - Set basic auth
 id: jahia-set-auth-basic
 description:
-  short: Jahia - set auth basic
+  short: Jahia - Set basic auth
 
 globals:
   new_password: ${settings.pwd}

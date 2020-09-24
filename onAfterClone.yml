@@ -1,11 +1,11 @@
 ---
 type: update
 version: 1.5.2
-name: Jahia - after clone
+name: Jahia - After clone
 logo: /images/jahia-logo-70x70.png
 id: jahia-dx-cluster-universal-after-clone
 description:
-  short: Jahia - after clone
+  short: Jahia - After clone
 
 mixins:
   - database/galera_actions.yml

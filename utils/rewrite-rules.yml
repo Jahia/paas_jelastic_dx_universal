@@ -1,10 +1,10 @@
 ---
 type: update
-version: 0.1
-name: Jahia - set rewrite rules
+version: 1.5.2
+name: Jahia - Set HAProxy conf
 id: jahia-set-rewrite-rules
 description:
-  short: Jahia - set rewrite rules
+  short: Jahia - Set HAProxy conf
 
 globals:
   haproxy_frontend_file: "/etc/haproxy/haproxy.cfg.d/00-global.cfg"

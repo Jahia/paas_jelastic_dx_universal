@@ -1,11 +1,11 @@
 ---
 type: install
 version: 1.5.2
-name: Jahia - Digital Experience Manager
+name: Jahia - Install
 logo: /images/jahia-logo-70x70.png
 id: jahia-jelastic
 description:
-  short: Jahia - Digital Experience Manager
+  short: Jahia - Install
   text: Digital Experience Manager gives you an agile customizable platform that
     manages your entire digital ecosystem to innovate and deliver great customer
     experiences, foster internal collaboration and support dynamic business
