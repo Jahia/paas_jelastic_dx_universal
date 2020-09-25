@@ -20,7 +20,7 @@ onInstall:
     vars: {"envName": "${env.shortdomain}"}
 
   - if (nodes.sqldb.length > 1):
-    - letsEscapeTheIfDarkDimensionToSetupGaleraCluster
+      letsEscapeTheIfDarkDimensionToSetupGaleraCluster
 
   - resetHaproxyBackends: bl
   - cmd[proc]: |-
@@ -82,7 +82,11 @@ actions:
 
   setGaleraMaster:
     - cmd[${this}]: |-
-        mysqld --wsrep-recover 2>&1 | awk -F: '/Recovered position/ {print $NF}'
+        $(mysqld --wsrep-recover 2>&1 | awk -F: '/Recovered position/ {print "export position="$NF" uuid="substr($(NF-1),2)}')
+        echo "version: 2.1" > /var/lib/mysql/grastate.dat
+        echo "uuid:    "$uuid >> /var/lib/mysql/grastate.dat
+        echo "seqno:   "$position >> /var/lib/mysql/grastate.dat
+        echo $position
     - if ("${response.out}" > "${globals.galeraLogPosition}"):
         - setGlobals:
             galeraLogPosition: "${response.out}"
@@ -91,7 +95,6 @@ actions:
         - return:
             type: error
             message: "An error occurred while configuring mysql replication."
-
 
   letsEscapeTheIfDarkDimensionToSetupGaleraCluster:
     - cmd[sqldb]: |-
@@ -112,20 +115,15 @@ actions:
         - setGaleraMaster: ${@i.id}
 
     - cmd[${globals.galeraMasterNode}]: |-
-        galera_new_cluster
-        n=120
-        res=1
-        while [ $res -eq 1 ]; do
-            if [ $n -lt 1 ]; then
-                echo "Database didn't start"
-                exit 1
-            fi
-            mysql -e "show databases"
-            res=$?
-            sleep 1
-        done
+        echo "safe_to_bootstrap: 1" >> /var/lib/mysql/grastate.dat
+        service mysql start
+        # Wait for wsrep to crash...
+        sleep 10
+        service mysql restart
       user: root
     - forEach(n:nodes.sqldb):
       - if ("${@n.id}" != "${globals.galeraMasterNode}"):
-           - cmd[${@n.id}]: service mysql start
-             user: root
+           cmd[${@n.id}]: |-
+             echo "safe_to_bootstrap: 0" >> /var/lib/mysql/grastate.dat
+             service mysql start
+           user: root
