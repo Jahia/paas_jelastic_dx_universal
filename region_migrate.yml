@@ -48,7 +48,7 @@ actions:
       - method: environment.control.CheckMigrationPossibility
         params:
         envname: ${env.envName}
-        hardwareNodeGroup: ${settings.region}
+        hardwareNodeGroup: ${settings.targetRegion}
 
   stopEnvironment:
     - api:
@@ -62,7 +62,7 @@ actions:
         params:
           isOnline: false
           envName: ${env.envName}
-          hardwareNodeGroup: ${settings.region}
+          hardwareNodeGroup: ${settings.targetRegion}
 
   startEnvironment:
     - api:
@@ -237,7 +237,7 @@ actions:
 
 settings:
   fields:
-    - name: region
+    - name: targetRegion
       type: regionlist
       caption: Targeted Region
       required: true
