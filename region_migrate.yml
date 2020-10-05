@@ -77,7 +77,7 @@ actions:
 
   enableGalera:
     - cmd[sqldb]: |-
-        service mysql start
+        service mysql start &&\
         chkconfig mysql on
       user: root
 
@@ -88,7 +88,7 @@ actions:
 
   enableTomcat:
     - cmd[proc, cp]: |-
-        service tomcat start
+        service tomcat start &&\
         chkconfig tomcat on
       user: root
 
