@@ -172,6 +172,10 @@ actions:
         sed 's/service: jahia/service: ${env.shortdomain}/' -i /etc/datadog-agent/conf.d/tomcat.d/conf.yaml
         chmod 644 /opt/tomcat/logs/catalina.out
         /usr/local/bin/set_dd_tags.sh
+        mkdir /etc/datadog-agent/conf.d/jelastic.d /var/log/jelastic-packages
+        chown $(sed -n 's/^STACK_USER=\(.*\)/\1/p' < /.jelenv):root /var/log/jelastic-packages
+        chown dd-agent: /etc/datadog-agent/conf.d/jelastic.d
+        wget -qO /etc/datadog-agent/conf.d/jelastic.d/conf.yaml ${baseUrl}/configs/dd_agent_jelastic_package_conf.yml
         systemctl restart crond
         systemctl enable datadog-agent
       user: root
@@ -183,6 +187,10 @@ actions:
         echo "hostname: ${_ROLE}.${NODE_NAME#node}" >> /etc/datadog-agent/datadog.yaml
         sed 's/service: jahia/service: ${env.shortdomain}/' -i /etc/datadog-agent/conf.d/tomcat.d/conf.yaml
         chmod 644 /opt/tomcat/logs/catalina.out
+        mkdir /etc/datadog-agent/conf.d/jelastic.d /var/log/jelastic-packages
+        chown $(sed -n 's/^STACK_USER=\(.*\)/\1/p' < /.jelenv):root /var/log/jelastic-packages
+        chown dd-agent: /etc/datadog-agent/conf.d/jelastic.d
+        wget -qO /etc/datadog-agent/conf.d/jelastic.d/conf.yaml ${baseUrl}/configs/dd_agent_jelastic_package_conf.yml
         /usr/local/bin/set_dd_tags.sh
         systemctl restart crond
         systemctl enable datadog-agent
