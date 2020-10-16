@@ -24,7 +24,6 @@ actions:
         - installGaleraCluster
     - if (settings.skipStart != 'true'):
         - createJahiaDatabase
-    - setupDatadogAgentSql: sqldb
 
   createJahiaDatabase:
     - log: "## Create DX's Jahia database and user"
