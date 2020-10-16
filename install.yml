@@ -92,6 +92,7 @@ onBeforeInstall: |
     "nodeGroup": "cp",
     "links": "sqldb:" + db_scheme,
     "startServiceOnCreation": false,
+    "isSLBAccessEnabled": false,
     "env": {
         "DB_USER": "${globals.db_user}",
         "DB_PASSWORD": "${globals.db_pass}",
@@ -125,6 +126,7 @@ onBeforeInstall: |
     "nodeGroup": "proc",
     "links": "sqldb:" + db_scheme,
     "startServiceOnCreation": false,
+    "isSLBAccessEnabled": false,
     "env": {
         "DB_USER": "${globals.db_user}",
         "DB_PASSWORD": "${globals.db_pass}",
@@ -156,6 +158,7 @@ onBeforeInstall: |
     "tag": "10.4.13",
     "count": db_count,
     "cloudlets": db_cloudlets,
+    "isSLBAccessEnabled": false,
     "env": {
       "ADMINPANEL_ENABLED": false,
       "DATADOGAPIKEY": "${globals.datadog_key}",
