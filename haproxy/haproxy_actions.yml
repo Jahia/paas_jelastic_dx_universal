@@ -97,7 +97,7 @@ actions:
         echo " - envmode:${jahia_cfg_operatingMode}" >> /etc/datadog-agent/datadog.yaml
         wget -qO /etc/datadog-agent/conf.d/haproxy.d/conf.yaml ${baseUrl}/configs/dd_agent_haproxy_conf.yml
         mkdir /etc/datadog-agent/conf.d/jelastic.d /var/log/jelastic-packages
-        chown $(sed -n 's/^STACK_USER=\(.*\)/\1/p' < /.jelenv):root /var/log/jelastic-packages
+        chown haproxy:root /var/log/jelastic-packages
         chown dd-agent: /etc/datadog-agent/conf.d/jelastic.d
         wget -qO /etc/datadog-agent/conf.d/jelastic.d/conf.yaml ${baseUrl}/configs/dd_agent_jelastic_package_conf.yml
         STATS_PWD=$(grep "stats auth admin" /etc/haproxy/haproxy.cfg.d/00-global.cfg | head -n1 | cut -d":" -f2)
