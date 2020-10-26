@@ -101,7 +101,7 @@ actions:
         echo "       schema_size_metrics: true" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
         echo "       disable_innodb_metrics: false" >> /etc/datadog-agent/conf.d/mysql.d/conf.yaml
         mkdir /etc/datadog-agent/conf.d/jelastic.d /var/log/jelastic-packages
-        chown $(sed -n 's/^STACK_USER=\(.*\)/\1/p' < /.jelenv):root /var/log/jelastic-packages
+        chown mysql:root /var/log/jelastic-packages
         chown dd-agent: /etc/datadog-agent/conf.d/jelastic.d
         wget -qO /etc/datadog-agent/conf.d/jelastic.d/conf.yaml ${baseUrl}/configs/dd_agent_jelastic_package_conf.yml
         wget -qO /usr/local/bin/set_dd_tags.sh ${baseUrl}/scripts/set_dd_tags.sh
