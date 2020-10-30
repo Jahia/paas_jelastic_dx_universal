@@ -149,7 +149,7 @@ onBeforeInstall: |
         "HEALTHCHECK_DURATION": "240",
       },
       "volumeMounts": {
-        "/datastore": {
+        "/data/datastore": {
           "sourceNodeGroup": "storage",
           "sourcePath": "/data"
         }
@@ -194,7 +194,7 @@ onBeforeInstall: |
         "HEALTHCHECK_DURATION": "240",
       },
       "volumeMounts": {
-        "/datastore": {
+        "/data/datastore": {
           "sourceNodeGroup": "storage",
           "sourcePath": "/data"
         }
