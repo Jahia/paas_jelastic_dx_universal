@@ -164,7 +164,7 @@ actions:
         f=/opt/tomcat/webapps/ROOT/WEB-INF/etc/repository/jackrabbit/repository.xml
         t=/tmp/hihihoho
         head -n -9 $f > $t
-        echo '  <DataStore class="org.apache.jackrabbit.core.data.FileDataStore">' > $t
+        echo '  <DataStore class="org.apache.jackrabbit.core.data.FileDataStore">' >> $t
         echo '    <param name="path" value="/data/datastore" />' >> $t
         echo '    <param name="minRecordLength" value="1024" />' >> $t
         echo '  </DataStore>' >> $t
