@@ -160,6 +160,7 @@ actions:
         sed -i '/<session-config>/r /tmp/cookies-config' /opt/tomcat/conf/web.xml && rm /tmp/cookies-config
         sed -e '/maxHttpHeaderSize/d' -e "s/^\(.*Connector port=\"80.*HTTP.*\)$/\1\n\t\tmaxHttpHeaderSize=\"65536\"/g" -i /opt/tomcat/conf/server.xml
         umount /data/datastore
+        systemctl restart autofs
 
     - cmd[${this}]: |-
         f=/opt/tomcat/webapps/ROOT/WEB-INF/etc/repository/jackrabbit/repository.xml
