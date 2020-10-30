@@ -102,6 +102,23 @@ onBeforeInstall: |
   }
   nodes.push(node_haproxy);
 
+  node_storage = {
+    "displayName": "Storage",
+    "nodeGroup": "storage",
+    "nodeType": "storage",
+    "tag": "2.0-7.8",
+    "count": 3,
+    "cluster": true,
+    "cloudlets": 8,
+    "env": {
+        "DATADOGAPIKEY": "${globals.datadog_key}",
+        "_PROVIDE": "haproxy",
+        "_ROLE": "reverse_proxy",
+        "envName": "${globals.shortdomain}"
+      }
+  }
+  nodes.push(node_storage);
+
   node_cp = {
     "displayName": "Browsing",
     "count": "${settings.browsingCount}",
@@ -130,8 +147,15 @@ onBeforeInstall: |
         "VAULT_SECRET_ID": "${globals.vault_secret_id}",
         "VAULT_CLUSTER_URL": "${globals.vault_cluster_url}",
         "HEALTHCHECK_DURATION": "240",
+      },
+      "volumeMounts": {
+        "/data/datastore": {
+          "sourceNodeGroup": "storage",
+          "sourcePath": "/data"
+        }
       }
   }
+
   if (dockerImage == "undefined") {
     node_cp['nodeType'] = "jahia";
     node_cp['tag'] = "${globals.dx_version}";
@@ -169,6 +193,12 @@ onBeforeInstall: |
         "VAULT_SECRET_ID": "${globals.vault_secret_id}",
         "VAULT_CLUSTER_URL": "${globals.vault_cluster_url}",
         "HEALTHCHECK_DURATION": "240",
+      },
+      "volumeMounts": {
+        "/data/datastore": {
+          "sourceNodeGroup": "storage",
+          "sourcePath": "/data"
+        }
       }
   }
   if (dockerImage == "undefined") {
