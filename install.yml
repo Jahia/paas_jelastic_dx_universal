@@ -130,7 +130,7 @@ onBeforeInstall: |
         "jahia_cfg_healthcheck_token": "${globals.healthcheck_token}",
       },
       "volumeMounts": {
-        "/data/datastore": {
+        "/datastore": {
           "sourceNodeGroup": "storage",
           "sourcePath": "/data"
         }
@@ -143,7 +143,6 @@ onBeforeInstall: |
   } else {
     node_cp['image']  = dockerImage;
   }
-
   nodes.push(node_cp);
 
   node_proc = {
@@ -172,7 +171,7 @@ onBeforeInstall: |
         "jahia_cfg_healthcheck_token": "${globals.healthcheck_token}",
       },
       "volumeMounts": {
-        "/data/datastore": {
+        "/datastore": {
           "sourceNodeGroup": "storage",
           "sourcePath": "/data"
         }
