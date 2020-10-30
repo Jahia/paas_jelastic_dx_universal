@@ -75,19 +75,6 @@ actions:
               ;;
         esac
         sed -e '2isource /.jelenv' -e "s#\(^JAVA_OPTS=.*\)\(\"$\)#\1 ${j_opts}\2#" -i /opt/tomcat/conf/tomcat-env.sh
-
-    - cmd[proc, cp]: |-
-        f=/opt/tomcat/webapps/ROOT/WEB-INF/etc/repository/jackrabbit/repository.xml
-        t=/tmp/hihihoho
-        head -n -9 $f > $t
-        echo '  <DataStore class="org.apache.jackrabbit.core.data.FileDataStore"' > $t
-        echo '    <param name="path" value="/data/datastore" />' >> $t
-        echo '    <param name="minRecordLength" value="1024" />' >> $t
-        echo '  </DataStore>' >> $t
-        echo '</Repository>' >> $t
-        mv $t $f
-      user: tomcat
-
     - copyApp: proc, cp
     - cmd[proc]: |-
         base64 -d <<< "${settings.rootpwd.toBase64()}" > $DATA_PATH/digital-factory-data/root.pwd
@@ -136,6 +123,19 @@ actions:
         indent="      " && printf "$indent<cookie-config>\n$indent$indent<secure>true</secure>\n$indent$indent<http-only>true</http-only>\n$indent</cookie-config>\n" > /tmp/cookies-config
         sed -i '/<session-config>/r /tmp/cookies-config' /opt/tomcat/conf/web.xml && rm /tmp/cookies-config
         sed -e '/maxHttpHeaderSize/d' -e "s/^\(.*Connector port=\"80.*HTTP.*\)$/\1\n\t\tmaxHttpHeaderSize=\"65536\"/g" -i /opt/tomcat/conf/server.xml
+
+    - cmd[${this}]: |-
+        f=/opt/tomcat/webapps/ROOT/WEB-INF/etc/repository/jackrabbit/repository.xml
+        t=/tmp/hihihoho
+        head -n -9 $f > $t
+        echo '  <DataStore class="org.apache.jackrabbit.core.data.FileDataStore"' > $t
+        echo '    <param name="path" value="/data/datastore" />' >> $t
+        echo '    <param name="minRecordLength" value="1024" />' >> $t
+        echo '  </DataStore>' >> $t
+        echo '</Repository>' >> $t
+        mv $t $f
+      user: tomcat
+
     - if (settings.mode == "development"):
         cmd[${this}]: |-
           echo "org.jahia.ehcachemanager.maxBytesLocalHeap=700M" >> $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
