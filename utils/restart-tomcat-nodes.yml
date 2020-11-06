@@ -1,0 +1,20 @@
+---
+type: update
+version: 1.5.2
+id: restart-tomcat
+name: Rolling restart Tomcat
+description: Rolling restart all Tomcat nodes (cp & proc)
+
+mixins:
+  - ../jahia/jahia_actions.yml
+
+onInstall:
+  - restart: proc
+  - foreach (nodes.cp):
+      - restart: ${@i.id}
+
+actions:
+  restart:
+    - cmd [${this}]: service tomcat restart
+      user: root
+    - startupJahiaHealthCheck: ${this}
