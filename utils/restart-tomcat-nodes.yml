@@ -15,7 +15,6 @@ onInstall:
 
 actions:
   restart:
-    - startupJahiaHealthCheck: ${this}
     - cmd [${this}]: service tomcat restart
       user: root
     - startupJahiaHealthCheck: ${this}
