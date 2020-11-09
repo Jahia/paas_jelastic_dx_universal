@@ -36,7 +36,8 @@ onInstall:
       sudo rm /data/digital-factory-data/repository/workspaces/*
       sudo rm /data/digital-factory-data/repository/revisionNode
       sudo rm -f /data/digital-factory-data/karaf/etc/org.jahia.modules.marketingfactory.settings-mf.cfg
-      sed -i "s/\(.*serverId.*=\).*/\1 $HOSTNAME/g" /opt/tomcat/conf/digital-factory-config/jahia/jahia.node.properties
+      short_name=$(echo ${_ROLE}.$HOSTNAME | sed -r 's/^([a-Z]+)\.[a-Z]+([0-9]+)-.+$/\1.\2/' | tr 'A-Z' 'a-z')
+      sed -i "s|^cluster.node.serverId.*|cluster.node.serverId = $short_name|" $STACK_PATH/conf/digital-factory-config/jahia/jahia.node.properties
       sudo service tomcat start
   - environment.control.ApplyNodeGroupData [proc, cp]:
       data:
