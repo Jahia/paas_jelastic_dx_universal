@@ -3,6 +3,7 @@ actions:
   installHaproxy:
     - setSudoer: bl
     - cmd[bl]: yum install -y jq
+      user: root
     - retrieveHaproxyConf: bl
     - splitHaproxyConf: bl
     - updateHaproxyConf
