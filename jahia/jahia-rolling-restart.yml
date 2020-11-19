@@ -1,12 +1,12 @@
 ---
 type: update
 version: 1.5.2
-id: restart-tomcat
-name: Rolling restart Tomcat
-description: Rolling restart all Tomcat nodes (cp & proc)
+id: jahia-rolling-restart
+name: Jahia nodes rolling restart
+description: Rolling restart all Jahia nodes (cp & proc)
 
 mixins:
-  - ../jahia/jahia_actions.yml
+  - jahia_actions.yml
 
 onInstall:
   - restart: proc
