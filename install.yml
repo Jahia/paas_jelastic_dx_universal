@@ -239,6 +239,10 @@ nodes: definedInOnBeforeInstall
 
 # --Events --
 onInstall:
+  - cmd[cp,proc,storage]: |-
+      yum update -y http://spacewalk.jelastic.com/pub/autofs-5.1.6-1j.el7.x86_64.rpm
+      systemctl restart autofs
+    user: root
   - log: "## Beginning installation of Jahia"
   - setGlobalEnvVars
   - setJournaldLimit
