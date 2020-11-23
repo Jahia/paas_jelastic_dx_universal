@@ -84,7 +84,7 @@ actions:
     - if (settings.mode == 'development'):
         - installMaven: proc, cp
     - cmd[proc,cp]: |-
-        sed -i /etc/autofs.jelastic -r 's#(^.+\s).+(:/data$)#\1storage\2#'
+        sed -i -r 's#(^.+\s).+(:/data$)#\1storage\2#' /etc/autofs.jelastic
         umount /data/datastore || echo "SOUCI AVEC UMOUNT"
         systemctl restart autofs || echo "SOUCI AVEC RESTART AUTOFS"
       user: root
