@@ -116,7 +116,7 @@ actions:
       user: tomcat
 
     - cmd[proc,cp]: |-
-        sed -i 's/^#//' /opt/tomcat/conf/digital-factory-config/jahia/jahia.properties
+        sed -ir 's/^#\s+(jahia\.jackrabbit\.datastore\.path.+)$/\1/' /opt/tomcat/conf/digital-factory-config/jahia/jahia.properties
       user: tomcat
 
     - if (settings.skipStart != 'true'):
