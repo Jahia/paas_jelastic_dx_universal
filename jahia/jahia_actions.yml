@@ -115,6 +115,10 @@ actions:
         mv $t $f
       user: tomcat
 
+    - cmd[proc,cp]: |-
+        sed -i 's/^#//' /opt/tomcat/conf/digital-factory-config/jahia/jahia.properties
+      user: tomcat
+
     - if (settings.skipStart != 'true'):
         - api: env.control.ExecDockerRunCmd
           nodeId: ${nodes.proc.first.id}
