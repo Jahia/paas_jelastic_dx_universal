@@ -99,9 +99,10 @@ actions:
         - installMaven: proc, cp
     - cmd[proc,cp]: |-
         sed -i -r 's#(^.+\s).+(:/data$)#\1storage\2#' /etc/autofs.jelastic
-        umount /data/datastore || echo "SOUCI AVEC UMOUNT"
+        umount /data/digital-factory-data/repository/datastore || echo "SOUCI AVEC UMOUNT"
         systemctl restart autofs || echo "SOUCI AVEC RESTART AUTOFS"
       user: root
+
     - cmd[proc,cp]: |-
         f=/opt/tomcat/webapps/ROOT/WEB-INF/etc/repository/jackrabbit/repository.xml
         t=/tmp/hihihoho
