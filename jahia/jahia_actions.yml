@@ -116,7 +116,15 @@ actions:
       user: tomcat
 
     - cmd[proc,cp]: |-
-        sed -ir 's/^#\s+(jahia\.jackrabbit\.datastore\.path.+)$/\1/' /opt/tomcat/conf/digital-factory-config/jahia/jahia.properties
+        f=/opt/tomcat/webapps/ROOT/WEB-INF/etc/repository/jackrabbit/repository.xml
+        t=/tmp/hihihoho
+        head -n -9 $f > $t
+        echo '  <DataStore class="org.apache.jackrabbit.core.data.FileDataStore">' >> $t
+        echo '    <param name="path" value="/data/digital-factory-data/repository/datastore/" />' >> $t
+        echo '    <param name="minRecordLength" value="1024" />' >> $t
+        echo '  </DataStore>' >> $t
+        echo '</Repository>' >> $t
+        mv $t $f
       user: tomcat
 
     - if (settings.skipStart != 'true'):
