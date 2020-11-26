@@ -88,6 +88,9 @@ actions:
         umount /data/digital-factory-data/repository/datastore || echo "SOUCI AVEC UMOUNT"
         systemctl restart autofs || echo "SOUCI AVEC RESTART AUTOFS"
       user: root
+    - cmd[proc,cp]: |-
+        sed -i 's/^#//' /opt/tomcat/conf/digital-factory-config/jahia/jahia.properties
+      user: tomcat
     - if (settings.skipStart != 'true'):
         - api: env.control.ExecDockerRunCmd
           nodeId: ${nodes.proc.first.id}
