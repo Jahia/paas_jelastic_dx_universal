@@ -97,15 +97,16 @@ actions:
     - cmd [${nodes.proc.first.id}]: echo $(ls -d /opt/*maven*/bin/mvn)
     - setGlobals:
         jahia_cfg_mvnPath: ${response.out}
-    - setGlobals: # Dev values by default
-        jahia_cfg_org_jahia_ehcachemanager_maxBytesLocalHeap: ${globals.org_jahia_ehcachemanager_maxBytesLocalHeap_dev}
-        jahia_cfg_org_jahia_ehcachemanager_big_maxBytesLocalHeap_cp: ${globals.org_jahia_ehcachemanager_big_maxBytesLocalHeap_dev}
-        jahia_cfg_org_jahia_ehcachemanager_big_maxBytesLocalHeap_proc: ${globals.org_jahia_ehcachemanager_big_maxBytesLocalHeap_dev}
     - if (settings.mode == "production"):
         - setGlobals:
             jahia_cfg_org_jahia_ehcachemanager_maxBytesLocalHeap: ${globals.org_jahia_ehcachemanager_maxBytesLocalHeap_prod}
             jahia_cfg_org_jahia_ehcachemanager_big_maxBytesLocalHeap_cp: ${globals.org_jahia_ehcachemanager_big_maxBytesLocalHeap_prod_cp}
             jahia_cfg_org_jahia_ehcachemanager_big_maxBytesLocalHeap_proc: ${globals.org_jahia_ehcachemanager_big_maxBytesLocalHeap_prod_proc}
+    - else:
+        - setGlobals:
+            jahia_cfg_org_jahia_ehcachemanager_maxBytesLocalHeap: ${globals.org_jahia_ehcachemanager_maxBytesLocalHeap_dev}
+            jahia_cfg_org_jahia_ehcachemanager_big_maxBytesLocalHeap_cp: ${globals.org_jahia_ehcachemanager_big_maxBytesLocalHeap_dev}
+            jahia_cfg_org_jahia_ehcachemanager_big_maxBytesLocalHeap_proc: ${globals.org_jahia_ehcachemanager_big_maxBytesLocalHeap_dev}
     - env.control.AddContainerEnvVars [cp, proc]:
       vars:
         jahia_cfg_expandImportedFilesOnDisk: ${globals.expandImportedFilesOnDisk}
@@ -150,7 +151,7 @@ actions:
 
   defineToolsPwd:
     - log: "## Now setting tools password"
-    - cmd[proc, cp]: |-
+    - cmd[proc]: |-
         if [ ! -f /usr/local/bin/reset-jahia-tools-manager-password.py ]; then
           wget -qO /usr/local/bin/reset-jahia-tools-manager-password.py ${baseUrl}/scripts/reset-jahia-tools-manager-password.py
           chmod u+x /usr/local/bin/reset-jahia-tools-manager-password.py
@@ -162,14 +163,13 @@ actions:
             type: error
             message: "An error occurred when defining tools password."
     - cmd [proc]: awk '$1=="jahiaToolManagerPassword" {print $NF}' $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
+    - set:
+        jahiaToolManagerPassword: ${response.out}
+    - cmd [cp]: |-
+        sed -i "s;.*jahiaToolManagerPassword.*;jahiaToolManagerPassword = ${this.jahiaToolManagerPassword};" $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
     - env.control.AddContainerEnvVars [proc, cp]:
       vars:
-        MANAGER_PASSWORD: ${response.out}
-    - foreach (nodes.cp):
-        - cmd [${@i.id}]: awk '$1=="jahiaToolManagerPassword" {print $NF}' $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
-        - env.control.AddContainerEnvVars [${@i.id}]:
-          vars:
-            MANAGER_PASSWORD: ${response.out}
+        MANAGER_PASSWORD: ${this.jahiaToolManagerPassword}
 
   setToolsPwd:
     - cmd[${this}]: |-
