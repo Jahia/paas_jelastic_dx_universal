@@ -130,7 +130,7 @@ onBeforeInstall: |
         "jahia_cfg_healthcheck_token": "${globals.healthcheck_token}",
       },
       "volumeMounts": {
-        "/data/datastore": {
+        "/data/digital-factory-data/repository/datastore": {
           "sourceNodeGroup": "storage",
           "sourcePath": "/data"
         }
@@ -171,7 +171,7 @@ onBeforeInstall: |
         "jahia_cfg_healthcheck_token": "${globals.healthcheck_token}",
       },
       "volumeMounts": {
-        "/data/datastore": {
+        "/data/digital-factory-data/repository/datastore": {
           "sourceNodeGroup": "storage",
           "sourcePath": "/data"
         }
