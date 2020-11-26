@@ -149,7 +149,7 @@ onBeforeInstall: |
         "HEALTHCHECK_DURATION": "240",
       },
       "volumeMounts": {
-        "/data/datastore": {
+        "/data/digital-factory-data/repository/datastore": {
           "sourceNodeGroup": "storage",
           "sourcePath": "/data"
         }
@@ -194,7 +194,7 @@ onBeforeInstall: |
         "HEALTHCHECK_DURATION": "240",
       },
       "volumeMounts": {
-        "/data/datastore": {
+        "/data/digital-factory-data/repository/datastore": {
           "sourceNodeGroup": "storage",
           "sourcePath": "/data"
         }
