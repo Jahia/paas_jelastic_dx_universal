@@ -111,6 +111,8 @@ actions:
         wget -qO /etc/cron.d/set_dd_tags_cron ${baseUrl}/configs/set_dd_tags_cron
         chmod u+x /usr/local/bin/set_dd_tags.sh
         wget -qO /etc/rsyslog.d/haproxy.conf ${baseUrl}/configs/rsyslog_haproxy
+        wget -qO /etc/logrotate.d/haproxy ${baseUrl}/configs/logrotate_haproxy
+        chmod 644 /etc/logrotate.d/haproxy
         chown root:dd-agent /var/log/haproxy/* && chmod 640 /var/log/haproxy/*
         systemctl restart rsyslog crond datadog-agent
       user: root
