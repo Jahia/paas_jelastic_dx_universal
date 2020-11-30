@@ -103,7 +103,7 @@ actions:
 
   checkIP:
     - script: |-
-        var contains = "${globals.unomi_allowed_ips}".includes("${this}")
+        var contains = "${globals.unomi_allowed_ips}".indexOf("${this}") !== -1
         return {'result': 0, "is_included": contains}
     - if ( "${response.is_included}" != "true" ):
         return:
