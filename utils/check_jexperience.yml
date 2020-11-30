@@ -75,20 +75,26 @@ actions:
         unomi_allowed_ips: ${response.allowed_ips}
 
   checkJexperienceCfg:
-    cmd[proc]: |-
-      CONFIG_FILE="/data/digital-factory-data/karaf/etc/org.jahia.modules.jexperience.settings-global.cfg"
-      URL=$(grep jexperience.jCustomerURL $CONFIG_FILE | cut -d'=' -f2 | sed 's/ //g' |sed 's/https\?...//g')
-      PWD=$(grep jexperience.jCustomerPassword $CONFIG_FILE | cut -d'=' -f2 | sed 's/ //g')
-      USERNAME=$(grep jexperience.jCustomerUsername $CONFIG_FILE | cut -d'=' -f2 | sed 's/ //g')
-      if [ "$URL" != "${globals.unomidns}" ]; then
-        exit 1
-      fi
-      if [ "$PWD" != "${globals.unomi_pwd}" ]; then
-        exit 1
-      fi
-      if [ "$USERNAME" != "karaf" ]; then
-        exit 1
-      fi
+    - cmd[proc]: |-
+        CONFIG_FILE="/data/digital-factory-data/karaf/etc/org.jahia.modules.jexperience.settings-global.cfg"
+        URL=$(grep jexperience.jCustomerURL $CONFIG_FILE | cut -d'=' -f2 | sed 's/ //g' |sed 's/https\?...//g')
+        if [ "$URL" != "${globals.unomidns}" ]; then
+          >&2 echo "error"
+        fi
+    - if ("${response.errOut}" != ""):
+       - return:
+           type: error
+           message: "jCustomer url is wrong."
+    - cmd[proc]: |-
+        CONFIG_FILE="/data/digital-factory-data/karaf/etc/org.jahia.modules.jexperience.settings-global.cfg"
+        PWD=$(grep jexperience.jCustomerPassword $CONFIG_FILE | cut -d'=' -f2 | sed 's/ //g')
+        if [ "$PWD" != "${globals.unomi_pwd}" ]; then
+          >&2 echo "error"
+        fi
+    - if ("${response.errOut}" != ""):
+       - return:
+           type: error
+           message: "jCustomer password is wrong."
 
   checkAllowedIps:
       - checkIP: ${nodes.proc.first.intIP}
