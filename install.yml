@@ -32,6 +32,14 @@ globals:
   dbnodeType: mariadb-dockerized
   xms: 256M
   xmx: 2584M
+  expandImportedFilesOnDisk: "true"
+  jahiaFileUploadMaxSize: 268435456
+  imageService: ImageMagickImageService
+  org_jahia_ehcachemanager_maxBytesLocalHeap_dev: 700M
+  org_jahia_ehcachemanager_big_maxBytesLocalHeap_dev: 700M
+  org_jahia_ehcachemanager_maxBytesLocalHeap_prod: 800M
+  org_jahia_ehcachemanager_big_maxBytesLocalHeap_prod_cp: 2500M
+  org_jahia_ehcachemanager_big_maxBytesLocalHeap_prod_proc: 700M
   java_opts:
     -DDB_USER=${DB_USER}
     -DDB_PASSWORD=${DB_PASSWORD}

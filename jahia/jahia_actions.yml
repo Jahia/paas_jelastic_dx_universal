@@ -4,8 +4,6 @@ actions:
     - setSudoer: ${this.newNode}
     - copyApp: ${this.newNode}
     - setToolsPwd: ${this.newNode}
-    - if (settings.mode == 'development'):
-        - installMaven: ${this.newNode}
     - setupDatadogAgentPerNode: ${this.newNode}
     - cmd[${this.newNode}]: |-
         if (service tomcat status); then
@@ -24,8 +22,6 @@ actions:
     - setSudoer: ${this}
     - copyApp: ${this}
     - setToolsPwd: ${this}
-    - if (settings.mode == 'development'):
-        - installMaven: ${this}
     - if ("${this}" == "cp"):
         cmd[${this}]:
           - sed -i "s#\(processingServer\s*=\).*#\1 false#g" $STACK_PATH/conf/digital-factory-config/jahia/jahia.node.properties
@@ -75,15 +71,13 @@ actions:
               ;;
         esac
         sed -e '2isource /.jelenv' -e "s#\(^JAVA_OPTS=.*\)\(\"$\)#\1 ${j_opts}\2#" -i /opt/tomcat/conf/tomcat-env.sh
-
+    - setJahiaPropertiesEnvvars
     - copyApp: proc, cp
     - cmd[proc]: |-
         base64 -d <<< "${settings.rootpwd.toBase64()}" > $DATA_PATH/digital-factory-data/root.pwd
       user: tomcat
     - defineToolsPwd
     - setToolsPwd: proc, cp
-    - if (settings.mode == 'development'):
-        - installMaven: proc, cp
 
     - if (settings.skipStart != 'true'):
         - api: env.control.ExecDockerRunCmd
@@ -95,17 +89,43 @@ actions:
     - if (settings.skipStart != 'true'):
         - env.control.ExecDockerRunCmd [${nodes.cp.join(id,)}]
 
-  installMaven:
-    - log: "## Activate Maven on ${this}"
-    - cmd[${this}]: |-
-        mvn_path=$(find /opt/*maven*/bin -type f -name "mvn")
-        sed -i 's,#\(mvnPath =\s*\).*$,\1'$mvn_path',' /opt/tomcat/conf/digital-factory-config/jahia/jahia.properties
+  setJahiaPropertiesEnvvars:
+    - log: "## Setting jahia.properties envvars"
+    - cmd [${nodes.proc.first.id}]: '[ -d /opt/magick ] && echo "/opt/magick/bin" || echo "/usr/bin"'
+    - setGlobals:
+        jahia_cfg_imageMagickPath: ${response.out}
+    - cmd [${nodes.proc.first.id}]: echo $(ls -d /opt/*maven*/bin/mvn)
+    - setGlobals:
+        jahia_cfg_mvnPath: ${response.out}
+    - if (settings.mode == "production"):
+        - setGlobals:
+            jahia_cfg_org_jahia_ehcachemanager_maxBytesLocalHeap: ${globals.org_jahia_ehcachemanager_maxBytesLocalHeap_prod}
+            jahia_cfg_org_jahia_ehcachemanager_big_maxBytesLocalHeap_cp: ${globals.org_jahia_ehcachemanager_big_maxBytesLocalHeap_prod_cp}
+            jahia_cfg_org_jahia_ehcachemanager_big_maxBytesLocalHeap_proc: ${globals.org_jahia_ehcachemanager_big_maxBytesLocalHeap_prod_proc}
+    - else:
+        - setGlobals:
+            jahia_cfg_org_jahia_ehcachemanager_maxBytesLocalHeap: ${globals.org_jahia_ehcachemanager_maxBytesLocalHeap_dev}
+            jahia_cfg_org_jahia_ehcachemanager_big_maxBytesLocalHeap_cp: ${globals.org_jahia_ehcachemanager_big_maxBytesLocalHeap_dev}
+            jahia_cfg_org_jahia_ehcachemanager_big_maxBytesLocalHeap_proc: ${globals.org_jahia_ehcachemanager_big_maxBytesLocalHeap_dev}
+    - env.control.AddContainerEnvVars [cp, proc]:
+      vars:
+        jahia_cfg_expandImportedFilesOnDisk: ${globals.expandImportedFilesOnDisk}
+        jahia_cfg_jahiaFileUploadMaxSize: ${globals.jahiaFileUploadMaxSize}
+        jahia_cfg_imageService: ${globals.imageService}
+        jahia_cfg_imageMagickPath: ${globals.jahia_cfg_imageMagickPath}
+        jahia_cfg_mvnPath: ${globals.jahia_cfg_mvnPath}
+        jahia_cfg_org_jahia_ehcachemanager_maxBytesLocalHeap: ${globals.jahia_cfg_org_jahia_ehcachemanager_maxBytesLocalHeap}
+    - env.control.AddContainerEnvVars [cp]:
+      vars:
+        jahia_cfg_org_jahia_ehcachemanager_big_maxBytesLocalHeap: ${globals.jahia_cfg_org_jahia_ehcachemanager_big_maxBytesLocalHeap_cp}
+    - env.control.AddContainerEnvVars [proc]:
+      vars:
+        jahia_cfg_org_jahia_ehcachemanager_big_maxBytesLocalHeap: ${globals.jahia_cfg_org_jahia_ehcachemanager_big_maxBytesLocalHeap_proc}
 
   copyApp:
     - log: "## Copying Jahia app and settings its properties"
     - cmd[${this}]: |-
         [ "$_ROLE" == "Browsing" ] && sed -i "s#\(processingServer\s*=\).*#\1 false#g" $STACK_PATH/conf/digital-factory-config/jahia/jahia.node.properties
-        echo "expandImportedFilesOnDisk = true" >> $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
         rm -rf $STACK_PATH/webapps/*
         #COPS-18 workaround, switch from loadbalance to sequential
         replace="sequential:"
@@ -124,19 +144,6 @@ actions:
         indent="      " && printf "$indent<cookie-config>\n$indent$indent<secure>true</secure>\n$indent$indent<http-only>true</http-only>\n$indent</cookie-config>\n" > /tmp/cookies-config
         sed -i '/<session-config>/r /tmp/cookies-config' /opt/tomcat/conf/web.xml && rm /tmp/cookies-config
         sed -e '/maxHttpHeaderSize/d' -e "s/^\(.*Connector port=\"80.*HTTP.*\)$/\1\n\t\tmaxHttpHeaderSize=\"65536\"/g" -i /opt/tomcat/conf/server.xml
-    - if (settings.mode == "development"):
-        cmd[${this}]: |-
-          echo "org.jahia.ehcachemanager.maxBytesLocalHeap=700M" >> $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
-          echo "org.jahia.ehcachemanager.big.maxBytesLocalHeap=700M" >> $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
-    - if (settings.mode == "production"):
-        cmd[${this}]: |-
-          echo "org.jahia.ehcachemanager.maxBytesLocalHeap=800M" >> $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
-          if [[ "$_ROLE" == "Processing" ]]; then
-            echo "org.jahia.ehcachemanager.big.maxBytesLocalHeap=700M" >> $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
-          fi
-          if [[ "$_ROLE" == "Browsing" ]]; then
-            echo "org.jahia.ehcachemanager.big.maxBytesLocalHeap=2500M" >> $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
-          fi
     - if ("${response.errOut}" != ""):
         - return:
             type: error
@@ -144,19 +151,25 @@ actions:
 
   defineToolsPwd:
     - log: "## Now setting tools password"
-    - cmd[proc, cp]: |-
+    - cmd[proc]: |-
         if [ ! -f /usr/local/bin/reset-jahia-tools-manager-password.py ]; then
           wget -qO /usr/local/bin/reset-jahia-tools-manager-password.py ${baseUrl}/scripts/reset-jahia-tools-manager-password.py
           chmod u+x /usr/local/bin/reset-jahia-tools-manager-password.py
         fi
         /usr/local/bin/reset-jahia-tools-manager-password.py "${settings.toolspwd.toBase64()}" $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
-        sed -ie '/jahiaToolManagerPassword=\(.*\)/d' /.jelenv
-        awk '$1=="jahiaToolManagerPassword" {print "MANAGER_PASSWORD="$NF}' $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties >> /.jelenv
       user: root
     - if ("${response.errOut}" != ""):
         - return:
             type: error
             message: "An error occurred when defining tools password."
+    - cmd [proc]: awk '$1=="jahiaToolManagerPassword" {print $NF}' $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
+    - set:
+        jahiaToolManagerPassword: ${response.out}
+    - cmd [cp]: |-
+        sed -i "s;.*jahiaToolManagerPassword.*;jahiaToolManagerPassword = ${this.jahiaToolManagerPassword};" $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
+    - env.control.AddContainerEnvVars [proc, cp]:
+      vars:
+        MANAGER_PASSWORD: ${this.jahiaToolManagerPassword}
 
   setToolsPwd:
     - cmd[${this}]: |-
