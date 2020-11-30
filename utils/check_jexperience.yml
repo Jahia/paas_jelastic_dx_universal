@@ -1,0 +1,105 @@
+---
+type: update
+version: 1.5.2
+name: Jahia - check jexperience
+id: jahia-check-jexperience
+description:
+  short: Jahia - check jexperience
+
+onInstall:
+  - getEnvLinked
+  - if (! ${globals.unomi_env_linked}):
+       - return:
+            type: success
+            message: "No unomi linked"
+
+  - getUnomiDnsAndPwd
+  - checkJexperienceCfg
+  - checkAllowedIps
+
+actions:
+  getEnvLinked:
+    - script: |
+        const envName = "${env.envName}";
+        envs = jelastic.env.control.GetEnvInfo(envName, session);
+
+        unomi_linked = envs.nodeGroups.filter(function (nodeGroup) {
+                         return nodeGroup.name == "cp";
+                       })
+                       .pop()
+                       .envLink;
+
+        return unomi_linked?
+        {"result": 0, value: unomi_linked, "is_linked": true, "out": "Found a linked env"} :
+        {"result": 0, value: "none", "is_linked": false, "out": "No unomi env linked"};
+    - setGlobals:
+        unomi_env_name: ${response.value}
+        unomi_env_linked: ${response.is_linked}
+
+  getUnomiDnsAndPwd:
+    - script: |
+        var unomi_env_name = "${globals.unomi_env_name}"
+        var resp = jelastic.env.control.GetEnvInfo(unomi_env_name, session)
+        for (var i = 0, g = resp.nodes; i < g.length; i++) {
+          if (g[i].nodeGroup == "cp") {
+            var unomi_nodeid = g[i].id
+            var unomi_version = g[i].version.split("-", 1)[0]
+            break
+          }
+        }
+        var cmd = "find -H /opt/ -mindepth 4  -type f -name setenv -exec awk -F'=' '$1~/ROOT_PASSWORD$/ {print $2}' {} \\;";
+        var command = toJSON([{"command": cmd}]);
+        var res = jelastic.env.control.ExecCmdById(unomi_env_name, session, unomi_nodeid, command)
+        var unomi_pwd = res['responses'][0]['out'];
+
+
+        const container_env_vars = jelastic.env.control.GetContainerEnvVars(
+                                     unomi_env_name,
+                                     session,
+                                     unomi_nodeid
+                                   );
+        const allowed_ips = container_env_vars.object.UNOMI_THIRDPARTY_PROVIDER1_IPADDRESSES;
+
+        return {
+          'result': 0,
+          'domain': resp.env.domain,
+          'unomi_pwd': unomi_pwd,
+          'unomi_version': unomi_version,
+          'allowed_ips': allowed_ips
+        }
+
+    - setGlobals:
+        unomidns: ${response.domain}
+        unomi_pwd: ${response.unomi_pwd}
+        unomi_version: ${response.unomi_version}
+        unomi_allowed_ips: ${response.allowed_ips}
+
+  checkJexperienceCfg:
+    cmd[proc]: |-
+      CONFIG_FILE="/data/digital-factory-data/karaf/etc/org.jahia.modules.jexperience.settings-global.cfg"
+      URL=$(grep jexperience.jCustomerURL $CONFIG_FILE | cut -d'=' -f2 | sed 's/ //g' |sed 's/https\?...//g')
+      PWD=$(grep jexperience.jCustomerPassword $CONFIG_FILE | cut -d'=' -f2 | sed 's/ //g')
+      USERNAME=$(grep jexperience.jCustomerUsername $CONFIG_FILE | cut -d'=' -f2 | sed 's/ //g')
+      if [ "$URL" != "${globals.unomidns}" ]; then
+        exit 1
+      fi
+      if [ "$PWD" != "${globals.unomi_pwd}" ]; then
+        exit 1
+      fi
+      if [ "$USERNAME" != "karaf" ]; then
+        exit 1
+      fi
+
+  checkAllowedIps:
+      - checkIP: ${nodes.proc.first.intIP}
+      - foreach (nodes.cp):
+          - checkIP: ${@i.intIP}
+
+  checkIP:
+    - script: |-
+        var contains = "${globals.unomi_allowed_ips}".includes("${this}")
+        return {'result': 0, "is_included": contains}
+    - if ( "${response.is_included}" != "true" ):
+        return:
+         type: error
+         message: "IP ${this} not allowed in jcustomer configuration"
