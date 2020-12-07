@@ -12,6 +12,7 @@ report_host =
 # Galera Provider Configuration
 wsrep_on = ON
 wsrep_provider = /usr/lib64/galera/libgalera_smm.so
+wsrep_provider_options = "gcache.size=256M"
 
 # Galera Cluster Configuration
 wsrep_cluster_name = 
