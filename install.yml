@@ -26,9 +26,9 @@ globals:
   shortdomain: ${settings.shortdomain}
   displayName: ${settings.displayName}
   jahia_docker_image: ${settings.jahiaDockerImage}
-  vault_roleid: ${settings.vaultRoleId}
-  vault_secretid: ${settings.vaultSecretId}
-  vault_clusterurl: ${settings.vaultClusterUrl}
+  vault_role_id: ${settings.vaultRoleId}
+  vault_secret_id: ${settings.vaultSecretId}
+  vault_cluster_url: ${settings.vaultClusterUrl}
   dbnodeType: mariadb-dockerized
   xms: 256M
   xmx: 2584M
@@ -91,9 +91,9 @@ onBeforeInstall: |
         "_ROLE": "reverse_proxy",
         "envName": "${globals.shortdomain}",
         "jahia_cfg_healthcheck_token": "${globals.healthcheck_token}",
-        "VAULTROLEID": "${globals.vault_roleid}",
-        "VAULTSECRETID": "${globals.vault_secretid}",
-        "VAULTCLUSTERURL": "${globals.vault_clusterurl}",
+        "VAULT_ROLE_ID": "${globals.vault_role_id}",
+        "VAULT_SECRET_ID": "${globals.vault_secret_id}",
+        "VAULT_CLUSTER_URL": "${globals.vault_cluster_url}",
       },
     "volumes": [
       "/etc/haproxy"
