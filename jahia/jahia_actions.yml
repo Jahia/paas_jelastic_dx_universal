@@ -221,30 +221,40 @@ actions:
         set:
           duration: ${this.duration}
           target: ${this.target}
+    - cmd [${this.target}]: |-
+        if ! rpm --quiet -q jq; then
+          echo "[INFO] Installing jq to parse healthcheck module response"
+          yum install -y jq
+        fi
+      user: root
     - log: "## Health check on Jahia startup, target: ${this.target}, duration : ${this.duration} seconds"
     - cmd [${this.target}]: |-
         if ! tomcat_pid=$(pgrep -u tomcat -f java); then
           echo "[ERROR] Tomcat process not found, please check." >&2
           exit 1
         fi
-        #
+        
         if [ ! -f /var/log/tomcat/jahia.log ]; then
           echo "[ERROR] Jahia log file not found, it seems there is a problem with tomcat instance, please check." >&2
           exit 2
         fi
-        #
+        
         startup_line=$(grep -n "s t a r t i n g" /opt/tomcat/logs/catalina.out | tail -n1 | cut -d":" -f1)
         timeout=$(($(date +%s)+${this.duration}))
+        hc_url="http://127.0.0.1:8080/modules/healthcheck?token=$jahia_cfg_healthcheck_token"
+
         # Number of minutes allowed for Jahia login page to be reachable once tomcat startup is finished
         jahia_running_timeout=5
-        #
+        
         while [ $(date +%s) -lt $timeout ]; do
           # First we test if Jahia is up with a curl request.
-          curl_resp=$(curl -s -m 1 http://127.0.0.1:8080/cms/login)
-          if grep -q "password" <<< $(echo $curl_resp); then
-            exit 0
+          if curl_resp=$(curl -f -s -m 1 "$hc_url"); then
+            status=$(echo $curl_resp | jq -r ".status")
+            if [ "$status" = "GREEN" ] || [ "$status" = "YELLOW" ]; then
+              exit 0
+            fi
           fi
-          #
+          
           # If it isn't, we first check tomcat process status
           if ! ps --pid $tomcat_pid > /dev/null; then
             echo "[ERROR] Tomcat process no more running, please check." >&2
@@ -259,10 +269,10 @@ actions:
             fi
             ((jahia_running_timeout-=1))
           fi
-          #
+          
           sleep 60
         done
-        #
+        
         echo "[ERROR] Timeout, the Tomcat process is still running but Jahia is not started yet" >&2
         exit 5
 
