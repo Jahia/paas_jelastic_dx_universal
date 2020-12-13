@@ -1,5 +1,5 @@
 type: update
-baseUrl: https://raw.githubusercontent.com/Jahia/paas_jelastic_dx_universal/master
+baseUrl: https://raw.githubusercontent.com/ihorman/paas_jelastic_dx_universal/master
 name: Jahia - Region Migrate
 id: jahia-region-migrate
 description:

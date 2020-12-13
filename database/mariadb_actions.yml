@@ -13,6 +13,7 @@ actions:
         printf "[mysqld]\nkey_buffer_size = 128M\nmyisam_sort_buffer_size = 128M" > /etc/mysql/conf.d/mysql.cnf
         mysql -e "set global key_buffer_size = 128*1024*1024; set global myisam_sort_buffer_size = 128*1024*1024;"
         wget -qO /etc/logrotate.d/mysql ${baseUrl}/configs/logrotate_mysql
+        wget -q0 /var/lib/jelastic/customizations/jahia_override.lib ${baseUrl}/database/jahia_override.lib
         logrotate -f /etc/logrotate.d/mysql
       user: root
     - if ("${response.errOut}" != ""):
