@@ -9,77 +9,51 @@ description:
 globals:
   haproxy_frontend_file: "/etc/haproxy/haproxy.cfg.d/00-global.cfg"
   haproxy_backup_file: "/var/lib/haproxy/haproxy-global-cfg.bak"
+  rewrite_rules_file: "/var/lib/haproxy/rewrite-rules.cfg"
 
 onInstall:
-  - if ('${settings.operation}' == "get"):
-      - getRewritesRules
-      - return:
-          type: success
-          message: "${globals.rewrites}"
-
-  - script: |-
-      var newUrl = "${baseUrl}".split('/')
-      newUrl.pop();
-      newUrl.pop();
-      return {result: 0, "universal_url": newUrl.join('/')};
-  - setGlobals:
-      universal_url: ${response.universal_url}
-  - cmd [bl]: |-
-        if [ ! -f "/usr/local/bin/set-rewrite-rules.py" ]; then
-          yum install python3
-          wget -O /usr/local/bin/set-rewrite-rules.py ${globals.universal_url}/scripts/set-rewrite-rules.py
-          chmod u+x /usr/local/bin/set-rewrite-rules.py
-        fi
-        cp ${globals.haproxy_frontend_file} ${globals.haproxy_backup_file}
-        chown haproxy: ${globals.haproxy_backup_file}
-    user: root
-  - cmd [bl]: |-
-        python3 /usr/local/bin/set-rewrite-rules.py "${globals.haproxy_frontend_file}" "${settings.rewrite-rules.toBase64()}"
-    user: root
-  - if ("${response.responses.errOut}" != ""):
-      - getRewritesRules
-      - return:
-          type: error
-          message: "An error occured when setting rewrite rules."
-          currentRules: "${globals.rewrites}"
-
-  # Always return true cause if the cmd return -1, jelastic script just stop...
-  - cmd [bl]: |-
-        service haproxy reload || true
-    user: root
-  - if ("${response.responses.errOut}" != ""):
-      - set:
-          error-out: "${response.responses.out} -- ${response.responses.errOut}"
-      - log: "reload failed"
-      - cmd [bl]: |-
-          mv  "${globals.haproxy_backup_file}" "${globals.haproxy_frontend_file}"
-      - getRewritesRules
-      - return:
-          type: error
-          message: "${this.error-out}"
-          currentRules: "${globals.rewrites}"
-
-  - cmd [bl]: |-
-      rm "${globals.haproxy_backup_file}"
-    user: root
-  - return:
-      type: success
-
+  - getRewritesRules
+  - reloadHAProxy
+  - removeBackup
+  
 actions:
   getRewritesRules:
-    - cmd[${nodes.bl.first.id}]: |-
-        start=$(grep -n "START_REWRITES" /etc/haproxy/haproxy.cfg.d/00-global.cfg |cut -d":" -f1)
-        end=$(grep -n "END_REWRITES" /etc/haproxy/haproxy.cfg.d/00-global.cfg |cut -d":" -f1)
-        grep -A$((end - start)) "START_REWRITES"  /etc/haproxy/haproxy.cfg.d/00-global.cfg|grep -v "[START|END]_REWRITES" |iconv -f utf-8 -t iso-8859-1 |base64
-    - setGlobals:
-        rewrites: ${response.out}
+    - cmd [bl]: |-
+        cp ${globals.haproxy_frontend_file} ${globals.haproxy_backup_file}
+        chown haproxy: ${globals.haproxy_backup_file}
+        [ -x /usr/bin/jq ] || yum install -y jq
+        source /.jelenv
+        VAULT_TOKEN=$(curl -s -XPOST $VAULT_CLUSTER_URL/v1/auth/approle/login --data '{"role_id": "'$VAULT_ROLE_ID'", "secret_id": "'$VAULT_SECRET_ID'"}' | jq -r .auth.client_token)
+        VAULT_SECRET_PATH="${settings.vault_secret_path}"
+        curl -s -H "X-Vault-Token: $VAULT_TOKEN" $VAULT_CLUSTER_URL/v1/kv/data/$VAULT_SECRET_PATH | jq -r .data.data[] > "${globals.rewrite_rules_file}"
+        sed -i -ne '/## START_REWRITES ##/{p;r ${globals.rewrite_rules_file}' -e ':a;n;/## END_REWRITES ##/{p;b};ba};p' "${globals.haproxy_frontend_file}"
+        rm "${globals.rewrite_rules_file}"
+      user: root
+
+  reloadHAProxy:
+    - cmd [bl]: |-
+        service haproxy reload || true
+      user: root
+    - if ("${response.responses.errOut}" != ""):
+        - set:
+            error-out: "${response.responses.out} -- ${response.responses.errOut}"
+        - log: "reload failed"
+        - cmd [bl]: |-
+            mv "${globals.haproxy_backup_file}" "${globals.haproxy_frontend_file}"
+        - return:
+            type: error
+            message: "${this.error-out}"
+
+  removeBackup:
+    - cmd [bl]: |-
+        rm "${globals.haproxy_backup_file}"
+      user: root
+    - return:
+        type: success
+
 settings:
   fields:
-    - name: operation
-      type: text
-      caption: get or set rewrite rules
-      default: "get"
-    - name: rewrite-rules
-      type: text
-      caption: rewrite-rules base64 encoded
-      default: ""
+    - name: vault_secret_path
+      type: string
+      caption: Vault Secret Path
+      required: true
