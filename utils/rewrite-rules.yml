@@ -19,28 +19,22 @@ onInstall:
 actions:
   getRewritesRules:
     - cmd [bl]: |-
-        cp ${globals.haproxy_frontend_file} ${globals.haproxy_backup_file}
-        chown haproxy: ${globals.haproxy_backup_file}
         [ -x /usr/bin/jq ] || yum install -y jq
-        source /.jelenv
-        VAULT_TOKEN=$(curl -s -XPOST $VAULT_CLUSTER_URL/v1/auth/approle/login --data '{"role_id": "'$VAULT_ROLE_ID'", "secret_id": "'$VAULT_SECRET_ID'"}' | jq -r .auth.client_token)
-        VAULT_SECRET_PATH="${settings.vault_secret_path}"
       user: root
     - cmd [bl]: |-
+        cp "${globals.haproxy_frontend_file}" "${globals.haproxy_backup_file}"
+        VAULT_TOKEN=$(curl -s -XPOST $VAULT_CLUSTER_URL/v1/auth/approle/login --data '{"role_id": "'$VAULT_ROLE_ID'", "secret_id": "'$VAULT_SECRET_ID'"}' | jq -r .auth.client_token)
+        VAULT_SECRET_PATH="${settings.vault_secret_path}"
         curl -s -H "X-Vault-Token: $VAULT_TOKEN" $VAULT_CLUSTER_URL/v1/kv/data/$VAULT_SECRET_PATH | jq -r .data.data[] > "${globals.rewrite_rules_file}"
         sed -i -ne '/## START_REWRITES ##/{p;r ${globals.rewrite_rules_file}' -e ':a;n;/## END_REWRITES ##/{p;b};ba};p' "${globals.haproxy_frontend_file}"
         rm "${globals.rewrite_rules_file}"
-      user: root
     - if ("${response.errOut}" != ""):
-        - set:
-            error-out: "${response.errOut}"
         - cmd [bl]: |-
-            rm "${globals.haproxy_backup_file}"
-          user: root
+            mv "${globals.haproxy_backup_file}" "${globals.haproxy_frontend_file}"
         - log: "Get Rewrite Rules Failed"
         - return:
             type: error
-            message: "${this.error-out}"
+            message: "An internal error occurred while updating haproxy configuration"
 
   reloadHAProxy:
     - cmd [bl]: |-
@@ -59,7 +53,6 @@ actions:
   removeBackup:
     - cmd [bl]: |-
         rm "${globals.haproxy_backup_file}"
-      user: root
     - return:
         type: success
 
