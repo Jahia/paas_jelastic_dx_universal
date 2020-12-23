@@ -1,0 +1,18 @@
+---
+type: update
+version: 1.5.2
+name: Migrate Jahia env to v2
+id: migrate-jahia-env-v2
+
+onInstall:
+  - installStrongswan # PAAS-1207
+
+actions:
+  installStrongswan:
+    - cmd [cp, proc]: |-
+        if ! rpm --quiet -q strongswan; then
+          echo "[INFO] Installing Strongswan"
+          yum install -y strongswan && systemctl disable strongswan
+          exit $?
+        fi
+        echo "[INFO] Strongswan already install, nothing to do"
