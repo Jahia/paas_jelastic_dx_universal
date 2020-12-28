@@ -15,4 +15,5 @@ actions:
           yum install -y strongswan && systemctl disable strongswan
           exit $?
         fi
-        echo "[INFO] Strongswan already install, nothing to do"
+        echo "[INFO] Strongswan already installed, nothing to do"
+      user: root
