@@ -213,6 +213,9 @@ onInstall:
   - setupDatadogAgentSql: sqldb
   - setupDatadogAgent: cp, proc
   - setupDatadogAgentHaproxy: bl
+  - api[cp]: env.control.ApplyNodeGroupData
+    data:
+      envVersion: 2
 
 onBeforeScaleIn[cp]:
   - forEach(event.response.nodes):
