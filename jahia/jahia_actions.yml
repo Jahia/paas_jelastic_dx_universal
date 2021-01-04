@@ -296,3 +296,30 @@ actions:
         echo "/data/digital-factory-data/repository/index" >> /etc/jelastic/redeploy.conf
         echo "/data/digital-factory-data/repository/workspaces" >> /etc/jelastic/redeploy.conf
       user: root
+
+  deleteEnvLink:
+    - script: |-
+        const envName = "${env.envName}";
+        jCustomerEnv = jelastic.env.control.GetNodeGroups(envName, session).object.filter(function (object) {
+                                return object.name == "cp";
+                              }).pop().envLink;
+        if (jCustomerEnv == null) {
+          return {"result": 0, "out": "No jCustomer env linked"};
+        }
+        envsLinked = jelastic.env.control.GetNodeGroups(jCustomerEnv, session).object.filter(function (object) {
+                                return object.name == "cp";
+                              }).pop().envLink;
+        if (envsLinked.indexOf(envName) == -1) {
+          return {"result": 0, "out": envName + " not in envLink of " + jCustomerEnv};
+        }
+
+        // envLink can contain multiple Jahia envs on jCustomer side separated by a comma
+        if (envsLinked.indexOf(",") != -1) {
+          envsLinkedArr = envsLinked.split(",");
+          envsLinkedArr.splice(envsLinkedArr.indexOf(envName), 1);
+          newEnvLink = String(envsLinkedArr);
+        } else {
+          newEnvLink = null;
+        }
+        resp = jelastic.env.control.ApplyNodeGroupData(jCustomerEnv, session, nodeGroup='cp', data={'envLink': newEnvLink});
+        return {"result": 0, "out": envName + " removed from envLink of " + jCustomerEnv};
