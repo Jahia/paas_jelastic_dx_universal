@@ -4,16 +4,25 @@ version: 1.5.2
 name: Migrate Jahia env to v2
 id: migrate-jahia-env-v2
 
+# Required for healthchecks
+mixins:
+  - "../../common/common_actions.yml"
+  - "../../jahia/jahia_actions.yml"
+  - "../../database/mariadb_actions.yml"
+  - "../../database/galera_actions.yml"
+  - "../../haproxy/haproxy_actions.yml"
+
+globals:
+  version: 2
+
 onInstall:
-  - script: |
-      const currentVersion = jelastic.env.control.GetNodeGroups("${env.envName}", session).object.filter(function (object) {
-          return object.name == "cp";
-      }).pop().envVersion;
-      if (2 <= currentVersion) {
-          return {'result': 1, 'error': 'Environment is already up-to-date'}
-      } else {
-          return {'result': 0, 'out': 'Environment needs to be updated'}
-      }
+  ### Pre-checks
+  - checkEnvVersion: ${globals.version}
+  - checkJahiaHealth: "cp, proc"
+  - checkHaproxyHealth: bl
+  - checkMariadbHealth: sqldb
+  - checkGaleraClusterHealth: sqldb
+
   - vaultAccount # PAAS-1292
   - fixHaproxyHealthcheckUrl # PAAS-1308
   - allowYellowHaproxyHealthcheck # PAAS-1324
@@ -24,9 +33,13 @@ onInstall:
       - increaseGaleraCacheSize
       - galeraRollingRestart
   - addHTTPSecurityHeaders   #PAAS-1282
-  - api[cp]: env.control.ApplyNodeGroupData
-    data:
-      envVersion: 2
+
+  ### Post-actions
+  - setEnvVersion: ${globals.version}
+  - checkJahiaHealth: "cp, proc"
+  - checkHaproxyHealth: bl
+  - checkMariadbHealth: sqldb
+  - checkGaleraClusterHealth: sqldb
 
 actions:
   fixHaproxyHealthcheckUrl:
@@ -101,7 +114,7 @@ actions:
 
   jahiaRollingRestart:
     install:
-      jps: "https://raw.githubusercontent.com/Jahia/paas_jelastic_dx_universal/master/jahia/jahia-rolling-restart.yml"
+      jps: "${baseUrl}/../../jahia/jahia-rolling-restart.yml"
 
   haproxyLogs:
     cmd[bl]: |-
@@ -123,7 +136,7 @@ actions:
 
   galeraRollingRestart:
     install:
-      jps: "${baseUrl}/../../galera-nodes/restart-galera-nodes.yml"
+      jps: "https://raw.githubusercontent.com/Jahia/cloud-scripts/master/galera-nodes/restart-galera-nodes.yml"
 
   addHTTPSecurityHeaders:
     cmd[bl]: |-

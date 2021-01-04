@@ -115,3 +115,13 @@ actions:
         - return:
             type: error
             message: "An error occurred when installing datadog agent on a mariadb node."
+
+  checkMariadbHealth:
+    - cmd [${this}]: |-
+        if ! service mysql status; then
+          rc=$? && echo "[ERROR] Mariadb service is not running, exiting" && exit $rc
+        fi
+        if ! mysqladmin -s processlist 1>/dev/null; then
+          rc=$? && echo "[ERROR] Can't connect to mysql instance, exiting" && exit $rc
+        fi
+      user: root
