@@ -276,6 +276,29 @@ actions:
         echo "[ERROR] Timeout, the Tomcat process is still running but Jahia is not started yet" >&2
         exit 5
 
+  checkJahiaHealth:
+    - cmd [${this}]: |-
+        if ! rpm --quiet -q jq; then
+          echo "[INFO] Installing jq to parse healthcheck module response"
+          yum install -y jq
+        fi
+      user: root
+    - cmd [${this}]: |-
+        if ! tomcat_pid=$(pgrep -u tomcat -f java); then
+          echo "[ERROR] Tomcat process not found, please check" >&2
+          exit 1
+        fi
+        
+        hc_url="http://127.0.0.1:8080/modules/healthcheck?token=$jahia_cfg_healthcheck_token"
+
+        if curl_resp=$(curl -f -s -m 1 "$hc_url"); then
+          status=$(echo $curl_resp | jq -r ".status")
+          if [ "$status" = "GREEN" ] || [ "$status" = "YELLOW" ]; then
+            exit 0
+          fi
+        fi
+        echo "[ERROR] Healthcheck result different from GREEN or YELLOW, exiting" && exit 1
+
   # Make sure that the /opt/tomcat/conf/tomcatenv.sh is persisted when redeploying a cp/proc node
   keepTomcatEnvConfOnRedeploy:
     - log: "## Checking Jelastic redeploy.conf"

@@ -1,0 +1,255 @@
+---
+type: update
+version: 1.5.2
+name: Migrate Jahia env to v2
+id: migrate-jahia-env-v2
+
+# Required for healthchecks
+mixins:
+  - "../../common/common_actions.yml"
+  - "../../jahia/jahia_actions.yml"
+  - "../../database/mariadb_actions.yml"
+  - "../../database/galera_actions.yml"
+  - "../../haproxy/haproxy_actions.yml"
+
+globals:
+  version: 2
+
+onInstall:
+  ### Pre-checks
+  - checkEnvVersion: ${globals.version}
+  - checkJahiaHealth: "cp, proc"
+  - checkHaproxyHealth: bl
+  - checkMariadbHealth: sqldb
+  - checkGaleraClusterHealth: sqldb
+
+  - vaultAccount # PAAS-1292
+  - fixHaproxyHealthcheckUrl # PAAS-1308
+  - allowYellowHaproxyHealthcheck # PAAS-1324
+  - jahiaPropertiesToEnvVars # PAAS-1230
+  - jahiaRollingRestart
+  - haproxyLogs
+  - if (nodes.sqldb.length > 1):
+      - increaseGaleraCacheSize
+      - galeraRollingRestart
+  - addHTTPSecurityHeaders   #PAAS-1282
+
+  ### Post-actions
+  - setEnvVersion: ${globals.version}
+  - checkJahiaHealth: "cp, proc"
+  - checkHaproxyHealth: bl
+  - checkMariadbHealth: sqldb
+  - checkGaleraClusterHealth: sqldb
+
+actions:
+  fixHaproxyHealthcheckUrl:
+    - cmd [bl]: |-
+        sed -i "s;\$4/healthcheck?token;\$4/modules/healthcheck?token;" /etc/haproxy/haproxy.cfg.d/healthcheck.sh
+
+  allowYellowHaproxyHealthcheck:
+    - cmd [bl]: |-
+        sed -i "s/^if.*/if [ "\$res" = "GREEN" ] || [ "\$res" = "YELLOW" ]; then/" /etc/haproxy/haproxy.cfg.d/healthcheck.sh
+
+  # https://jira.jahia.org/browse/PAAS-1002 changes were never applied to existing environments
+  # For instance Arkema's environments
+  # I prefer adding these values to jahia.properties before "moving" them to envvars in case we have to
+  # revert these changes for some reasons
+  fixMissingEhcacheValues:
+    - cmd [proc]: |-
+        grep -q org.jahia.ehcachemanager $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties || echo $jahia_cfg_operatingMode
+    - set:
+        operatingMode: "${response.out}"
+    - if ("${this.operatingMode}" != ""): # if the ehcachemanager values are not found in jahia.properties
+        - if ("${this.operatingMode}" == "production"):
+            - set:
+                jahia_cfg_org_jahia_ehcachemanager_maxBytesLocalHeap: 800M
+                jahia_cfg_org_jahia_ehcachemanager_big_maxBytesLocalHeap_cp: 2500M
+                jahia_cfg_org_jahia_ehcachemanager_big_maxBytesLocalHeap_proc: 700M
+        - else:
+            - set:
+                jahia_cfg_org_jahia_ehcachemanager_maxBytesLocalHeap: 700M
+                jahia_cfg_org_jahia_ehcachemanager_big_maxBytesLocalHeap_cp: 700M
+                jahia_cfg_org_jahia_ehcachemanager_big_maxBytesLocalHeap_proc: 700M
+        - cmd [proc]: |-
+            echo "org.jahia.ehcachemanager.maxBytesLocalHeap=${this.jahia_cfg_org_jahia_ehcachemanager_maxBytesLocalHeap}" \
+              >> $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
+            echo "org.jahia.ehcachemanager.big.maxBytesLocalHeap=${this.jahia_cfg_org_jahia_ehcachemanager_big_maxBytesLocalHeap_proc}" \
+              >> $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
+        - cmd [cp]: |-
+            echo "org.jahia.ehcachemanager.maxBytesLocalHeap=${this.jahia_cfg_org_jahia_ehcachemanager_maxBytesLocalHeap}" \
+              >> $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
+            echo "org.jahia.ehcachemanager.big.maxBytesLocalHeap=${this.jahia_cfg_org_jahia_ehcachemanager_big_maxBytesLocalHeap_cp}" \
+              >> $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
+
+  jahiaPropertyToEnvVar:
+    - cmd [proc]: |-
+        PROPERTIES_FILE=/opt/tomcat/conf/digital-factory-config/jahia/jahia.properties
+        ENVVAR=${this}
+        PROPERTY_KEY="$(echo $ENVVAR | sed "s;jahia_cfg_;;" | sed "s;_;.;g")"
+        if ! grep -wq $ENVVAR /.jelenv; then
+          PROPERTY_VALUE=$(grep -E "^ *$PROPERTY_KEY *=" $PROPERTIES_FILE | sed "s;.*= *\(.*\);\1;")
+          [ "$PROPERTY_VALUE" = "" ] && echo "Cannot retrieve value of $PROPERTY_VALUE" && exit 1
+          echo $PROPERTY_VALUE && exit 0
+        fi
+        eval "echo \${$ENVVAR}"
+      user: root
+    - env.control.AddContainerEnvVars [cp, proc]:
+      vars:
+        ${this}: ${response.out}
+    - cmd [proc]: |-
+        PROPERTIES_FILE=/opt/tomcat/conf/digital-factory-config/jahia/jahia.properties
+        ENVVAR=${this}
+        PROPERTY_KEY="$(echo $ENVVAR | sed "s;jahia_cfg_;;" | sed "s;_;.;g")"
+        sed -i "s|^\( *$PROPERTY_KEY *=.*\)|#\1|" $PROPERTIES_FILE || exit 1
+
+  jahiaPropertiesToEnvVars:
+    - fixMissingEhcacheValues
+    - jahiaPropertyToEnvVar: jahia_cfg_jahiaFileUploadMaxSize
+    - jahiaPropertyToEnvVar: jahia_cfg_imageService
+    - jahiaPropertyToEnvVar: jahia_cfg_imageMagickPath
+    - jahiaPropertyToEnvVar: jahia_cfg_mvnPath
+    - jahiaPropertyToEnvVar: jahia_cfg_expandImportedFilesOnDisk
+    - jahiaPropertyToEnvVar: jahia_cfg_org_jahia_ehcachemanager_maxBytesLocalHeap
+    - jahiaPropertyToEnvVar: jahia_cfg_org_jahia_ehcachemanager_big_maxBytesLocalHeap
+
+  jahiaRollingRestart:
+    install:
+      jps: "${baseUrl}/../../jahia/jahia-rolling-restart.yml"
+
+  haproxyLogs:
+    cmd[bl]: |-
+      already_done=$(grep haproxy-status /etc/datadog-agent/conf.d/haproxy.d/conf.yaml)
+      if [ "$already_done" = "" ]; then
+        wget -qO /etc/logrotate.d/haproxy ${baseUrl}/logrotate_haproxy
+        chmod 644 /etc/logrotate.d/haproxy
+        wget -qO /tmp/dd_agent_haproxy_conf_new_lines.yml ${baseUrl}/dd_agent_haproxy_conf_new_lines.yml
+        sed -i '/http_web_access/r /tmp/dd_agent_haproxy_conf_new_lines.yml' /etc/datadog-agent/conf.d/haproxy.d/conf.yaml
+        rm /tmp/dd_agent_haproxy_conf_new_lines.yml
+        systemctl restart datadog-agent
+      fi
+    user: root
+
+  increaseGaleraCacheSize:
+    cmd [sqldb]: |-
+      sed -i '/^wsrep_provider_options =.*/d' /etc/mysql/conf.d/galera.cnf
+      sed -i '/^wsrep_provider =.*/a wsrep_provider_options = "gcache.size=256M"' /etc/mysql/conf.d/galera.cnf
+
+  galeraRollingRestart:
+    install:
+      jps: "https://raw.githubusercontent.com/Jahia/cloud-scripts/master/galera-nodes/restart-galera-nodes.yml"
+
+  addHTTPSecurityHeaders:
+    cmd[bl]: |-
+      insert_line_1='    http-response set-header Strict-Transport-Security "max-age=63072000;"'
+      insert_line_2='    http-response set-header X-Content-Type-Options "nosniff"'
+      insert_line_3='    http-response set-header X-XSS-Protection "1; mode=block;"'
+      if (grep -qPzo "$insert_line_1\n$insert_line_2\n$insert_line_3" /etc/haproxy/haproxy.cfg.d/00-global.cfg);
+      then
+        echo "headers already there"
+        exit 0
+      fi
+      pattern='#acl auth_ok http_auth(trusted_users) #HTTP_AUTH_BASIC'
+      sed -i "/$pattern/i\\$insert_line_1\n$insert_line_2\n$insert_line_3\n" /etc/haproxy/haproxy.cfg.d/00-global.cfg
+      service haproxy reload
+    user: root
+
+  vaultAccount:
+    - script: |
+        const envVars = jelastic.env.control.GetContainerEnvVars(
+            "${env.envName}",
+            session,
+            "${nodes.bl.first.id}"
+        );
+        return {'result': 0, 'done': "VAULT_SECRET_ID" in envVars.object}
+    - if ("${response.done}" == "false"):
+        setupVaultAccount
+
+  setupVaultAccount:
+    - log: Generate vault credentials
+    - cmd[proc]: |-
+        yum install -y jq > /dev/null
+
+        PAPI_HOSTNAME="${settings.papi_hostname}"
+        PAPI_TOKEN="${settings.papi_token}"
+        VAULT_HOSTNAME="${settings.vault_hostname}"
+        VAULT_TOKEN="${settings.vault_token}"
+        MAIL="${user.email}"
+        SHORTDOMAIN="paas_${env.shortdomain}"
+
+        ORGANISATION=$(curl -s -H "X-PAPI-KEY:$PAPI_TOKEN" https://$PAPI_HOSTNAME/api/v1/paas-organization?jelastic_login=$MAIL | jq -r .[0].name)
+
+        VAULT_CURL_CONSTS="-s -H X-Vault-Token:$VAULT_TOKEN https://$VAULT_HOSTNAME/v1"
+        # Create the entity
+        entity_id=$(curl $VAULT_CURL_CONSTS/identity/entity -XPOST -d "{\"name\": \"$SHORTDOMAIN\",\"metadata\": {\"customer\": \"$ORGANISATION\"},\"policies\": \"paas_environment\"}" | jq -r .data.id)
+
+        # Create approle
+        VAULT_CURL_APPROLE="$VAULT_CURL_CONSTS/auth/approle/role/$SHORTDOMAIN"
+        curl $VAULT_CURL_APPROLE -XPOST
+        role_id=$(curl $VAULT_CURL_APPROLE/role-id | jq -r .data.role_id)
+
+        # Fetch approle authmethod ID
+        approle_auth_accessor=$(curl $VAULT_CURL_CONSTS/sys/auth | jq -r '."approle/".accessor')
+
+        # Bind approle to the entity
+        approle_binding=$(curl $VAULT_CURL_CONSTS/identity/entity-alias -XPOST -d "{\"name\": \"$role_id\", \"canonical_id\":\"$entity_id\", \"mount_accessor\":\"$approle_auth_accessor\"}")
+
+        secret_id=$(curl $VAULT_CURL_APPROLE/secret-id -XPOST | jq -r .data.secret_id)
+        echo "$role_id,$secret_id"
+      user: root
+
+    - log: Check that received data are what we are expecting
+    - script: |-
+        output = "${response.out}";
+
+        match = /^[0-9a-z\-]+,[0-9a-z\-]+$/.exec(output);
+        if (match == null)
+          return {'result':1, "error": "wrong secret_id or app_id"};
+
+        splitted_output = output.split(",")
+
+        return {
+          'result': 0,
+          "role_id":splitted_output[0],
+          'secret_id':splitted_output[1]
+        }
+
+    - setGlobals:
+        role_id: ${response.role_id}
+        secret_id: ${response.secret_id}
+
+    - log: Check that credentials are actually working
+    - cmd[${nodes.bl.first.id}]: |-
+        curl -s -XPOST https://${settings.vault_hostname}/v1/auth/approle/login --data '{"secret_id": "${globals.secret_id}", "role_id": "${globals.role_id}"}' | jq -r .auth.policies | grep paas_environment
+
+    - if ( "${response.errOut}" != "" || "${response.out}" == "" ):
+        return:
+        type: error
+        message: "Generated vault credentials are not working"
+
+    - log: Store vault creds in env vars
+    - env.control.AddContainerEnvVars[bl]:
+      vars: {
+        "VAULT_HOSTNAME": "${settings.vault_hostname}",
+        "VAULT_SECRET_ID": "${globals.secret_id}",
+        "VAULT_ROLE_ID": "${globals.role_id}"
+      }
+
+
+settings:
+  fields:
+    - name: vault_token
+      type: string
+      caption: Vault token to perform operations
+      required: true
+    - name: vault_hostname
+      type: string
+      caption: vault dns
+      required: true
+    - name: papi_token
+      type: string
+      caption: papi token to perform operations
+      required: true
+    - name: papi_hostname
+      type: string
+      caption: papi dns
+      required: true

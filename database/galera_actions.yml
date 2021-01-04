@@ -68,3 +68,12 @@ actions:
         - return:
             type: error
             message: "An error occurred during galera cluster init."
+
+  checkGaleraClusterHealth:
+    - cmd [${this}]: |-
+        if [ -f /var/lib/mysql/grastate.dat ]; then
+          if [ "$(mysql -Ns -e "show global status like 'wsrep_local_state_comment'" | awk '{print $NF}')" != "Synced"  ]; then
+            rc=$? && echo "[ERROR] Galera cluster not synced, exiting" && exit $rc
+          fi
+        fi
+      user: root
