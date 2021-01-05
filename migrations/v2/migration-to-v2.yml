@@ -23,6 +23,7 @@ onInstall:
   - checkMariadbHealth: sqldb
   - checkGaleraClusterHealth: sqldb
 
+  - fixJahiaPropertiesPermissions # hotfix
   - vaultAccount # PAAS-1292
   - fixHaproxyHealthcheckUrl # PAAS-1308
   - allowYellowHaproxyHealthcheck # PAAS-1324
@@ -234,6 +235,10 @@ actions:
         "VAULT_ROLE_ID": "${globals.role_id}"
       }
 
+  fixJahiaPropertiesPermissions:
+    - cmd [proc, cp]: |-
+        chown tomcat: $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
+      user: root
 
 settings:
   fields:
