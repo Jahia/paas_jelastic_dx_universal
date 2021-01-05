@@ -28,6 +28,7 @@ onInstall:
   - fixHaproxyHealthcheckUrl # PAAS-1308
   - allowYellowHaproxyHealthcheck # PAAS-1324
   - jahiaPropertiesToEnvVars # PAAS-1230
+  - eventsUpdate
   - jahiaRollingRestart
   - haproxyLogs
   - if (nodes.sqldb.length > 1):
@@ -239,6 +240,10 @@ actions:
     - cmd [proc, cp]: |-
         chown tomcat: $STACK_PATH/conf/digital-factory-config/jahia/jahia.properties
       user: root
+
+  eventsUpdate:
+    install:
+      jps: "${baseUrl}/../../update.yml"
 
 settings:
   fields:
