@@ -123,9 +123,9 @@ actions:
 
   checkHaproxyHealth:
     cmd [${this}]: |-
-      if service haproxy status; then
+      if service haproxy status > /dev/null; then
         adm_user=$(awk '/ stats auth / {print $3}' /etc/haproxy/haproxy.cfg.d/00-global.cfg)
         curl -fsI /dev/null -u "$adm_user" localhost:80/haproxy_adm_panel && exit 0
       fi
-      rc=$? && echo "[ERROR] Haproxy is unavailable, exiting" && exit $rc
+      echo "[ERROR] Haproxy is unavailable, exiting" 1>&2 && exit 1
     user: root

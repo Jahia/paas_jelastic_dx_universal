@@ -297,7 +297,7 @@ actions:
             exit 0
           fi
         fi
-        echo "[ERROR] Healthcheck result different from GREEN or YELLOW, exiting" && exit 1
+        echo "[ERROR] Healthcheck result different from GREEN or YELLOW, exiting" 1>&2 && exit 1
 
   # Make sure that the /opt/tomcat/conf/tomcatenv.sh is persisted when redeploying a cp/proc node
   keepTomcatEnvConfOnRedeploy:
