@@ -73,7 +73,7 @@ actions:
     - cmd [${this}]: |-
         if [ -f /var/lib/mysql/grastate.dat ]; then
           if [ "$(mysql -Ns -e "show global status like 'wsrep_local_state_comment'" | awk '{print $NF}')" != "Synced"  ]; then
-            rc=$? && echo "[ERROR] Galera cluster not synced, exiting" && exit $rc
+            echo "[ERROR] Galera cluster not synced, exiting" 1>&2 && exit 1
           fi
         fi
       user: root

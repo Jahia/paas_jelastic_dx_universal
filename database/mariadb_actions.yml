@@ -118,10 +118,10 @@ actions:
 
   checkMariadbHealth:
     - cmd [${this}]: |-
-        if ! service mysql status; then
-          rc=$? && echo "[ERROR] Mariadb service is not running, exiting" && exit $rc
+        if ! service mysql status > /dev/null; then
+          echo "[ERROR] Mariadb service is not running, exiting" 1>&2 && exit 1
         fi
         if ! mysqladmin -s processlist 1>/dev/null; then
-          rc=$? && echo "[ERROR] Can't connect to mysql instance, exiting" && exit $rc
+          echo "[ERROR] Can't connect to mysql instance, exiting" 1>&2 && exit 1
         fi
       user: root
