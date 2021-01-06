@@ -23,6 +23,7 @@ onInstall:
   - checkMariadbHealth: sqldb
   - checkGaleraClusterHealth: sqldb
 
+  - eventsUpdate # PAAS-1322
   - installStrongswan # PAAS-1207
 
   ### Post-actions
@@ -33,6 +34,10 @@ onInstall:
   - checkGaleraClusterHealth: sqldb
 
 actions:
+  eventsUpdate:
+    install:
+      jps: "${baseUrl}/../../update.yml"
+
   installStrongswan:
     - cmd [cp, proc]: |-
         if ! rpm --quiet -q strongswan; then
