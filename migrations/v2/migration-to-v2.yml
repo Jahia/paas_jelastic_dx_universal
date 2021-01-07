@@ -231,7 +231,7 @@ actions:
     - log: Store vault creds in env vars
     - env.control.AddContainerEnvVars[bl]:
       vars: {
-        "VAULT_HOSTNAME": "${settings.vault_hostname}",
+        "VAULT_CLUSTER_URL": "https://${settings.vault_hostname}",
         "VAULT_SECRET_ID": "${globals.secret_id}",
         "VAULT_ROLE_ID": "${globals.role_id}"
       }
