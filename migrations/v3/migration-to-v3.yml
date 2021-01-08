@@ -23,10 +23,11 @@ onInstall:
   - checkMariadbHealth: sqldb
   - checkGaleraClusterHealth: sqldb
 
-  - eventsUpdate # PAAS-1322
   - installStrongswan # PAAS-1207
+  - checkProductVersion # PAAS-1342
 
   ### Post-actions
+  - eventsUpdate # PAAS-1322
   - setEnvVersion: ${globals.version}
   - checkJahiaHealth: "cp, proc"
   - checkHaproxyHealth: bl
@@ -47,3 +48,19 @@ actions:
         fi
         echo "[INFO] Strongswan already installed, nothing to do"
       user: root
+
+  checkProductVersion:
+    - api [${nodes.cp.first.id}]: environment.control.GetNodeInfo
+    - setGlobals:
+        jahiaVersion: ${response.node.version}
+    - script: |
+        const envName = "${env.envName}";
+        const targetJahiaVersion = "${globals.jahiaVersion}";
+        currentJahiaVersion = jelastic.env.control.GetNodeGroups(envName, session).object.filter(function (object) {
+                                        return object.name == "cp";
+                                      }).pop().productVersion;
+        if (currentJahiaVersion == targetJahiaVersion) {
+          return {"result": 0, "out": "cp NodeGroup data has the correct Jahia version"};
+        }
+        resp = jelastic.env.control.ApplyNodeGroupData(envName, session, nodeGroup='cp', data={'productVersion': targetJahiaVersion});
+        return {"result": 0, "out": "Jahia version has been updated on cp NodeGroup data"};
