@@ -80,10 +80,6 @@ Parameters are:
 - name: rollingUpgrade
   - Rolling upgrade, only available to redeploy Tomcat nodes only as the Jahia version upgrade currently needs all Tomcat nodes to be stopped
 
-### onAfterClone.yml
-
-As its name suggests, it is run from onAfterClone event, to do some actions that are not included in cloning function on the cloned environment.
-
 ### reset-polling.yml
 
 Used by Jahia Cloud to reset polling when an action fails (especially during backup/restore). It generates a *finished* action on Jelastic Console so the frontend can be aware that there was an issue with previous JPS execution.
