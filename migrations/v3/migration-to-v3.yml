@@ -8,6 +8,7 @@ id: migrate-jahia-env-v3
 mixins:
   - "../../common/common_actions.yml"
   - "../../jahia/jahia_actions.yml"
+  - "../../jahia/jahia-upgrade-healthcheck.yml"
   - "../../database/mariadb_actions.yml"
   - "../../database/galera_actions.yml"
   - "../../haproxy/haproxy_actions.yml"
@@ -27,6 +28,7 @@ onInstall:
   - fetchLogEventScript # PAAS-1323
   - installStrongswan # PAAS-1207
   - checkProductVersion # PAAS-1342
+  - upgradeHealthcheckModule # PAAS-1317
   - updateHaproxyConf # PAAS-1357
 
   ### Post-actions
@@ -116,3 +118,13 @@ actions:
         wget -qO /usr/local/bin/log_event.sh ${baseUrl}../../scripts/log_events.sh
         chmod u+x /usr/local/bin/log_event.sh
       user: root
+
+  upgradeHealthcheckModule:
+    - api [${nodes.cp.first.id}]: environment.control.GetNodeInfo
+    - if ("${response.node.version}" > "8.0.0.0"):
+        setGlobals:
+          healthcheckVersion: "2.3.0"
+    - else:
+        setGlobals:
+          healthcheckVersion: "1.2.0"
+    - upgradeJahiaHealthcheckModule
