@@ -79,31 +79,36 @@ actions:
         is_exist='acl haproxy_adm_panel path'
         idempotent=$(awk "/^ *$is_exist/" $path_haproxy_conf)
 
-        if [ "$idempotent" == "" ]; then
-          insert_line_1='acl auth_ok http_auth(trusted_users) #HTTP_AUTH_BASIC'
-          insert_line_2='acl tools  path_beg -i /tools #HTTP_AUTH_BASIC'
-          insert_line_3='acl haproxy_adm_panel  path_beg -i /haproxy_adm_panel #HTTP_AUTH_BASIC'
-          insert_line_4='http-request auth realm env-access-restricted if !auth_ok !tools !haproxy_adm_panel #HTTP_AUTH_BASIC'
-          spaces='    '
-          looking_for='acl auth_ok http_auth'
-          res=$(awk "/^ *$looking_for/" $path_haproxy_conf)
-          sed -i "$!N;/#HTTP_AUTH_BASIC/d; i $insert_line_1\n$insert_line_2\n$insert_line_3\n$insert_line_4\n" $path_haproxy_conf
-          if [ "$res" != "" ]; then
-            sed -i "/#HTTP_AUTH_BASIC/s/^/${spaces}/" $path_haproxy_conf
-          else
-            sed -i "/#HTTP_AUTH_BASIC/s/^/${spaces}#/" $path_haproxy_conf
-          fi
-          echo "[INFO] Haproxy basic authentication rules updated"
-
-          insert_line_5='acl healthcheck path /healthcheck /modules/healthcheck'
-          insert_line_6='acl haproxy_adm_panel path /haproxy_adm_panel'
-          insert_line_7='http-request allow if healthcheck or haproxy_adm_panel'
-          sed -i "s|acl healthcheck path /modules/healthcheck|$insert_line_5\n${spaces}${insert_line_6}|" $path_haproxy_conf
-          sed -i "s|http-request allow if healthcheck|$insert_line_7|" $path_haproxy_conf
-          echo "[INFO] Haproxy healthcheck rules updated"
-
-          sudo service haproxy reload
+        if [ "$idempotent" != "" ]; then
+          echo "Update haproxy conf already done"
+          exit 0
         fi
+
+        insert_line_1='acl auth_ok http_auth(trusted_users) #HTTP_AUTH_BASIC'
+        insert_line_2='acl tools  path_beg -i /tools #HTTP_AUTH_BASIC'
+        insert_line_3='acl haproxy_adm_panel  path_beg -i /haproxy_adm_panel #HTTP_AUTH_BASIC'
+        insert_line_4='http-request auth realm env-access-restricted if !auth_ok !tools !haproxy_adm_panel #HTTP_AUTH_BASIC'
+        spaces='    '
+        looking_for='acl auth_ok http_auth'
+        res=$(awk "/^ *$looking_for/" $path_haproxy_conf)
+        sed -i "/#HTTP_AUTH_BASIC/d" $path_haproxy_conf
+        line=$(awk '/http-response set-header X-XSS-Protection/ {print NR; exit}' $path_haproxy_conf)
+        sed -i "$(($line+1))i\\\n$insert_line_1\n$insert_line_2\n$insert_line_3\n$insert_line_4" $path_haproxy_conf
+        if [ "$res" != "" ]; then
+          sed -i "/#HTTP_AUTH_BASIC/s/^/${spaces}/" $path_haproxy_conf
+        else
+          sed -i "/#HTTP_AUTH_BASIC/s/^/${spaces}#/" $path_haproxy_conf
+        fi
+        echo "[INFO] Haproxy basic authentication rules updated"
+
+        insert_line_5='acl healthcheck path /healthcheck /modules/healthcheck'
+        insert_line_6='acl haproxy_adm_panel path /haproxy_adm_panel'
+        insert_line_7='http-request allow if healthcheck or haproxy_adm_panel'
+        sed -i "s|acl healthcheck path /modules/healthcheck|$insert_line_5\n${spaces}${insert_line_6}|" $path_haproxy_conf
+        sed -i "s|http-request allow if healthcheck|$insert_line_7|" $path_haproxy_conf
+        echo "[INFO] Haproxy healthcheck rules updated"
+
+        sudo service haproxy reload
       user: haproxy
 
   fetchLogEventScript:
