@@ -24,6 +24,7 @@ onInstall:
   - checkGaleraClusterHealth: sqldb
   ### End Pre-checks
 
+  - fetchLogEventScript # PAAS-1323
   - installStrongswan # PAAS-1207
   - checkProductVersion # PAAS-1342
   - updateHaproxyConf # PAAS-1357
@@ -31,6 +32,10 @@ onInstall:
   ### Post-actions
   - eventsUpdate # PAAS-1322
   - setEnvVersion: ${globals.version}
+  - logEvent:
+      target: ${nodes.proc.first.id}
+      title: "Environment $envName migrated"
+      text: "Environment $envName migrated to v${globals.version}"
   - checkJahiaHealth: "cp, proc"
   - checkHaproxyHealth: bl
   - checkMariadbHealth: sqldb
@@ -100,3 +105,9 @@ actions:
           sudo service haproxy reload
         fi
       user: haproxy
+
+  fetchLogEventScript:
+    - cmd[*]: |-
+        wget -qO /usr/local/bin/log_event.sh ${baseUrl}../../scripts/log_events.sh
+        chmod u+x /usr/local/bin/log_event.sh
+      user: root

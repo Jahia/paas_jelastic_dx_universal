@@ -309,9 +309,85 @@ onAfterRedeployContainer[sqldb]:
 onBeforeStop:
   - stopJahia: cp, proc
   - stopGalera
+  - logEvent:
+      target: ${nodes.proc.first.id}
+      title: "Stopping environment $envName"
+      text: "$envName is going to stop"
+
+onAfterStart:
+  logEvent:
+    target: ${nodes.proc.first.id}
+    title: "$envName environment started"
+    text: "$envName is started"
+
+onBeforeMigrate:
+  logEvent:
+    target: ${nodes.proc.first.id}
+    title: "Migration triggered for $envName environment"
+    text: "$envName going to be migrate"
+
+onAfterMigrate:
+  logEvent:
+    target: ${nodes.proc.first.id}
+    title: "Environment $envName migrated"
+    text: "$envName has been migrated"
+
+onBeforeRestartContainer:
+  logEvent:
+    target: ${event.params.nodeId}
+    title: "Restarting node ${event.params.nodeId}"
+    text: "${event.params.nodeId} node is going to be restarted"
+
+onAfterRestartContainer:
+  logEvent:
+    target: ${event.params.nodeId}
+    title: "Node ${event.params.nodeId} restarted"
+    text: "Node ${event.params.nodeId} has restarted"
+
+onBeforeRedeployContainer:
+  - if ('${event.params.nodeGroup.print()}' != ''):
+      logEvent:
+        target: ${event.params.nodeGroup}
+        title: "Redeploying ${event.params.nodeGroup} nodes to ${event.params.tag} version"
+        text: "${event.params.nodeGroup} nodes are going to be redeploy to ${event.params.tag} version"
+  - elif ('${event.params.nodeId.print()}' != ''):
+      logEvent:
+        target: ${event.params.nodeId}
+        title: "Redeploying node ${event.params.nodeId} to ${event.params.tag} version"
+        text: "Node ${event.params.nodeId} is going to be redeploy to ${event.params.tag} version"
+
+onAfterRedeployContainer:
+  - if ('${event.params.nodeGroup.print()}' != ''):
+      logEvent:
+        target: ${event.params.nodeGroup}
+        title: "${event.params.nodeGroup} nodes has been redeployed to ${event.params.tag} version"
+        text: "${event.params.nodeGroup} nodes has been redeployed to ${event.params.tag} version"
+  - elif ('${event.params.nodeId.print()}' != ''):
+      logEvent:
+        target: ${event.params.nodeId}
+        title: "Node ${event.params.nodeId} redeployed to ${event.params.tag} version"
+        text: "Node ${event.params.nodeId} has been redeploy to ${event.params.tag} version"
+
+onBeforeScaleIn:
+  forEach(event.response.nodes):
+    logEvent:
+      target: ${@i.id}
+      title: "Scaling in ${event.params.nodeGroup} node group"
+      text: "Node ${@i.id} is going to be removed"
+
+onAfterServiceScaleOut:
+  forEach(event.response.nodes):
+    logEvent:
+      target: ${@i.id}
+      title: "Scaled out ${event.params.nodeGroup} node group"
+      text: "Node ${@i.id} has been added"
 
 onBeforeDelete:
-  deleteEnvLink
+  - logEvent:
+      target: ${nodes.proc.first.id}
+      title: "Deleting environment $envName"
+      text: "$envName is going to be deleted"
+  - deleteEnvLink
 
 success: /text/success.md
 

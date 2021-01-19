@@ -67,3 +67,14 @@ actions:
             return api.env.control.ApplyNodeGroupData("${env.envName}", session, "cp", { envVersion: ${this} });
     - else:
         - log: "The parameter '${this}' is not an integer, nothing to do"
+
+  getLogEventScript:
+    cmd[${this}]: |-
+      wget -qO /usr/local/bin/log_event.sh ${baseUrl}/scripts/log_events.sh
+      chmod u+x /usr/local/bin/log_event.sh
+    user: root
+
+  logEvent:
+    cmd[${this.target}]: |-
+      /usr/local/bin/log_event.sh "${this.title}" "${this.text}"
+    user: root
