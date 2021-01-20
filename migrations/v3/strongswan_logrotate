@@ -1,0 +1,9 @@
+/var/log/ipsec.log
+{
+  rotate 7
+  daily
+  missingok
+  compress
+  delaycompress
+  copytruncate
+}

@@ -1,0 +1,2 @@
+[Service]
+ExecStartPre=/usr/bin/bash -c "/usr/bin/sed -i -E \"s/(^\s+leftid=@).*/\1$(/usr/bin/hostname)/\" /etc/strongswan/ipsec.conf"

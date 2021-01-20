@@ -1,0 +1,8 @@
+        filelog {
+                charon {
+                path = /var/log/ipsec.log
+                time_format = %Y-%m-%dT%T
+                time_add_ms = yes
+                flush_line = yes
+                }
+        }
