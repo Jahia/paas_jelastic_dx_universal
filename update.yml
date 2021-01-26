@@ -75,11 +75,11 @@ onAfterServiceScaleOut[cp]:
           newNode: ${@i.id}
   - resetHaproxyBackends
 
-onBeforeRestartContainer[cp]:
+onBeforeRestartNode[cp]:
   removeNodeFromHaproxy:
     nodeId: ${event.params.nodeId}
 
-onAfterRestartContainer[cp]:
+onAfterRestartNode[cp]:
   forEach(nodes.cp):
     if ("${event.params.nodeId}" == ${@i.id}):
       addNodeToHaproxy:
@@ -179,13 +179,13 @@ onAfterMigrate:
     title: "Environment $envName migrated"
     text: "$envName has been migrated"
 
-onBeforeRestartContainer:
+onBeforeRestartNode:
   logEvent:
     target: ${event.params.nodeId}
     title: "Restarting node ${event.params.nodeId}"
     text: "${event.params.nodeId} node is going to be restarted"
 
-onAfterRestartContainer:
+onAfterRestartNode:
   logEvent:
     target: ${event.params.nodeId}
     title: "Node ${event.params.nodeId} restarted"
