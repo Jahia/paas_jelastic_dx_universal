@@ -41,14 +41,6 @@ onInstall:
   #
   ## Upgrades
   - if (!${globals.rollingUpgrade}):
-      # If bulk upgrade, then every tomcat nodes need to be stopped
-      - forEach(nodes.cp):
-          removeNodeFromHaproxy:
-            nodeId: ${@i.id}
-            nodeIp: ${@i.intIP}
-      - cmd [cp]:
-          - service tomcat stop
-        user: root
       - procUpgrade
       - bulkCpUpgrade
   - else:
@@ -70,9 +62,6 @@ onInstall:
 
 actions:
   procUpgrade:
-    - cmd [proc]: |-
-        service tomcat stop
-      user: root
     - cmd [proc]:
         - echo 'export JAHIA_UPGRADE="${globals.upgradeJahia}"' >> /etc/locale.conf
       user: root
@@ -120,11 +109,6 @@ actions:
         ## [Upgrade] - 2/2
         exit 0
     - forEach (nodes.cp):
-        - removeNodeFromHaproxy:
-            nodeId: ${@i.id}
-        - cmd [${@i.id}]:
-            - service tomcat stop
-          user: root
         - api: environment.control.RedeployContainerById
           nodeId: ${@i.id}
           tag: ${globals.targetDockerTag}
