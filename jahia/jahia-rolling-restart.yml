@@ -5,9 +5,16 @@ id: jahia-rolling-restart
 name: Jahia nodes rolling restart
 description: Rolling restart all Jahia nodes (cp & proc)
 
+mixins:
+  - jahia_actions.yml
+
 onInstall:
-  - api: environment.control.RestartNodeById
-    nodeId: ${nodes.proc.first.id}
-  - forEach (nodes.cp):
-      - api: environment.control.RestartNodeById
-        nodeId: ${@i.id}
+  - restart: ${nodes.proc.first.id}
+  - foreach (nodes.cp):
+      - restart: ${@i.id}
+
+actions:
+  restart:
+    - api: environment.control.RestartNodeById
+      nodeId: ${this}
+    - startupJahiaHealthCheck: ${this}
