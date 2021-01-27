@@ -56,7 +56,7 @@ actions:
     - resetHaproxyBackends
 
   removeNodeFromHaproxy:
-    - log: "going to del ${this.nodeId}"
+    - log: "Removing node ${this.nodeId} from HAProxy"
     - cmd[bl]: |-
         grep -q "${env.appid}-${this.nodeId}" /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
         if [ $? ]; then sed -i "/${env.appid}-${this.nodeId}/d" /etc/haproxy/haproxy.cfg.d/10-jahia.cfg; fi
@@ -64,6 +64,7 @@ actions:
       user: haproxy
 
   addNodeToHaproxy:
+    - log: "Adding node ${this.nodeId} to HAProxy"
     - cmd[bl]: |-
         echo "    server ${env.appid}-${this.nodeId} ${this.nodeIp}:80 check cookie s${this.nodeId}" >> /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
         sudo service haproxy reload

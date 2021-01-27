@@ -9,12 +9,12 @@ mixins:
   - jahia_actions.yml
 
 onInstall:
-  - restart: proc
+  - restart: ${nodes.proc.first.id}
   - foreach (nodes.cp):
       - restart: ${@i.id}
 
 actions:
   restart:
-    - cmd [${this}]: service tomcat restart
-      user: root
+    - api: environment.control.RestartNodeById
+      nodeId: ${this}
     - startupJahiaHealthCheck: ${this}

@@ -75,37 +75,45 @@ onAfterServiceScaleOut[cp]:
           newNode: ${@i.id}
   - resetHaproxyBackends
 
-onBeforeRestartContainer[cp]:
+onBeforeRestartNode[cp]:
   removeNodeFromHaproxy:
     nodeId: ${event.params.nodeId}
 
-onAfterRestartContainer[cp]:
+onAfterRestartNode[cp]:
   forEach(nodes.cp):
     if ("${event.params.nodeId}" == ${@i.id}):
       addNodeToHaproxy:
         nodeId: ${@i.id}
         nodeIp: ${@i.intIP}
 
-# There is no proper way to merge these events as Cloudscripting
-# does not allow to put several nodeGroups as target of an event
 onBeforeRedeployContainer[cp]:
-  - if ('${event.params.nodeGroup.print()}' != ''):
+  - if ('${event.params.nodeGroup:}'):
+      # Handle RedeployContainersByGroup
       - forEach(nodes.cp):
           removeNodeFromHaproxy:
             nodeId: ${@i.id}
+      - cmd [cp]: |-
+          service tomcat stop
+        user: root
       - keepTomcatEnvConfOnRedeploy: ${event.params.nodeGroup}
       - keepJCRIndicesOnRedeploy: ${event.params.nodeGroup}
-  - elif ('${event.params.nodeId.print()}' != ''):
+  - elif ('${event.params.nodeId:}'):
+      # Handle RedeployContainerById
       - removeNodeFromHaproxy:
           nodeId: ${event.params.nodeId}
+      - cmd [${event.params.nodeId}]: |-
+          service tomcat stop
+        user: root
       - keepTomcatEnvConfOnRedeploy: ${event.params.nodeId}
       - keepJCRIndicesOnRedeploy: ${event.params.nodeId}
 
 onAfterRedeployContainer[cp]:
-  - if ('${event.params.nodeGroup.print()}' != ''):
+  - if ('${event.params.nodeGroup:}'):
+      # Handle RedeployContainersByGroup
       - onAfterRedeployJahiaContainer: ${event.params.nodeGroup}
       - resetHaproxyBackends
-  - elif ('${event.params.nodeId.print()}' != ''):
+  - elif ('${event.params.nodeId:}'):
+      # Handle RedeployContainerById
       - onAfterRedeployJahiaContainer: ${event.params.nodeId}
       - forEach(nodes.cp):
           if ("${event.params.nodeId}" == "${@i.id}"):
@@ -114,21 +122,29 @@ onAfterRedeployContainer[cp]:
               nodeIp: ${@i.intIP}
 
 onBeforeRedeployContainer[proc]:
-  - if ('${event.params.nodeGroup.print()}' != ''):
+  - cmd [proc]: |-
+      service tomcat stop
+    user: root
+  - if ('${event.params.nodeGroup:}'):
+      # Handle RedeployContainersByGroup
       - keepTomcatEnvConfOnRedeploy: ${event.params.nodeGroup}
       - keepJCRIndicesOnRedeploy: ${event.params.nodeGroup}
-  - elif ('${event.params.nodeId.print()}' != ''):
+  - elif ('${event.params.nodeId:}'):
+      # Handle RedeployContainerById
       - keepTomcatEnvConfOnRedeploy: ${event.params.nodeId}
       - keepJCRIndicesOnRedeploy: ${event.params.nodeId}
 
 onAfterRedeployContainer[proc]:
-  - if ('${event.params.nodeGroup.print()}' != ''):
+  - if ('${event.params.nodeGroup:}'):
+      # Handle RedeployContainersByGroup
       - onAfterRedeployJahiaContainer: ${event.params.nodeGroup}
-  - elif ('${event.params.nodeId.print()}' != ''):
+  - elif ('${event.params.nodeId:}'):
+      # Handle RedeployContainerById
       - onAfterRedeployJahiaContainer: ${event.params.nodeId}
 
 onAfterRedeployContainer[bl]:
-  - if ('${event.params.nodeGroup.print()}' != ''):
+  - if ('${event.params.nodeGroup:}'):
+      # Handle RedeployContainersByGroup
       - setSudoer: ${event.params.nodeGroup}
       - splitHaproxyConf: ${event.params.nodeGroup}
       - setupDatadogAgentHaproxy: ${event.params.nodeGroup}
@@ -136,7 +152,8 @@ onAfterRedeployContainer[bl]:
           data:
             productName: haproxy
             productVersion: ${nodes.bl.first.version}
-  - elif ('${event.params.nodeId.print()}' != ''):
+  - elif ('${event.params.nodeId:}'):
+      # Handle RedeployContainerById
       - setSudoer: ${event.params.nodeId}
       - splitHaproxyConf: ${event.params.nodeId}
       - setupDatadogAgentHaproxy: ${event.params.nodeId}
@@ -146,10 +163,12 @@ onAfterRedeployContainer[bl]:
             productVersion: ${nodes.bl.first.version}
 
 onAfterRedeployContainer[sqldb]:
-  - if ('${event.params.nodeGroup.print()}' != ''):
+  - if ('${event.params.nodeGroup:}'):
+      # Handle RedeployContainersByGroup
       - setSudoer: ${event.params.nodeGroup}
       - setupDatadogAgentSql: ${event.params.nodeGroup}
-  - elif ('${event.params.nodeId.print()}' != ''):
+  - elif ('${event.params.nodeId:}'):
+      # Handle RedeployContainerById
       - setSudoer: ${event.params.nodeId}
       - setupDatadogAgentSql: ${event.params.nodeId}
 
@@ -179,37 +198,41 @@ onAfterMigrate:
     title: "Environment $envName migrated"
     text: "$envName has been migrated"
 
-onBeforeRestartContainer:
+onBeforeRestartNode:
   logEvent:
     target: ${event.params.nodeId}
     title: "Restarting node ${event.params.nodeId}"
     text: "${event.params.nodeId} node is going to be restarted"
 
-onAfterRestartContainer:
+onAfterRestartNode:
   logEvent:
     target: ${event.params.nodeId}
     title: "Node ${event.params.nodeId} restarted"
     text: "Node ${event.params.nodeId} has restarted"
 
 onBeforeRedeployContainer:
-  - if ('${event.params.nodeGroup.print()}' != ''):
+  - if ('${event.params.nodeGroup:}'):
+      # Handle RedeployContainersByGroup
       logEvent:
         target: ${event.params.nodeGroup}
         title: "Redeploying ${event.params.nodeGroup} nodes to ${event.params.tag} version"
         text: "${event.params.nodeGroup} nodes are going to be redeploy to ${event.params.tag} version"
-  - elif ('${event.params.nodeId.print()}' != ''):
+  - elif ('${event.params.nodeId:}'):
+      # Handle RedeployContainerById
       logEvent:
         target: ${event.params.nodeId}
         title: "Redeploying node ${event.params.nodeId} to ${event.params.tag} version"
         text: "Node ${event.params.nodeId} is going to be redeploy to ${event.params.tag} version"
 
 onAfterRedeployContainer:
-  - if ('${event.params.nodeGroup.print()}' != ''):
+  - if ('${event.params.nodeGroup:}'):
+      # Handle RedeployContainersByGroup
       logEvent:
         target: ${event.params.nodeGroup}
         title: "${event.params.nodeGroup} nodes have been redeployed to ${event.params.tag} version"
         text: "${event.params.nodeGroup} nodes have been redeployed to ${event.params.tag} version"
-  - elif ('${event.params.nodeId.print()}' != ''):
+  - elif ('${event.params.nodeId:}'):
+      # Handle RedeployContainerById
       logEvent:
         target: ${event.params.nodeId}
         title: "Node ${event.params.nodeId} redeployed to ${event.params.tag} version"
