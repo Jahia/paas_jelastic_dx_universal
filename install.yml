@@ -200,9 +200,6 @@ onBeforeInstall: |
 nodes: definedInOnBeforeInstall
 
 # --Events --
-onUninstall:
-  removeSudoers: ${targetNodes.nodeGroup}
-
 onInstall:
   - log: "## Beginning installation of Jahia"
   - setGlobalEnvVars
