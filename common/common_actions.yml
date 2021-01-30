@@ -16,12 +16,6 @@ actions:
             type: error
             message: "An error occurred during sudoers configuration."
 
-
-  removeSudoers:
-    - cmd [${this}]:
-        - sed -i -e 's/.*NOPASSWD.*//g' /etc/sudoers.d/sudo
-      user: root
-
   setGlobalEnvVars:
     - if (/\/raw\/v[0-9]+(\.[0-9]+)+$/.test(baseUrl)):
         - log: "## git repo branch is prod"
