@@ -38,15 +38,19 @@ onInstall:
         useExistingVolumes: false
   # As a reminder, when updating the value of a global variable inside an "if" block,
   # the new value won't be taken in account if testing it inside a nested "if" block.
-  #
+
   ## Upgrades
   - if (!${globals.rollingUpgrade}):
+      # In case of Jahia upgrade, all jahia nodes must be stopped first
+      - cmd [cp, proc]:
+          - service tomcat stop
+        user: root
       - procUpgrade
       - bulkCpUpgrade
   - else:
       - procUpgrade
       - rollingCpUpgrade
-  #
+
   ## Post-actions
   # Get the Jahia version, which could be different of the name of the docker image
   # e.g.: docker image tag "7.3.3.0_PAAS-444"
