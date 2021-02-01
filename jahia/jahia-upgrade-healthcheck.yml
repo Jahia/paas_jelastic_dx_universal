@@ -1,13 +1,14 @@
 ---
 
-# expect the global healthcheckVersion to be defined
-
 actions:
   upgradeJahiaHealthcheckModule:
-    - if ("${this.healthcheckVersion}" == ""):
+    # expect the parameter version to be defined
+    - if ("${this.version}" == ""):
         return:
           type: error
           message: healthcheckVersion global is not defined
+    - setGlobals:
+        healthcheckVersion: "${this.version}"
 
     - forceHealthcheckSuccess
     - performHealthcheckUpgradeOnNode: proc
@@ -126,7 +127,7 @@ actions:
     - setGlobals:
         jahia_version: ${response.out}
 
-  startupJahiaHealthCheck:
+  waitForNewHealthCheckVersionToBeReady:
     - cmd[${this}]: |-
         if ! rpm --quiet -q jq; then
           echo "[INFO] Installing jq to parse healthcheck module response"
@@ -152,5 +153,5 @@ actions:
     - if ("${response.errOut}" != ""):
         - return:
             type: error
-            message: healthcheck is broken on node ${this}. Be carreful, the haproxy healthcheck is still forced to success
+            message: healthcheck is broken on node ${this}. Be careful, the haproxy healthcheck is still forced to success
 

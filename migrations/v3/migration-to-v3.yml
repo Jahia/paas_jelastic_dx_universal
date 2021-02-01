@@ -122,9 +122,8 @@ actions:
   upgradeHealthcheckModule:
     - api [${nodes.cp.first.id}]: environment.control.GetNodeInfo
     - if ("${response.node.version}" > "8.0.0.0"):
-        setGlobals:
-          healthcheckVersion: "2.3.0"
+        upgradeJahiaHealthcheckModule:
+          version: "2.3.0"
     - else:
-        setGlobals:
-          healthcheckVersion: "1.2.0"
-    - upgradeJahiaHealthcheckModule
+        upgradeJahiaHealthcheckModule:
+          version: "1.2.0"
