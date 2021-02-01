@@ -1,0 +1,157 @@
+---
+
+actions:
+  upgradeJahiaHealthcheckModule:
+    # expect the parameter version to be defined
+    - if ("${this.version}" == ""):
+        return:
+          type: error
+          message: healthcheckVersion global is not defined
+    - setGlobals:
+        healthcheckVersion: "${this.version}"
+
+    - forceHealthcheckSuccess
+    - performHealthcheckUpgradeOnNode: proc
+    - foreach (nodes.cp):
+        - performHealthcheckUpgradeOnNode: ${@i.id}
+    - restoreHealthCheck
+
+  performHealthcheckUpgradeOnNode:
+    - enable_karaf_login: ${this}
+    - installNewHealthcheckIfNotPresent: ${this}
+    - removeOldHealthCheckVersions: ${this}
+    - disable_karaf_login: ${this}
+    - startupJahiaHealthCheck: ${this}
+
+  installNewHealthcheckIfNotPresent:
+    - cmd[${this}]: |-
+        ssh abricot@localhost -p 8101 -i /tmp/abricot -o StrictHostKeyChecking=no bundle:list | awk '
+          {
+            if ($NF == "healthcheck" && $7 == "${globals.healthcheckVersion}" && NF == "9")
+              print $1
+          }'
+    - if ("${response.out}" == ""):
+        - log: Installing new healthcheck on ${this}
+        - cmd[${this}]: |-
+            cd /data/digital-factory-data/modules
+            wget -O healthcheck-${globals.healthcheckVersion}.jar https://store.jahia.com/cms/mavenproxy/private-app-store/org/jahia/modules/healthcheck/${globals.healthcheckVersion}/healthcheck-${globals.healthcheckVersion}.jar
+            sleep 20
+    - else:
+        log: No need to install new healthcheck on ${this}
+
+    - cmd[${this}]: |-
+        # starts the module if not
+        bundle_id=$(ssh abricot@localhost -p 8101 -i /tmp/abricot -o StrictHostKeyChecking=no bundle:list |  awk '
+          {
+            if ($NF == "healthcheck" && $7 == "${globals.healthcheckVersion}" && NF == "9" && $3 != "Active")
+              print $1
+          }')
+        if [ "$bundle_id" != "" ]; then
+          ssh abricot@localhost -p 8101 -i /tmp/abricot -o StrictHostKeyChecking=no bundle:start $bundle_id
+          echo "module started"
+        fi
+    - if ("${response.out}" != ""):
+        log: Module healthcheck started on ${this}
+
+  removeOldHealthCheckVersions:
+    - cmd[${this}]: |-
+        ssh abricot@localhost -p 8101 -i /tmp/abricot -o StrictHostKeyChecking=no bundle:list | awk '
+          {
+            if ($NF == "healthcheck" && $7 != "${globals.healthcheckVersion}" && NF == "9")
+              system("ssh abricot@localhost -p 8101 -i /tmp/abricot -o StrictHostKeyChecking=no bundle:uninstall "$1"; echo deleted")
+          }'
+    - if ("${response.out}" != ""):
+        log: Old healthcheck module deleted on ${this}
+
+  forceHealthcheckSuccess:
+    cmd[bl]: |-
+      exit_line=$(sed '2q;d' /etc/haproxy/haproxy.cfg.d/healthcheck.sh)
+      if [ "$exit_line" != "exit 0" ]; then
+        sed -i '1 a exit 0' /etc/haproxy/haproxy.cfg.d/healthcheck.sh
+      fi
+
+  restoreHealthCheck:
+    cmd[bl]: |-
+      exit_line=$(sed '2q;d' /etc/haproxy/haproxy.cfg.d/healthcheck.sh)
+      if [ "$exit_line" = "exit 0" ]; then
+        sed -i '2 d' /etc/haproxy/haproxy.cfg.d/healthcheck.sh
+      fi
+
+
+  enable_karaf_login:
+    - log: "Activate karaf's ssh login on ${this}'s nodegroup"
+    - cmd[${this}]: |-
+        # Check if karaf login already enabled
+        ssh abricot@localhost -o BatchMode=yes -p 8101 -i /tmp/abricot -o StrictHostKeyChecking=no bundle:list
+        if [ $? -eq 0 ]; then
+          exit 0
+        fi
+
+        # Clear everything and enbale karaf login
+        [ -f /tmp/abricot ] && rm /tmp/abricot
+        [ -f /tmp/abricot.pub  ] && rm /tmp/abricot.pub
+        ssh-keygen -t rsa -f /tmp/abricot -P ""
+        awk '{printf "abricot:%s,_g_:admingroup\n",$2}' /tmp/abricot.pub >> /data/digital-factory-data/karaf/etc/keys.properties
+        sed 's,\(sshRealm\s*=\s*\)jahia,\1karaf,' -i /data/digital-factory-data/karaf/etc/org.apache.karaf.shell.cfg
+        i=1
+        it=66
+        until (ssh abricot@localhost -p 8101 -i /tmp/abricot -o StrictHostKeyChecking=no bundle:list > /dev/null); do
+          echo "karaf ssh login not updated yet (iteration $i/$it)"
+          if [ $i -ge $it ]; then
+            echo "Too long to start, something is wrong here... EXITING"
+            exit 1
+          fi
+          ((i++))
+          sleep 1
+        done
+
+  disable_karaf_login:
+    - log: "Disable karaf's ssh login on ${this}'s nodegroup"
+    - cmd[${this}]: |-
+        [ -f /tmp/abricot  ] && rm /tmp/abricot
+        [ -f /tmp/abricot.pub  ] && rm /tmp/abricot.pub
+        sed '/^abricot:/d' -i /data/digital-factory-data/karaf/etc/keys.properties
+        sed 's,\(sshRealm\s*=\s*\)karaf,\1jahia,' -i /data/digital-factory-data/karaf/etc/org.apache.karaf.shell.cfg
+
+  getJahiaVersion:
+    - script: |-
+        const envVars = jelastic.env.control.GetContainerEnvVars(
+            "${env.envName}",
+            session,
+            "${nodes.proc.first.id}"
+        );
+        if ( envVars.object["DX_VERSION"] )
+          return {'result': 0, 'out': envVars.object["DX_VERSION"]}
+        else
+          return {'result': 1, "error": "Can't get jahia version"}
+    - setGlobals:
+        jahia_version: ${response.out}
+
+  waitForNewHealthCheckVersionToBeReady:
+    - cmd[${this}]: |-
+        if ! rpm --quiet -q jq; then
+          echo "[INFO] Installing jq to parse healthcheck module response"
+          yum install -y jq > /dev/null
+        fi
+      user: root
+    - cmd [${this}]: |-
+        timeout=$(($(date +%s)+20))
+        hc_url="http://127.0.0.1:8080/modules/healthcheck?token=$jahia_cfg_healthcheck_token"
+
+        while [ $(date +%s) -lt $timeout ]; do
+          # First we test if Jahia is up with a curl request.
+          if curl_resp=$(curl -f -s -m 1 "$hc_url"); then
+            status=$(echo $curl_resp | jq -r ".status")
+            if [ "$status" = "GREEN" ] || [ "$status" = "YELLOW" ]; then
+              exit 0
+            fi
+          fi
+          sleep 1
+        done
+
+        echo "[ERROR] Timeout, the Tomcat process is still running but Jahia is not started yet" >&2
+    - if ("${response.errOut}" != ""):
+        - return:
+            type: error
+            message: healthcheck is broken on node ${this}. Be careful, the haproxy healthcheck is still forced to success
+
