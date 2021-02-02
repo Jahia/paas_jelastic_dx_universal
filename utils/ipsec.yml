@@ -16,16 +16,13 @@ onInstall:
       - setIPsecConf: proc
       - foreach(nodes.cp):
           - setIPsecConf: ${@i.id}
-  - if (settings.ipsec_should_be == "enable"):
+  - if (settings.ipsec_should_be != ""):
       - daemonControl
-  - if (settings.ipsec_should_be == "disable"):
-      - daemonControl
-
 
 actions:
   daemonControl:
     - cmd[cp, proc]: |-
-        systemctl ${settings.ipsec_should_be} strongswan
+        systemctl ${settings.ipsec_should_be} --now strongswan
       user: root
 
   setIPsecConf:
