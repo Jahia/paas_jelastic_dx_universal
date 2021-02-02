@@ -125,6 +125,9 @@ onBeforeInstall: |
         "envName": "${globals.shortdomain}",
         "DB_ENDPOINT": db_scheme,
         "jahia_cfg_healthcheck_token": "${globals.healthcheck_token}",
+        "VAULT_ROLE_ID": "${globals.vault_role_id}",
+        "VAULT_SECRET_ID": "${globals.vault_secret_id}",
+        "VAULT_CLUSTER_URL": "${globals.vault_cluster_url}",
       }
   }
   if (dockerImage == "undefined") {
@@ -160,6 +163,9 @@ onBeforeInstall: |
         "envName": "${globals.shortdomain}",
         "DB_ENDPOINT": db_scheme,
         "jahia_cfg_healthcheck_token": "${globals.healthcheck_token}",
+        "VAULT_ROLE_ID": "${globals.vault_role_id}",
+        "VAULT_SECRET_ID": "${globals.vault_secret_id}",
+        "VAULT_CLUSTER_URL": "${globals.vault_cluster_url}",
       }
   }
   if (dockerImage == "undefined") {
