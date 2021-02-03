@@ -136,8 +136,13 @@ actions:
         conn_status=$(strongswan status $conn_name | awk 'NR==2 {if($2=="ESTABLISHED") {print "true"}else{print "false"}}')
         if ! $conn_status; then
           echo "[ERROR] Connection $conn_name is not established" >&2
-          [ -f $confdir/$confname.conf_bak ] && mv $confdir/$confname.conf{_bak,}
-          [ -f ${secretsfile}_bak ] && mv ${secretsfile}{_bak,}
+          for f in $confdir/$confname.conf ${secretsfile}; do
+            if [ -f ${f}_bak ]; then
+              mv ${f}{_bak,}
+            else
+              rm -v ${f}
+            fi
+          done
           if ! $ipsec_is_active; then
             systemctl stop strongswan
           else
