@@ -23,6 +23,10 @@ actions:
   daemonControl:
     - cmd[cp, proc]: |-
         systemctl ${settings.ipsec_should_be} --now strongswan
+        if [ "${settings.ipsec_should_be}" == "disable" ]; then
+          rm -v ${globals.ipsec_conf_dir}/*.conf
+          sed -i '2,$d' ${globals.ipsec_secrets_file}
+        fi
       user: root
 
   setIPsecConf:
