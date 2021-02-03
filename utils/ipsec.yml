@@ -103,7 +103,7 @@ actions:
           else
             cp -p ${secretsfile}{,_bak}
             l=$(awk "/^# for $confname:\$/ {print NR}" $secretsfile)
-            sed "${l}{n;d}" -i $secretsfile &&  sed "${l}r $secret_tmpfile" -i $secretsfile
+            sed "${l}{n;d}" -i $secretsfile && sed "${l}r $secret_tmpfile" -i $secretsfile
             if [[ $? -ne 0 ]]; then
               echo "[ERROR] secrets file is not updated" >&2
             fi
