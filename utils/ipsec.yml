@@ -135,7 +135,7 @@ actions:
         sleep 5  # little wait to be sure
         conn_status=$(strongswan status $conn_name | awk 'NR==2 {if($2=="ESTABLISHED") {print "true"}else{print "false"}}')
         if ! $conn_status; then
-          echo "[ERROR] Connection $conn_status is not established" >&2
+          echo "[ERROR] Connection $conn_name is not established" >&2
           [ -f $confdir/$confname.conf_bak ] && mv $confdir/$confname.conf{_bak,}
           [ -f ${secretsfile}_bak ] && mv ${secretsfile}{_bak,}
           if ! $ipsec_is_active; then
