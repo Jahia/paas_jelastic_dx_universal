@@ -132,7 +132,7 @@ actions:
 
         # check connection is alive, rollback if needed
         conn_name=$(awk '$1=="conn" {print $2; exit}' $confdir/$confname.conf)
-        conn_status=$(strongswan status $conn_name | awk 'NR==2 && $2=="ESTABLISHED" {print "true"}')
+        conn_status=$(strongswan status $conn_name | awk 'NR==2 {if($2=="ESTABLISHED") {print "true"}else{print "false"}}')
         if ! $conn_status; then
           echo "[ERROR] Connection $conn_status is not established" >&2
           [ -f $confdir/$confname.conf_bak ] && mv $confdir/$confname.conf{_bak,}
