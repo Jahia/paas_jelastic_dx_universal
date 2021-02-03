@@ -17,4 +17,3 @@ actions:
   restart:
     - api: environment.control.RestartNodeById
       nodeId: ${this}
-    - startupJahiaHealthCheck: ${this}

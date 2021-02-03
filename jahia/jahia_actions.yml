@@ -245,7 +245,7 @@ actions:
         timeout=$(($(date +%s)+${this.duration}))
         hc_url="http://127.0.0.1:8080/modules/healthcheck?token=$jahia_cfg_healthcheck_token"
 
-        # Number of minutes allowed for Jahia login page to be reachable once tomcat startup is finished
+        # Number of minutes allowed for healthcheck to be completed once tomcat startup is finished
         jahia_running_timeout=5
 
         while [ $(date +%s) -lt $timeout ]; do
@@ -266,7 +266,7 @@ actions:
           tail -n +${startup_line} /opt/tomcat/logs/catalina.out | grep -q "Server startup in"
           if [ $? -eq 0 ]; then
             if [ $jahia_running_timeout -eq 0 ]; then
-              echo "[ERROR] Tomcat startup is finished but login page is not working, please check." >&2
+              echo "[ERROR] Tomcat startup is finished but healthcheck failed, please check." >&2
               exit 4
             fi
             ((jahia_running_timeout-=1))

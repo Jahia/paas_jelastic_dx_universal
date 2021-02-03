@@ -106,7 +106,6 @@ actions:
       useExistingVolumes: ${globals.useExistingVolumes}
       skipReinstall: false
       envName: ${env.envName}
-    - startupJahiaHealthCheck: cp
 
   rollingCpUpgrade:
     - cmd [proc]: |-
@@ -119,7 +118,6 @@ actions:
           useExistingVolumes: ${globals.useExistingVolumes}
           skipReinstall: false
           envName: ${env.envName}
-        - startupJahiaHealthCheck: ${@i.id}
 
 settings:
   fields:
