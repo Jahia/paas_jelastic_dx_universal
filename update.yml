@@ -81,10 +81,11 @@ onBeforeRestartNode[cp]:
 
 onAfterRestartNode[cp]:
   forEach(nodes.cp):
-    if ("${event.params.nodeId}" == ${@i.id}):
-      addNodeToHaproxy:
-        nodeId: ${@i.id}
-        nodeIp: ${@i.intIP}
+    if ("${event.params.nodeId}" == "${@i.id}"):
+      - startupJahiaHealthCheck: ${event.params.nodeId}
+      - addNodeToHaproxy:
+          nodeId: ${@i.id}
+          nodeIp: ${@i.intIP}
 
 onBeforeRedeployContainer[cp]:
   - if ('${event.params.nodeGroup:}'):
@@ -111,15 +112,17 @@ onAfterRedeployContainer[cp]:
   - if ('${event.params.nodeGroup:}'):
       # Handle RedeployContainersByGroup
       - onAfterRedeployJahiaContainer: ${event.params.nodeGroup}
+      - startupJahiaHealthCheck: ${event.params.nodeGroup}
       - resetHaproxyBackends
   - elif ('${event.params.nodeId:}'):
       # Handle RedeployContainerById
       - onAfterRedeployJahiaContainer: ${event.params.nodeId}
       - forEach(nodes.cp):
           if ("${event.params.nodeId}" == "${@i.id}"):
-            addNodeToHaproxy:
-              nodeId: ${@i.id}
-              nodeIp: ${@i.intIP}
+            - startupJahiaHealthCheck: ${event.params.nodeId}
+            - addNodeToHaproxy:
+                nodeId: ${@i.id}
+                nodeIp: ${@i.intIP}
 
 onBeforeRedeployContainer[proc]:
   - cmd [proc]: |-
@@ -181,10 +184,11 @@ onBeforeStop:
       text: "$envName is going to stop"
 
 onAfterStart:
-  logEvent:
-    target: ${nodes.proc.first.id}
-    title: "$envName environment started"
-    text: "$envName is started"
+  - startupJahiaHealthCheck: cp
+  - logEvent:
+      target: ${nodes.proc.first.id}
+      title: "$envName environment started"
+      text: "$envName is started"
 
 onBeforeMigrate:
   logEvent:
