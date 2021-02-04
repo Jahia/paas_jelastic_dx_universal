@@ -18,8 +18,14 @@ onInstall:
           - setIPsecConf: ${@i.id}
   - if (settings.ipsec_should_be != ""):
       - daemonControl
+      - setNodeGroupData
 
 actions:
+  setNodeGroupData:
+    - environment.control.ApplyNodeGroupData [cp]:
+        data:
+          ipsec: "${settings.ipsec_should_be}"
+
   daemonControl:
     - cmd[cp, proc]: |-
         systemctl ${settings.ipsec_should_be} --now strongswan
