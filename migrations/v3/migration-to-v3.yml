@@ -79,8 +79,8 @@ actions:
     # Get informations from bl nodegroup because that's
     # the only one vault ready in v2
     - environment.control.GetContainerEnvVarsByGroup [bl]
-    - environment.control.SetContainerEnvVarsByGroup [proc, cp]:
-        data:
+    - environment.control.AddContainerEnvVars [proc, cp]:
+        vars:
           VAULT_ROLE_ID: ${response.object.VAULT_ROLE_ID}
           VAULT_SECRET_ID: ${response.object.VAULT_SECRET_ID}
           VAULT_CLUSTER_URL: ${response.object.VAULT_CLUSTER_URL}

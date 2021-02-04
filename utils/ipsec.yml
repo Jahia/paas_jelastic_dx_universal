@@ -23,6 +23,10 @@ actions:
   daemonControl:
     - cmd[cp, proc]: |-
         systemctl ${settings.ipsec_should_be} --now strongswan
+        if [ "${settings.ipsec_should_be}" == "disable" ]; then
+          rm -v ${globals.ipsec_conf_dir}/*.conf
+          sed -i '2,$d' ${globals.ipsec_secrets_file}
+        fi
       user: root
 
   setIPsecConf:
@@ -103,7 +107,7 @@ actions:
           else
             cp -p ${secretsfile}{,_bak}
             l=$(awk "/^# for $confname:\$/ {print NR}" $secretsfile)
-            sed "${l}{n;d}" -i $secretsfile &&  sed "${l}r $secret_tmpfile" -i $secretsfile
+            sed "${l}{n;d}" -i $secretsfile && sed "${l}r $secret_tmpfile" -i $secretsfile
             if [[ $? -ne 0 ]]; then
               echo "[ERROR] secrets file is not updated" >&2
             fi
@@ -132,11 +136,17 @@ actions:
 
         # check connection is alive, rollback if needed
         conn_name=$(awk '$1=="conn" {print $2; exit}' $confdir/$confname.conf)
-        conn_status=$(strongswan status $conn_name | awk 'NR==2 && $2=="ESTABLISHED" {print "true"}')
+        sleep 5  # little wait to be sure
+        conn_status=$(strongswan status $conn_name | awk 'NR==2 {if($2=="ESTABLISHED") {print "true"}else{print "false"}}')
         if ! $conn_status; then
-          echo "[ERROR] Connection $conn_status is not established" >&2
-          [ -f $confdir/$confname.conf_bak ] && mv $confdir/$confname.conf{_bak,}
-          [ -f ${secretsfile}_bak ] && mv ${secretsfile}{_bak,}
+          echo "[ERROR] Connection $conn_name is not established" >&2
+          for f in $confdir/$confname.conf ${secretsfile}; do
+            if [ -f ${f}_bak ]; then
+              mv ${f}{_bak,}
+            else
+              rm -v ${f}
+            fi
+          done
           if ! $ipsec_is_active; then
             systemctl stop strongswan
           else
