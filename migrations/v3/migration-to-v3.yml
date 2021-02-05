@@ -31,6 +31,7 @@ onInstall:
   - checkProductVersion # PAAS-1342
   - upgradeHealthcheckModule # PAAS-1317
   - updateHaproxyConf # PAAS-1357
+  - addHealthcheckEnvVar # PAAS-1369
 
   ### Post-actions
   - eventsUpdate # PAAS-1322
@@ -162,3 +163,7 @@ actions:
     - else:
         upgradeJahiaHealthcheckModule:
           version: "1.2.0"
+
+  addHealthcheckEnvVar:
+    - api [cp, proc]: env.control.AddContainerEnvVars
+      vars: {"HEALTHCHECK_DURATION": "240"}
