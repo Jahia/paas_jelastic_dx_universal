@@ -128,6 +128,7 @@ onBeforeInstall: |
         "VAULT_ROLE_ID": "${globals.vault_role_id}",
         "VAULT_SECRET_ID": "${globals.vault_secret_id}",
         "VAULT_CLUSTER_URL": "${globals.vault_cluster_url}",
+        "HEALTHCHECK_DURATION": "240",
       }
   }
   if (dockerImage == "undefined") {
@@ -166,6 +167,7 @@ onBeforeInstall: |
         "VAULT_ROLE_ID": "${globals.vault_role_id}",
         "VAULT_SECRET_ID": "${globals.vault_secret_id}",
         "VAULT_CLUSTER_URL": "${globals.vault_cluster_url}",
+        "HEALTHCHECK_DURATION": "240",
       }
   }
   if (dockerImage == "undefined") {
