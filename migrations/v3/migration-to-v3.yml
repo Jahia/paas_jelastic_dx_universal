@@ -69,7 +69,7 @@ actions:
         mkdir /etc/systemd/system/strongswan.service.d
         wget -qO /etc/systemd/system/strongswan.service.d/override.conf ${baseUrl}/strongswan_override
         systemctl daemon-reload
-        cat tmp/strongswan_defaults >> /etc/strongswan/ipsec.conf
+        cat /tmp/strongswan_defaults >> /etc/strongswan/ipsec.conf
         sed -i '11r /tmp/strongswan_logger' /etc/strongswan/strongswan.conf
         rm -f /tmp/strongswan_*
         echo "/etc/strongswan/" >> /etc/jelastic/redeploy.conf
