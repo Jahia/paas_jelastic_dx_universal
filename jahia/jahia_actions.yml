@@ -240,13 +240,13 @@ actions:
         fi
 
         startup_line=$(grep -n "s t a r t i n g" /opt/tomcat/logs/catalina.out | tail -n1 | cut -d":" -f1)
-        timeout=$(($(date +%M) + $HEALTHCHECK_DURATION))
+        timeout=$(date --date="+$HEALTHCHECK_DURATION minutes" +%s)
         hc_url="http://127.0.0.1:8080/modules/healthcheck?token=$jahia_cfg_healthcheck_token"
 
         # Number of minutes allowed for healthcheck to be completed once tomcat startup is finished
         jahia_running_timeout=5
 
-        while [ $(date +%M) -lt $timeout ]; do
+        while [ $(date +%s) -lt $timeout ]; do
           # First we test if Jahia is up with a curl request.
           if curl_resp=$(curl -f -s -m 1 "$hc_url"); then
             status=$(echo $curl_resp | jq -r ".status")
