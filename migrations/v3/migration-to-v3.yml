@@ -32,6 +32,7 @@ onInstall:
   - checkProductVersion # PAAS-1342
   - upgradeHealthcheckModule # PAAS-1317
   - updateHaproxyConf # PAAS-1357
+  - increaseHaproxyTimeout # PAAS-1433
 
   ### Post-actions
   - eventsUpdate # PAAS-1322
@@ -167,3 +168,9 @@ actions:
   addHealthcheckEnvVar:
     - api [cp, proc]: env.control.AddContainerEnvVars
       vars: {"HEALTHCHECK_DURATION": "240"}
+
+  increaseHaproxyTimeout:
+    cmd[bl]: |-
+      sed 's/timeout \(client\|server\)\( *\) 1m$/timeout \1\2 5m/g' -i /etc/haproxy/haproxy.cfg.d/00-global.cfg
+      sudo service haproxy reload
+    user: haproxy
