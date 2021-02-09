@@ -77,3 +77,37 @@ actions:
           fi
         fi
       user: root
+
+  stopGaleraNode:
+    cmd[${this}]: |-
+      service mysql stop || exit 1
+      if [ -f /var/lib/mysql/grastate.dat ]; then
+        cat /var/lib/mysql/grastate.dat
+      else
+        echo "$HOSTNAME is not in a cluster"
+      fi
+      service mysql stop
+    user: root
+
+  startGaleraNode:
+    cmd[${this}]: |-
+      service mysql start
+      rc=$?
+      if [ ! -f /var/lib/mysql/grastate.dat ]; then
+        echo "$HOSTNAME is not in a cluster, exiting"
+        exit $rc
+      fi
+      i=1
+      it=66
+      until [ "$(mysql -Ns -e "show global status like 'wsrep_local_state_comment'" | awk '{print $NF}')" == "Synced"  ]; do
+        echo "$(date) not ready yet (iteration $i/$it)"
+        if [ $i -ge $it ]; then
+          echo "Too long to start, something is wrong here... EXITING"
+          exit 1
+        fi
+        sleep 1
+        ((i++))
+      done
+      echo "Node $HOSTNAME is now Synced !"
+    user: root
+
