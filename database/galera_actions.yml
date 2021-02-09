@@ -111,3 +111,13 @@ actions:
       echo "Node $HOSTNAME is now Synced !"
     user: root
 
+  checkGaleraClusterSize:
+    # Ensure the cluster size match the node count
+    - cmd[${nodes.sqldb.first.id}]: |-
+        mysql -Nse "show global status like 'wsrep_cluster_size';" | awk '{print $NF}'
+    - if ("${response.out}" == "${nodes.sqldb.length}"):
+        setGlobals:
+          galeraClusterSizeOk: True
+    - else:
+        setGlobals:
+          galeraClusterSizeOk: False

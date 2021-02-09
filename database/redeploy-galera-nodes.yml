@@ -10,7 +10,9 @@ globals:
 
 mixins:
   - galera_actions.yml
-  - ../jahia/jahia_actions.yml
+  - mariadb_actions.yml
+  - "../jahia/jahia_actions.yml"
+  - "../database/proxysql_actions.yml"
 
 onInstall:
   - enableFullReadOnlyOnCluster
@@ -19,15 +21,38 @@ onInstall:
 
 actions:
   redeployGalera:
-    forEach(nodes.sqldb):
-      - log: "Redeploying MariaDB on node ${@i.id}..."
-      - stopGalera: ${@i.id}
-      - api: environment.control.RedeployContainerById
-        nodeId: ${@i.id}
-        tag: ${globals.targetDockerTag}
-        useExistingVolumes: true
-        skipReinstall: false
-        envName: ${env.envName}
+    - if (nodes.sqldb.length > 1):
+      - checkGaleraClusterHealth: sqldb
+      - checkGaleraClusterSize
+      - if (!${globals.galeraClusterSizeOk}):
+          return:
+            type: error
+            message: "Galera cluster size is wrong. Aborting"
+    - forEach(nodes.sqldb):
+        - log: "Redeploying MariaDB on node ${@i.id}..."
+        - getGaleraNodeNameIndex: ${@i.id}
+        - proxysqlDisableMariadbBackend:
+            targetHost: ${globals.galeraNodeNameIndex}
+        - stopGaleraNode: ${@i.id}
+        - api: environment.control.RedeployContainerById
+          nodeId: ${@i.id}
+          tag: ${globals.targetDockerTag}
+          useExistingVolumes: true
+          skipReinstall: false
+          envName: ${env.envName}
+        - proxysqlEnableMariadbBackend:
+            targetHost: ${globals.galeraNodeNameIndex}
+
+        # We are going to a new if dimension, let's save some information
+        - setGlobals:
+            currentNode: ${@i.id}
+        - if (nodes.sqldb.length > 1):
+            - checkGaleraClusterHealth: sqldb
+            - checkGaleraClusterSize
+            - if (!${globals.galeraClusterSizeOk}):
+                return:
+                  type: error
+                  message: "Galera node ${globals.currentNode} was not able to join the cluster after being redeployed"
 
 settings:
   fields:

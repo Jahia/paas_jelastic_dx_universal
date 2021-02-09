@@ -60,3 +60,13 @@ actions:
   refreshProxysqlInstancesList:
     - setProxysqlGlobals
     - setupProxysqlCluster
+
+  proxysqlDisableMariadbBackend:
+    - setProxysqlGlobals
+    - cmd[cp, proc]: |-
+        ${globals.sql_cli} -e "UPDATE mysql_servers SET status='OFFLINE_SOFT' WHERE hostname='${this.targetHost}';"
+
+  proxysqlEnableMariadbBackend:
+    - setProxysqlGlobals
+    - cmd[cp, proc]: |-
+        ${globals.sql_cli} -e "UPDATE mysql_servers SET status='ONLINE' WHERE hostname='${this.targetHost}';"
