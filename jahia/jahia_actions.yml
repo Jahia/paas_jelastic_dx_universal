@@ -2,7 +2,6 @@
 actions:
   onAfterBrowsingScaleOut:
     - setSudoer: ${this.newNode}
-    - getLogEventScript: ${this.newNode}
     - copyApp: ${this.newNode}
     - setToolsPwd: ${this.newNode}
     - setupDatadogAgentPerNode: ${this.newNode}

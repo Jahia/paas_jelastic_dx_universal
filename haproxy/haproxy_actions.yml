@@ -2,7 +2,6 @@
 actions:
   installHaproxy:
     - setSudoer: bl
-    - getLogEventScript: bl
     - cmd[bl]: yum install -y jq
       user: root
     - retrieveHaproxyConf: bl

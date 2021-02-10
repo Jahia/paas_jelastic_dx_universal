@@ -2,7 +2,6 @@
 actions:
   installDatabase:
     - setSudoer: sqldb
-    - getLogEventScript: sqldb
     - log: "## Setup MariaDB logrotate on ${this}"
     - cmd[sqldb]: |-
         mkdir /etc/systemd/system/{mysql,mariadb}.service.d
