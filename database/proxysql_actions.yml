@@ -1,0 +1,74 @@
+---
+actions:
+  setProxysqlGlobals:
+    - setGlobals:
+        sql_cli: "mysql -h 127.0.0.1 -uadmin -padmin -P6032"
+
+  setupProxysqlCluster:
+    - cmd[cp, proc]: |-
+          ${globals.sql_cli} -e "DELETE FROM proxysql_servers"
+    - foreach (nodes.cp):
+        - cmd[cp, proc]: |-
+            ${globals.sql_cli} -e "INSERT INTO proxysql_servers (hostname,port,weight,comment) VALUES ('node${@i.id}-${env.domain}',6032,0,'browsing_$((${@}+1))')"
+    - cmd [cp, proc]: |-
+        ${globals.sql_cli} -e "INSERT INTO proxysql_servers (hostname,port,weight,comment) VALUES ('node${nodes.proc.first.id}-${env.domain}',6032,0,'processing')"
+        ${globals.sql_cli} -e "LOAD PROXYSQL SERVERS TO RUNTIME"
+        ${globals.sql_cli} -e "SAVE PROXYSQL SERVERS TO DISK"
+    - cmd [cp, proc]: |-
+        i=60
+        sql="select count(*) from stats_proxysql_servers_metrics where Uptime_s = 0"
+        while ! sleep 1 && ${globals.sql_cli} -e "$sql" | grep -s 0; do
+          ((i--))
+          if [ $i -eq 0 ]; then
+            echo "[ERROR] ProxySQL cluster is not healthy" 1>&2
+            exit 1
+          fi
+        done
+
+  setupGaleraHostgroups:
+    - cmd[cp, proc]: |-
+        ${globals.sql_cli} -e "REPLACE INTO mysql_galera_hostgroups (writer_hostgroup,backup_writer_hostgroup, \
+              reader_hostgroup,offline_hostgroup,active,max_writers,writer_is_also_reader,max_transactions_behind) \
+              VALUES (2,3,4,1,1,1,1,100)"
+        ${globals.sql_cli} -e "LOAD MYSQL USERS TO RUNTIME"
+        ${globals.sql_cli} -e "SAVE MYSQL USERS TO DISK"
+
+  setupMysqlServers:
+    - cmd[proc]: |-
+        ${globals.sql_cli} -e "REPLACE INTO mysql_servers(hostgroup_id,hostname,port, max_connections) VALUES (2,'galera_1',3306, 30)"
+    - if (nodes.sqldb.length > 1):
+        - cmd[proc]: |-
+            ${globals.sql_cli} -e "REPLACE INTO mysql_servers(hostgroup_id,hostname,port, max_connections) VALUES (2,'galera_2',3306, 30)"
+            ${globals.sql_cli} -e "REPLACE INTO mysql_servers(hostgroup_id,hostname,port, max_connections) VALUES (2,'galera_3',3306, 30)"
+    - cmd[proc]: |-
+        ${globals.sql_cli} -e "LOAD MYSQL SERVERS TO RUNTIME"
+        ${globals.sql_cli} -e "SAVE MYSQL SERVERS TO DISK"
+
+  setupMonitorUser:
+    - cmd[sqldb]: |-
+        mysql -e "CREATE USER IF NOT EXISTS 'proxysql'@'%' IDENTIFIED BY 'monitorpassword'"
+        mysql -e "GRANT SELECT on sys.* TO 'proxysql'@'%'"
+        mysql -e "GRANT SELECT on performance_schema.* TO 'proxysql'@'%'"
+        mysql -e "GRANT  PROCESS, REPLICATION CLIENT ON *.* TO 'proxysql'@'%'"
+
+  enableBackendMonitor:
+    - cmd[cp, proc]: |-
+        ${globals.sql_cli} -e "UPDATE global_variables SET variable_value='true' WHERE variable_name='mysql-monitor_enabled'"
+        ${globals.sql_cli} -e "LOAD MYSQL VARIABLES TO RUNTIME"
+        ${globals.sql_cli} -e "SAVE MYSQL VARIABLES TO DISK"
+
+  checkProxySql:
+    - cmd[cp, proc]: |-
+        if ! mysql -h 127.0.0.1 -P 6033 -u$DB_USER -p$DB_PASSWORD -e "select count(*) as abricot from jahia.jbpm_task" | grep abricot; then
+          echo "[ERROR] Can't query Jahia database via ProxySQL" 1>&2
+          exit 1
+        fi
+
+  finishProxysqlInstall:
+    - setProxysqlGlobals
+    - setupMonitorUser
+    - enableBackendMonitor
+    - setupGaleraHostgroups
+    - if (nodes.sqldb.length > 1):
+        - setupMysqlServers
+    - setupProxysqlCluster

@@ -66,6 +66,7 @@ mixins:
   - jahia/jahia_actions.yml
   - database/mariadb_actions.yml
   - database/galera_actions.yml
+  - database/proxysql_actions.yml
 
 onBeforeInstall: |
   nodes = []
@@ -213,6 +214,7 @@ onInstall:
   - setGlobalEnvVars
   - setJournaldLimit
   - installDatabase
+  - finishProxysqlInstall
   - installJahia
   - installHaproxy
   - setupDatadogAgentSql: sqldb
