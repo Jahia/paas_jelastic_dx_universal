@@ -11,6 +11,7 @@ mixins:
   - "../../jahia/jahia-upgrade-healthcheck.yml"
   - "../../database/mariadb_actions.yml"
   - "../../database/galera_actions.yml"
+  - "../../database/proxysql_actions.yml"
   - "../../haproxy/haproxy_actions.yml"
 
 globals:
@@ -25,6 +26,8 @@ onInstall:
   - checkGaleraClusterHealth: sqldb
   ### End Pre-checks
 
+  - redeployTomcat
+  - finishProxysqlInstall
   - addHealthcheckEnvVar # PAAS-1369
   - fetchLogEventScript # PAAS-1323
   - installStrongswan # PAAS-1207, pre set up for PAAS-1208
@@ -174,3 +177,24 @@ actions:
       sed 's/timeout \(client\|server\)\( *\) 1m$/timeout \1\2 5m/g' -i /etc/haproxy/haproxy.cfg.d/00-global.cfg
       sudo service haproxy reload
     user: haproxy
+
+  redeployProcessing:
+    - api: environment.control.RedeployContainersByGroup
+      nodeGroup: proc
+      tag: ${nodes.proc.version}
+      useExistingVolumes: false
+      skipReinstall: false
+      envName: ${env.envName}
+
+  redeployBrowsing:
+    - forEach(nodes.cp):
+        - api: environment.control.RedeployContainerById
+          nodeId: ${@i.id}
+          tag: ${nodes.proc.version}
+          useExistingVolumes: false
+          skipReinstall: false
+          envName: ${env.envName}
+
+  redeployTomcat:
+    - redeployProcessing
+    - redeployBrowsing
