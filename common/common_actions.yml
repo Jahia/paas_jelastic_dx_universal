@@ -69,6 +69,8 @@ actions:
     user: root
 
   logEvent:
-    cmd[${this.target}]: |-
-      /usr/local/bin/log_event.sh "${this.title}" "${this.text}"
-    user: root
+    # Check if env is running (status = 1)
+    if (1 == ${env.status}):
+      cmd[${this.target}]: |-
+        /usr/local/bin/log_event.sh "${this.title}" "${this.text}"
+      user: root
