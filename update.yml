@@ -16,6 +16,7 @@ mixins:
   - jahia/jahia_actions.yml
   - database/mariadb_actions.yml
   - database/galera_actions.yml
+  - database/proxysql_actions.yml
 
 globals:
   haproxy_admin_stats_pass: ${fn.password(20)}
@@ -69,11 +70,15 @@ onBeforeScaleIn[cp]:
           nodeId: ${@i.id}
           nodeIp: ${@i.intIP}
 
+onAfterScaleIn[cp]:
+  - refreshProxysqlInstancesList
+
 onAfterServiceScaleOut[cp]:
   - forEach(event.response.nodes):
       - onAfterBrowsingScaleOut:
           newNode: ${@i.id}
   - resetHaproxyBackends
+  - refreshProxysqlInstancesList
 
 onBeforeRestartNode[cp]:
   removeNodeFromHaproxy:
@@ -197,10 +202,11 @@ onBeforeMigrate:
     text: "$envName going to be migrate"
 
 onAfterMigrate:
-  logEvent:
-    target: ${nodes.proc.first.id}
-    title: "Environment $envName migrated"
-    text: "$envName has been migrated"
+  - logEvent:
+      target: ${nodes.proc.first.id}
+      title: "Environment $envName migrated"
+      text: "$envName has been migrated"
+  - refreshProxysqlInstancesList
 
 onBeforeRestartNode:
   logEvent:

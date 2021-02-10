@@ -72,3 +72,7 @@ actions:
     - if (nodes.sqldb.length > 1):
         - setupMysqlServers
     - setupProxysqlCluster
+
+  refreshProxysqlInstancesList:
+    - setProxysqlGlobals
+    - setupProxysqlCluster

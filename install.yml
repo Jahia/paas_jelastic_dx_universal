@@ -230,11 +230,15 @@ onBeforeScaleIn[cp]:
           nodeId: ${@i.id}
           nodeIp: ${@i.intIP}
 
+onAfterScaleIn[cp]:
+  - refreshProxysqlInstancesList
+
 onAfterServiceScaleOut[cp]:
   - forEach(event.response.nodes):
       - onAfterBrowsingScaleOut:
           newNode: ${@i.id}
   - resetHaproxyBackends
+  - refreshProxysqlInstancesList
 
 onBeforeRestartNode[cp]:
   removeNodeFromHaproxy:
@@ -358,10 +362,11 @@ onBeforeMigrate:
     text: "$envName going to be migrate"
 
 onAfterMigrate:
-  logEvent:
-    target: ${nodes.proc.first.id}
-    title: "Environment $envName migrated"
-    text: "$envName has been migrated"
+  - logEvent:
+      target: ${nodes.proc.first.id}
+      title: "Environment $envName migrated"
+      text: "$envName has been migrated"
+  - refreshProxysqlInstancesList
 
 onBeforeRestartNode:
   logEvent:
