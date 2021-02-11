@@ -92,6 +92,9 @@ onAfterRestartNode[cp]:
           nodeId: ${@i.id}
           nodeIp: ${@i.intIP}
 
+onAfterRestartNode[proc]:
+  startupJahiaHealthCheck: ${event.params.nodeId}
+
 onBeforeRedeployContainer[cp]:
   - if ('${event.params.nodeGroup:}'):
       # Handle RedeployContainersByGroup
@@ -146,9 +149,11 @@ onAfterRedeployContainer[proc]:
   - if ('${event.params.nodeGroup:}'):
       # Handle RedeployContainersByGroup
       - onAfterRedeployJahiaContainer: ${event.params.nodeGroup}
+      - startupJahiaHealthCheck: ${event.params.nodeGroup}
   - elif ('${event.params.nodeId:}'):
       # Handle RedeployContainerById
       - onAfterRedeployJahiaContainer: ${event.params.nodeId}
+      - startupJahiaHealthCheck: ${event.params.nodeId}
 
 onAfterRedeployContainer[bl]:
   - if ('${event.params.nodeGroup:}'):
@@ -189,7 +194,7 @@ onBeforeStop:
       text: "$envName is going to stop"
 
 onAfterStart:
-  - startupJahiaHealthCheck: cp
+  - startupJahiaHealthCheck: cp, proc
   - logEvent:
       target: ${nodes.proc.first.id}
       title: "$envName environment started"
