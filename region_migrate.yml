@@ -7,6 +7,7 @@ description:
 
 mixins:
   - database/galera_actions.yml
+  - database/proxysql_actions.yml
 
 globals:
   - maxtry: 10
@@ -39,6 +40,7 @@ onInstall:
   - if (nodes.sqldb.length > 1):
       - setupSeeds: sqldb
       - enableGalera
+  - refreshProxysqlInstancesList
   - enableTomcat
   - resetHaproxyBackends: bl
 

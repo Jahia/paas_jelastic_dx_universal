@@ -206,7 +206,6 @@ onAfterMigrate:
       target: ${nodes.proc.first.id}
       title: "Environment $envName migrated"
       text: "$envName has been migrated"
-  - refreshProxysqlInstancesList
 
 onBeforeRestartNode:
   logEvent:
