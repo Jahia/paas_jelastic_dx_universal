@@ -7,7 +7,6 @@ actions:
     - copyApp: ${this.newNode}
     - setToolsPwd: ${this.newNode}
     - setupDatadogAgentPerNode: ${this.newNode}
-    - datastoreStuff
     - cmd[${this.newNode}]: |-
         if (service tomcat status); then
           echo "Now Restarting Tomcat"
@@ -36,7 +35,6 @@ actions:
             touch "/data/digital-factory-data/[persisted-configurations].dorestore"
             chown tomcat: "/data/digital-factory-data/[persisted-configurations].dorestore"
           fi
-    - datastoreStuff
     - cmd[${this}]: |-
           source /etc/locale.conf
           echo "JAHIA_UPGRADE=$JAHIA_UPGRADE"
@@ -97,16 +95,12 @@ actions:
         esac
         sed -e '2isource /.jelenv' -e "s#\(^JAVA_OPTS=.*\)\(\"$\)#\1 ${j_opts}\2#" -i /opt/tomcat/conf/tomcat-env.sh
     - setJahiaPropertiesEnvvars
-
     - copyApp: proc, cp
     - cmd[proc]: |-
         base64 -d <<< "${settings.rootpwd.toBase64()}" > $DATA_PATH/digital-factory-data/root.pwd
       user: tomcat
     - defineToolsPwd
     - setToolsPwd: proc, cp
-
-    - if (settings.mode == 'development'):
-        - installMaven: proc, cp
 
     - datastoreStuff:
     - if (settings.skipStart != 'true'):

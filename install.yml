@@ -162,6 +162,7 @@ onBeforeInstall: |
   } else {
     node_cp['image']  = dockerImage;
   }
+
   nodes.push(node_cp);
 
   node_proc = {
