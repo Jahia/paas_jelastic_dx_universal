@@ -25,14 +25,6 @@ actions:
           fi
         done
 
-  setupGaleraHostgroups:
-    - cmd[cp, proc]: |-
-        ${globals.sql_cli} -e "REPLACE INTO mysql_galera_hostgroups (writer_hostgroup,backup_writer_hostgroup, \
-              reader_hostgroup,offline_hostgroup,active,max_writers,writer_is_also_reader,max_transactions_behind) \
-              VALUES (2,3,4,1,1,1,1,100)"
-        ${globals.sql_cli} -e "LOAD MYSQL USERS TO RUNTIME"
-        ${globals.sql_cli} -e "SAVE MYSQL USERS TO DISK"
-
   setupMysqlServers:
     - cmd[proc]: |-
         ${globals.sql_cli} -e "REPLACE INTO mysql_servers(hostgroup_id,hostname,port, max_connections) VALUES (2,'galera_1',3306, 30)"
@@ -57,18 +49,10 @@ actions:
         ${globals.sql_cli} -e "LOAD MYSQL VARIABLES TO RUNTIME"
         ${globals.sql_cli} -e "SAVE MYSQL VARIABLES TO DISK"
 
-  checkProxySql:
-    - cmd[cp, proc]: |-
-        if ! mysql -h 127.0.0.1 -P 6033 -u$DB_USER -p$DB_PASSWORD -e "select count(*) as abricot from jahia.jbpm_task" | grep abricot; then
-          echo "[ERROR] Can't query Jahia database via ProxySQL" 1>&2
-          exit 1
-        fi
-
   finishProxysqlInstall:
     - setProxysqlGlobals
     - setupMonitorUser
     - enableBackendMonitor
-    - setupGaleraHostgroups
     - if (nodes.sqldb.length > 1):
         - setupMysqlServers
     - setupProxysqlCluster
