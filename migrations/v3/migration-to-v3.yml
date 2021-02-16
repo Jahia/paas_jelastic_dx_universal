@@ -163,10 +163,10 @@ actions:
     - api [${nodes.cp.first.id}]: environment.control.GetNodeInfo
     - if ("${response.node.version}" > "8.0.0.0"):
         upgradeJahiaHealthcheckModule:
-          version: "2.3.0"
+          version: "2.3.1"
     - else:
         upgradeJahiaHealthcheckModule:
-          version: "1.2.0"
+          version: "1.2.1"
 
   addHealthcheckEnvVar:
     - api [cp, proc]: env.control.AddContainerEnvVars
