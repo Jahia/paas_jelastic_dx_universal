@@ -346,7 +346,7 @@ actions:
         resp = jelastic.env.control.ApplyNodeGroupData(jCustomerEnv, session, nodeGroup='cp', data={'envLink': newEnvLink});
         return {"result": 0, "out": envName + " removed from envLink of " + jCustomerEnv};
 
-  is_fullreadonly_enabled:
+  isFullReadonlyEnabled:
     - cmd[proc]: |-
         RO_ON=$(ssh abricot@localhost -p 8101 -i /tmp/abricot -o StrictHostKeyChecking=no full-read-only | grep -e Current -e local | grep ON)
         if [ "$RO_ON" == "" ]; then
@@ -357,12 +357,12 @@ actions:
     - setGlobals:
         RO: "${response.out}"
 
-  switch-fullreadonly:
+  switchFullReadonly:
     - log: "switch full read mode to ${this.fullreadmode} on nodegroup ${this.group}"
     - cmd[${this.group}]: |-
           ssh abricot@localhost -p 8101 -i /tmp/abricot -o StrictHostKeyChecking=no full-read-only ${this.fullreadmode}
 
-  enable_karaf_login:
+  enableKarafLogin:
     - log: "Activate karaf's ssh login on ${this}'s nodegroup"
     - cmd[${this}]: |-
         [ -f /tmp/abricot ] && rm /tmp/abricot
@@ -382,7 +382,7 @@ actions:
           sleep 1
         done
 
-  disable_karaf_login:
+  disableKarafLogin:
     - log: "Disable karaf's ssh login on ${this}'s nodegroup"
     - cmd[${this}]: |-
         [ -f /tmp/abricot  ] && rm /tmp/abricot
@@ -393,35 +393,35 @@ actions:
   enableFullReadOnlyOnCluster:
     - getJahiaVersion
 
-    - enable_karaf_login: proc
-    - is_fullreadonly_enabled
+    - enableKarafLogin: proc
+    - isFullReadonlyEnabled
 
     - if(!${globals.RO}):
-        - switch-fullreadonly:
+        - switchFullReadonly:
             group: "proc"
             fullreadmode: "ON"
 
         - if(globals.jahiaVersion < '7.3.3.0'):
-            - enable_karaf_login: cp
-            - switch-fullreadonly:
+            - enableKarafLogin: cp
+            - switchFullReadonly:
                 group: "cp"
                 fullreadmode: "ON"
 
   disableFullReadOnlyOnCluster:
     - getJahiaVersion
-    - is_fullreadonly_enabled
+    - isFullReadonlyEnabled
 
     - if(${globals.RO}):
-        - switch-fullreadonly:
+        - switchFullReadonly:
             group: "proc"
             fullreadmode: "OFF"
-        - disable_karaf_login: proc
+        - disableKarafLogin: proc
 
         - if(globals.jahiaVersion < '7.3.3.0'):
-            - switch-fullreadonly:
+            - switchFullReadonly:
                 group: "cp"
                 fullreadmode: "OFF"
-            - disable_karaf_login: cp
+            - disableKarafLogin: cp
 
   getJahiaVersion:
     - log: "Get jahia version"
