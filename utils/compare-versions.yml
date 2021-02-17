@@ -1,0 +1,41 @@
+---
+
+actions:
+  compareVersions:
+    # Parameters :
+    #  a : the first version to compare
+    #  b : the second version to compare
+    #  res : the global variable name to store the result
+    # Returns:
+    # 1 if a > b
+    # 0 if a = b
+    # -1 if a < b
+    - script: |-
+        function compare(index) {
+          if (index > a.length)
+            return 0;
+
+          aDigit = parseInt(a[index]);
+          bDigit = parseInt(b[index]);
+
+          if (aDigit < bDigit)
+            return -1;
+          else if (aDigit > bDigit)
+            return 1;
+          else
+            return compare(index+1)
+        }
+
+        const a = "${this.a}".split('.');
+        const b = "${this.b}".split('.')
+
+        if (a.length != b.length)
+          return {"result": 1, "error": "invalid parameters"}
+
+        return {"result": 0, "outcome": compare(0)}
+
+    - setGlobals:
+        versionIsGreater: 1
+        versionIsEqual: 0
+        versionIsLower: -1
+        ${this.res}: ${response.outcome}
