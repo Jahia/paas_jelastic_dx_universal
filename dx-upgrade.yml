@@ -10,6 +10,7 @@ description:
 mixins:
   - jahia/jahia_actions.yml
   - haproxy/haproxy_actions.yml
+  - utils/compare-versions.yml
 
 onInstall:
   ## Globals definition
@@ -33,9 +34,10 @@ onInstall:
           targetDockerTag: ${settings.targetVersion}
   # If it is a new version of Jahia
   - if ('${globals.targetDockerTag}' != '${nodes.proc.first.version}'):
-      setGlobals:
-        upgradeJahia: true
-        useExistingVolumes: false
+      - setGlobals:
+          upgradeJahia: true
+          useExistingVolumes: false
+      - setVersionPropertiesValue
   # As a reminder, when updating the value of a global variable inside an "if" block,
   # the new value won't be taken in account if testing it inside a nested "if" block.
 
@@ -117,6 +119,33 @@ actions:
           useExistingVolumes: ${globals.useExistingVolumes}
           skipReinstall: false
           envName: ${env.envName}
+
+  setVersionPropertiesValue:
+    - compareVersions:
+        a : "${globals.targetDockerTag}"
+        b : "7.3.7.0"
+        res : 7370Comparison
+
+    - if ( ${globals.versionIsLower} != ${globals.7370Comparison}):
+        - compareVersions:
+            a : "${globals.targetDockerTag}"
+            b : "8.0.0.0"
+            res : 8000Comparison
+        - compareVersions:
+            a : "${globals.targetDockerTag}"
+            b : "8.0.2.0"
+            res : 8020Comparison
+        - if ( ${globals.versionIsLower} == ${globals.8000Comparison} || ${globals.versionIsLower} != ${globals.8020Comparison} ):
+            cmd[proc,cp]: |-
+              INFO_DIR="/data/digital-factory-data/info"
+              if [ ! $(grep $INFO_DIR /etc/jelastic/redeploy.conf) ]; then
+                echo "$INFO_DIR/version.properties" >> /etc/jelastic/redeploy.conf
+              fi
+              if [ ! -f $INFO_DIR/version.properties ]; then
+                mkdir -p $INFO_DIR
+                echo "version=${nodes.proc.version}" > $INFO_DIR/version.properties
+              fi
+            user: tomcat
 
 settings:
   fields:
