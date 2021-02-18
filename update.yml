@@ -137,7 +137,10 @@ onAfterRedeployContainer[proc]:
   - if ('${event.params.nodeGroup:}'):
       # Handle RedeployContainersByGroup
       - onAfterRedeployJahiaContainer: ${event.params.nodeGroup}
-      - if (! '${globals.upgradeJahiaVersion}'):
+      - cmd [proc]: |-
+          echo $JAHIA_UPGRADE
+        user: root
+      - if ('${response.out}' == ''):
           startupJahiaHealthCheck: ${event.params.nodeGroup}
   - elif ('${event.params.nodeId:}'):
       # Handle RedeployContainerById
