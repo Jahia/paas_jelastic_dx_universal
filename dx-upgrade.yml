@@ -10,6 +10,7 @@ description:
 mixins:
   - jahia/jahia_actions.yml
   - haproxy/haproxy_actions.yml
+  - utils/compare-versions.yml
 
 onInstall:
   ## Globals definition
@@ -33,9 +34,10 @@ onInstall:
           targetDockerTag: ${settings.targetVersion}
   # If it is a new version of Jahia
   - if ('${globals.targetDockerTag}' != '${nodes.proc.first.version}'):
-      setGlobals:
-        upgradeJahia: true
-        useExistingVolumes: false
+      - setGlobals:
+          upgradeJahia: true
+          useExistingVolumes: false
+      - setVersionPropertiesValue
   # As a reminder, when updating the value of a global variable inside an "if" block,
   # the new value won't be taken in account if testing it inside a nested "if" block.
 
@@ -117,6 +119,33 @@ actions:
           useExistingVolumes: ${globals.useExistingVolumes}
           skipReinstall: false
           envName: ${env.envName}
+
+  # Add jahia version in /data/digital-factory-data/info/version.properties before redeploy
+  # in case we upgrade from a version that does not handle it to a version that does.
+  setVersionPropertiesValue:
+    - isVersionLower:
+        a : "${globals.targetDockerTag}"
+        b : "7.3.7.0"
+        res : isTargetVersionLowerThan7370
+
+    - if ( ! ${globals.isTargetVersionLowerThan7370} ):
+        - isVersionLower:
+            a : "${globals.targetDockerTag}"
+            b : "8.0.0.0"
+            res : isTargetVersionLowerThan8000
+        - isVersionLower:
+            a : "${globals.targetDockerTag}"
+            b : "8.0.2.0"
+            res : isTargetVersionLowerThan8020
+        - if ( ${globals.isTargetVersionLowerThan8000} || ! ${globals.isTargetVersionLowerThan8020} ):
+            # If the targetDockerTag < 8.0.0.0 or >= 8.0.2.0
+            cmd[proc,cp]: |-
+              INFO_DIR="/data/digital-factory-data/info"
+              if [ ! -f $INFO_DIR/version.properties ]; then
+                mkdir -p $INFO_DIR
+                echo "version=${nodes.proc.version}" > $INFO_DIR/version.properties
+              fi
+            user: tomcat
 
 settings:
   fields:
