@@ -31,8 +31,9 @@ actions:
     - forEach(nodes.sqldb):
         - log: "Redeploying MariaDB on node ${@i.id}..."
         - getGaleraNodeNameIndex: ${@i.id}
-        - proxysqlDisableMariadbBackend:
+        - proxysqlSetMariadbBackendStatus:
             targetHost: ${globals.galeraNodeNameIndex}
+            newStatus: OFFLINE_SOFT
         - stopGaleraNode: ${@i.id}
         - api: environment.control.RedeployContainerById
           nodeId: ${@i.id}
@@ -40,8 +41,9 @@ actions:
           useExistingVolumes: true
           skipReinstall: false
           envName: ${env.envName}
-        - proxysqlEnableMariadbBackend:
+        - proxysqlSetMariadbBackendStatus:
             targetHost: ${globals.galeraNodeNameIndex}
+            newStatus: ONLINE
 
         # We are going to a new if dimension, let's save some information
         - setGlobals:
