@@ -12,6 +12,9 @@ mixins:
   - haproxy/haproxy_actions.yml
   - utils/compare-versions.yml
 
+globals:
+  upgradeJahiaVersion: true
+
 onInstall:
   ## Globals definition
   - cmd [proc]: |-
@@ -96,6 +99,7 @@ actions:
         fi
         sed '/JAHIA_UPGRADE/d' -i /etc/locale.conf
       user: root
+    - startupJahiaHealthCheck: ${event.params.nodeGroup}
 
   bulkCpUpgrade:
     - cmd [proc]: |-
