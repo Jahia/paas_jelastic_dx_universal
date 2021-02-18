@@ -264,8 +264,6 @@ onBeforeRedeployContainer[cp]:
       - cmd [cp]: |-
           service tomcat stop
         user: root
-      - keepTomcatEnvConfOnRedeploy: ${event.params.nodeGroup}
-      - keepJCRIndicesOnRedeploy: ${event.params.nodeGroup}
   - elif ('${event.params.nodeId:}'):
       # Handle RedeployContainerById
       - removeNodeFromHaproxy:
@@ -273,8 +271,6 @@ onBeforeRedeployContainer[cp]:
       - cmd [${event.params.nodeId}]: |-
           service tomcat stop
         user: root
-      - keepTomcatEnvConfOnRedeploy: ${event.params.nodeId}
-      - keepJCRIndicesOnRedeploy: ${event.params.nodeId}
 
 onAfterRedeployContainer[cp]:
   - if ('${event.params.nodeGroup:}'):
@@ -296,14 +292,6 @@ onBeforeRedeployContainer[proc]:
   - cmd [proc]: |-
       service tomcat stop
     user: root
-  - if ('${event.params.nodeGroup:}'):
-      # Handle RedeployContainersByGroup
-      - keepTomcatEnvConfOnRedeploy: ${event.params.nodeGroup}
-      - keepJCRIndicesOnRedeploy: ${event.params.nodeGroup}
-  - elif ('${event.params.nodeId:}'):
-      # Handle RedeployContainerById
-      - keepTomcatEnvConfOnRedeploy: ${event.params.nodeId}
-      - keepJCRIndicesOnRedeploy: ${event.params.nodeId}
 
 onAfterRedeployContainer[proc]:
   - if ('${event.params.nodeGroup:}'):

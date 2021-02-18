@@ -30,10 +30,8 @@ onInstall:
   - finishProxysqlInstall
   - addHealthcheckEnvVar # PAAS-1369
   - fetchLogEventScript # PAAS-1323
-  - installStrongswan # PAAS-1207, pre set up for PAAS-1208
   - vaultTomcatSetup  # PAAS-1208
   - checkProductVersion # PAAS-1342
-  - upgradeHealthcheckModule # PAAS-1317
   - updateHaproxyConf # PAAS-1357
   - increaseHaproxyTimeout # PAAS-1433
 
@@ -55,31 +53,6 @@ actions:
     install:
       jps: "${baseUrl}/../../update.yml"
 
-  installStrongswan:
-    - cmd [cp, proc]: |-
-        if [ -x /usr/sbin/strongswan ]; then
-          echo "[INFO] Strongswan already installed, nothing to do"
-          exit 0
-        fi
-        echo "[INFO] Installing Strongswan"
-        if ! (yum install -y strongswan); then
-          echo "[ERROR] Strongswan install failed"
-          exit 1
-        fi
-        echo "[INFO] Starting Strongswan global setup"
-        wget -qO /tmp/strongswan_logger ${baseUrl}/strongswan_logger
-        wget -qO /tmp/strongswan_defaults ${baseUrl}/strongswan_defaults
-        wget -qO /etc/logrotate.d/ipsec ${baseUrl}/strongswan_logrotate
-        mkdir /etc/systemd/system/strongswan.service.d
-        wget -qO /etc/systemd/system/strongswan.service.d/override.conf ${baseUrl}/strongswan_override
-        systemctl daemon-reload
-        cat /tmp/strongswan_defaults >> /etc/strongswan/ipsec.conf
-        sed -i '11r /tmp/strongswan_logger' /etc/strongswan/strongswan.conf
-        rm -f /tmp/strongswan_*
-        echo "/etc/strongswan/" >> /etc/jelastic/redeploy.conf
-        echo "[INFO] Strongswan is installed"
-      user: root
-
   vaultTomcatSetup:
     # Get informations from bl nodegroup because that's
     # the only one vault ready in v2
@@ -89,15 +62,6 @@ actions:
           VAULT_ROLE_ID: ${response.object.VAULT_ROLE_ID}
           VAULT_SECRET_ID: ${response.object.VAULT_SECRET_ID}
           VAULT_CLUSTER_URL: ${response.object.VAULT_CLUSTER_URL}
-    - cmd[proc, cp]: |-
-        if [ -x /usr/bin/jq ]; then
-          echo "[INFO] jq already installed, nothing to do"
-        else
-          echo "[INFO] Installing jq"
-          yum install -y jq
-          exit $?
-        fi
-      user: root
 
   checkProductVersion:
     - api [${nodes.cp.first.id}]: environment.control.GetNodeInfo
@@ -158,15 +122,6 @@ actions:
         wget -qO /usr/local/bin/log_event.sh ${baseUrl}../../scripts/log_events.sh
         chmod u+x /usr/local/bin/log_event.sh
       user: root
-
-  upgradeHealthcheckModule:
-    - api [${nodes.cp.first.id}]: environment.control.GetNodeInfo
-    - if ("${response.node.version}" > "8.0.0.0"):
-        upgradeJahiaHealthcheckModule:
-          version: "2.3.1"
-    - else:
-        upgradeJahiaHealthcheckModule:
-          version: "1.2.1"
 
   addHealthcheckEnvVar:
     - api [cp, proc]: env.control.AddContainerEnvVars
