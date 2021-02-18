@@ -39,3 +39,60 @@ actions:
         versionIsEqual: 0
         versionIsLower: -1
         ${this.res}: ${response.outcome}
+
+  isVersionLower:
+    # Parameters :
+    #  a : the first version to compare
+    #  b : the second version to compare
+    #  res : the global variable name to store the result
+    # Returns:
+    # 1 if a < b
+    # 0 if a >= b
+    - compareVersions:
+        a : "${this.a}"
+        b : "${this.b}"
+        res : isVersionLowerComparison
+    - if (${globals.isVersionLowerComparison} == -1):
+        setGlobals:
+          ${this.res}: true
+    - else:
+        setGlobals:
+          ${this.res}: false
+
+  isVersionHigher:
+    # Parameters :
+    #  a : the first version to compare
+    #  b : the second version to compare
+    #  res : the global variable name to store the result
+    # Returns:
+    # 1 if a > b
+    # 0 if a <= b
+    - compareVersions:
+        a : "${this.a}"
+        b : "${this.b}"
+        res : isVersionHigherComparison
+    - if (${globals.isVersionHigherComparison} == 1):
+        setGlobals:
+          ${this.res}: true
+    - else:
+        setGlobals:
+          ${this.res}: false
+
+  isVersionEqual:
+    # Parameters :
+    #  a : the first version to compare
+    #  b : the second version to compare
+    #  res : the global variable name to store the result
+    # Returns:
+    # 1 if a == b
+    # 0 if a != b
+    - compareVersions:
+        a : "${this.a}"
+        b : "${this.b}"
+        res : isVersionEqualComparison
+    - if (${globals.isVersionEqualComparison} == 0):
+        setGlobals:
+          ${this.res}: true
+    - else:
+        setGlobals:
+          ${this.res}: false

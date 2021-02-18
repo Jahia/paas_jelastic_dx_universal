@@ -121,25 +121,26 @@ actions:
           envName: ${env.envName}
 
   setVersionPropertiesValue:
-    - compareVersions:
+    - isVersionLower:
         a : "${globals.targetDockerTag}"
         b : "7.3.7.0"
-        res : 7370Comparison
+        res : isTargetVersionLowerThan7370
 
-    - if ( ${globals.versionIsLower} != ${globals.7370Comparison}):
-        - compareVersions:
+    - if ( ! ${globals.isTargetVersionLowerThan7370} ):
+        - isVersionLower:
             a : "${globals.targetDockerTag}"
             b : "8.0.0.0"
-            res : 8000Comparison
-        - compareVersions:
+            res : isTargetVersionLowerThan8000
+        - isVersionLower:
             a : "${globals.targetDockerTag}"
             b : "8.0.2.0"
-            res : 8020Comparison
-        - if ( ${globals.versionIsLower} == ${globals.8000Comparison} || ${globals.versionIsLower} != ${globals.8020Comparison} ):
+            res : isTargetVersionLowerThan8020
+        - if ( ${globals.isTargetVersionLowerThan8000} || ! ${globals.isTargetVersionLowerThan8020} ):
+            # If the targetDockerTag < 8.0.0.0 or >= 8.0.2.0
             cmd[proc,cp]: |-
               INFO_DIR="/data/digital-factory-data/info"
               if [ ! $(grep $INFO_DIR /etc/jelastic/redeploy.conf) ]; then
-                echo "$INFO_DIR/version.properties" >> /etc/jelastic/redeploy.conf
+                echo "$INFO_DIR" >> /etc/jelastic/redeploy.conf
               fi
               if [ ! -f $INFO_DIR/version.properties ]; then
                 mkdir -p $INFO_DIR
