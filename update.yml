@@ -26,7 +26,6 @@ globals:
   redis_pass: ${fn.password(20)}
   mngr_user: manager
   dx_version: ${settings.dxVersion}
-  package_type: dev
   operating_mode: ${settings.mode}
   datadog_key: ${settings.ddogApikey}
   shortdomain: ${settings.shortdomain}

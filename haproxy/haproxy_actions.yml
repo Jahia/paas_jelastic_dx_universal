@@ -94,7 +94,6 @@ actions:
         echo "hostname: $(echo $_ROLE| sed 's/_//g').${NODE_NAME#node}" >> /etc/datadog-agent/datadog.yaml
         sed -i 's/# logs_enabled: false/logs_enabled: true/' /etc/datadog-agent/datadog.yaml
         echo "tags:" >> /etc/datadog-agent/datadog.yaml
-        echo " - env:${PACKAGE_TYPE}" >> /etc/datadog-agent/datadog.yaml
         echo " - product:jahia" >> /etc/datadog-agent/datadog.yaml
         echo " - version:${DX_VERSION}" >> /etc/datadog-agent/datadog.yaml
         echo " - envname:${env.envName}" >> /etc/datadog-agent/datadog.yaml

@@ -16,12 +16,6 @@ actions:
             type: error
             message: "An error occurred during sudoers configuration."
 
-  setGlobalEnvVars:
-    - if (/\/raw\/v[0-9]+(\.[0-9]+)+$/.test(baseUrl)):
-        - log: "## git repo branch is prod"
-        - api [*]: env.control.AddContainerEnvVars
-          vars: {"PACKAGE_TYPE": "prod"}
-
   setJournaldLimit:
     - cmd[*]: |-
         sed -i 's/.*SystemMaxUse=.*/SystemMaxUse=200M/g' /etc/systemd/journald.conf
