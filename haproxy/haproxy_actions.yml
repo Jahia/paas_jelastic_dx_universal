@@ -22,8 +22,7 @@ actions:
         wget -qO /etc/haproxy/haproxy.cfg.d/00-global.cfg ${baseUrl}/configs/haproxy-00-global.cfg
         wget -qO /etc/haproxy/haproxy.cfg.d/10-jahia.cfg ${baseUrl}/configs/haproxy-10-jahia.cfg
         wget -qO /etc/haproxy/haproxy.cfg.d/11-proc.cfg ${baseUrl}/configs/haproxy-11-proc.cfg
-        wget -qO /etc/haproxy/haproxy.cfg.d/healthcheck.sh ${baseUrl}/scripts/haproxy-backend-healthcheck.sh
-        chmod u+x /etc/haproxy/haproxy.cfg.d/healthcheck.sh
+        wget -qO /etc/sysconfig/haproxy ${baseUrl}/configs/haproxy-sysconfig
       user: root
     - if ("${response.errOut}" != ""):
         - return:
