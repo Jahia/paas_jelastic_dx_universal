@@ -26,6 +26,7 @@ onInstall:
   - checkGaleraClusterHealth: sqldb
   ### End Pre-checks
 
+  - upgradeHealthcheckModule # PAAS-1317
   - redeployTomcat
   - finishProxysqlInstall
   - addHealthcheckEnvVar # PAAS-1369
@@ -49,6 +50,18 @@ onInstall:
   ### End Post-actions
 
 actions:
+  # The upgrade Healtcheck module is cluster-wide so we can't rely on Tomcat nodes
+  # redeploy to upgrade the healthcheck, otherwise the healthcheck will fail on all nodes
+  # as soon as the proc node will be redeployed
+  upgradeHealthcheckModule:
+    - api [${nodes.cp.first.id}]: environment.control.GetNodeInfo
+    - if ("${response.node.version}" > "8.0.0.0"):
+        upgradeJahiaHealthcheckModule:
+          version: "2.3.1"
+    - else:
+        upgradeJahiaHealthcheckModule:
+          version: "1.2.1"
+
   eventsUpdate:
     install:
       jps: "${baseUrl}/../../update.yml"
