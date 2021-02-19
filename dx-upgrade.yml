@@ -96,6 +96,7 @@ actions:
         fi
         sed '/JAHIA_UPGRADE/d' -i /etc/locale.conf
       user: root
+    - startupJahiaHealthCheck: ${nodes.proc.first.id}
 
   bulkCpUpgrade:
     - cmd [proc]: |-
