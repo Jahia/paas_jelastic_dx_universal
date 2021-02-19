@@ -26,10 +26,10 @@ onInstall:
   - checkGaleraClusterHealth: sqldb
   ### End Pre-checks
 
+  - addHealthcheckEnvVar # PAAS-1369
   - upgradeHealthcheckModule # PAAS-1317
   - redeployTomcat
   - finishProxysqlInstall
-  - addHealthcheckEnvVar # PAAS-1369
   - fetchLogEventScript # PAAS-1323
   - vaultTomcatSetup  # PAAS-1208
   - checkProductVersion # PAAS-1342
