@@ -24,6 +24,7 @@ onInstall:
   - checkHaproxyHealth: bl
   - checkMariadbHealth: sqldb
   - checkGaleraClusterHealth: sqldb
+  - eventsUpdate
   ### End Pre-checks
 
   - addHealthcheckEnvVar # PAAS-1369
@@ -37,7 +38,6 @@ onInstall:
   - increaseHaproxyTimeout # PAAS-1433
 
   ### Post-actions
-  - eventsUpdate # PAAS-1322
   - setEnvVersion: ${globals.version}
   - logEvent:
       target: ${nodes.proc.first.id}
