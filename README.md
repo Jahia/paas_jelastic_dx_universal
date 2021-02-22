@@ -76,7 +76,6 @@ This *upgrade* package aims at upgrading Jahia version by redeploying Jahia node
 Parameters are:
 - name: targetVersion
   - Jahia Target Version. If nothing is specified, the current Jahia version of the target environment is selected
-- name: packageType
 - name: rollingUpgrade
   - Rolling upgrade, only available to redeploy Tomcat nodes only as the Jahia version upgrade currently needs all Tomcat nodes to be stopped
 

@@ -62,9 +62,8 @@ onInstall:
   - env.control.ApplyNodeGroupData[cp, proc]:
       data:
         productVersion: ${globals.targetJahiaVersion}
-        packageType: ${settings.packageType}
   - env.control.AddContainerEnvVars[cp, proc]:
-      vars: {"DX_VERSION": "${globals.targetJahiaVersion}", "PACKAGE_TYPE": "${settings.packageType}"}
+      vars: {"DX_VERSION": "${globals.targetJahiaVersion}"}
 
 actions:
   procUpgrade:
@@ -156,13 +155,6 @@ settings:
       vtype: text
       required: false
       tooltip: Optional. If you don't specify a version, the current Jahia version of the target environment will be selected.
-    - name: packageType
-      type: string
-      caption: Package Type
-      default: dev
-      vtype: text
-      required: true
-      tooltip: Required. Should be "dev" or "prod".
     - name: rollingUpgrade
       type: toggle
       caption: Rolling upgrade ?

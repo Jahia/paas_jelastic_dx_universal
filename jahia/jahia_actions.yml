@@ -59,7 +59,6 @@ actions:
         data:
           productName: dx
           productVersion: ${globals.dx_version}
-          packageType: ${globals.package_type}
 
     - initJahiaDatabase
     - log: "## Determine JDK version for good _JAVA_OPTIONS envvar"

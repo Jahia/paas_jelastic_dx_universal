@@ -20,7 +20,6 @@ globals:
   redis_pass: ${fn.password(20)}
   mngr_user: manager
   dx_version: ${settings.productVersion}
-  package_type: dev
   operating_mode: ${settings.mode}
   datadog_key: ${settings.ddogApikey}
   shortdomain: ${settings.shortdomain}
@@ -119,7 +118,6 @@ onBeforeInstall: |
         "XMX": xmx_browsing,
         "DATADOGAPIKEY": "${globals.datadog_key}",
         "DX_VERSION": "${globals.dx_version}",
-        "PACKAGE_TYPE": "${globals.package_type}",
         "jahia_cfg_operatingMode": "${globals.operating_mode}",
         "_PROVIDE": "jahia",
         "_ROLE": "Browsing",
@@ -158,7 +156,6 @@ onBeforeInstall: |
         "XMX": xmx_processing,
         "DATADOGAPIKEY": "${globals.datadog_key}",
         "DX_VERSION": "${globals.dx_version}",
-        "PACKAGE_TYPE": "${globals.package_type}",
         "jahia_cfg_operatingMode": "${globals.operating_mode}",
         "_PROVIDE": "jahia",
         "_ROLE": "Processing",
@@ -211,7 +208,6 @@ nodes: definedInOnBeforeInstall
 # --Events --
 onInstall:
   - log: "## Beginning installation of Jahia"
-  - setGlobalEnvVars
   - setJournaldLimit
   - installDatabase
   - finishProxysqlInstall
