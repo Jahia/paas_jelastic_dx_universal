@@ -1,0 +1,66 @@
+---
+type: update
+version: 1.5.2
+name: Jahia - Redeploy Galera nodes
+logo: /images/jahia-logo-70x70.png
+id: redeploy-galera-nodes
+
+globals:
+  targetDockerTag: ${settings.targetDockerTag}
+
+mixins:
+  - galera_actions.yml
+  - mariadb_actions.yml
+  - "../jahia/jahia_actions.yml"
+  - "../database/proxysql_actions.yml"
+
+onInstall:
+  - enableFullReadOnlyOnCluster
+  - redeployGalera
+  - disableFullReadOnlyOnCluster
+
+actions:
+  redeployGalera:
+    - if (nodes.sqldb.length > 1):
+      - checkGaleraClusterHealth: sqldb
+      - checkGaleraClusterSize
+      - if (!${globals.galeraClusterSizeOk}):
+          return:
+            type: error
+            message: "Galera cluster size is wrong. Aborting"
+    - forEach(nodes.sqldb):
+        - log: "Redeploying MariaDB on node ${@i.id}..."
+        - getGaleraNodeNameIndex: ${@i.id}
+        - proxysqlSetMariadbBackendStatus:
+            targetHost: ${globals.galeraNodeNameIndex}
+            newStatus: OFFLINE_SOFT
+        - stopGaleraNode: ${@i.id}
+        - api: environment.control.RedeployContainerById
+          nodeId: ${@i.id}
+          tag: ${globals.targetDockerTag}
+          useExistingVolumes: true
+          skipReinstall: false
+          envName: ${env.envName}
+        - proxysqlSetMariadbBackendStatus:
+            targetHost: ${globals.galeraNodeNameIndex}
+            newStatus: ONLINE
+
+        # We are going to a new if dimension, let's save some information
+        - setGlobals:
+            currentNode: ${@i.id}
+        - if (nodes.sqldb.length > 1):
+            - checkGaleraClusterHealth: sqldb
+            - checkGaleraClusterSize
+            - if (!${globals.galeraClusterSizeOk}):
+                return:
+                  type: error
+                  message: "Galera node ${globals.currentNode} was not able to join the cluster after being redeployed"
+
+settings:
+  fields:
+    - name: targetDockerTag
+      type: dockertags
+      nodeType: mariadb-dockerized
+      caption: MariaDB target Docker tag
+      default: 10.4.13
+      required: false

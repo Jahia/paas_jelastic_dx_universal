@@ -2,7 +2,6 @@
 actions:
   installDatabase:
     - setSudoer: sqldb
-    - getLogEventScript: sqldb
     - log: "## Setup MariaDB logrotate on ${this}"
     - cmd[sqldb]: |-
         mkdir /etc/systemd/system/{mysql,mariadb}.service.d
@@ -126,3 +125,10 @@ actions:
           echo "[ERROR] Can't connect to mysql instance, exiting" 1>&2 && exit 1
         fi
       user: root
+
+  getGaleraNodeNameIndex:
+    - cmd [${this}]: |-
+        my_ip=$(grep $(hostname) /etc/hosts | awk '{print $1}')
+        awk -v my_ip="$my_ip galera" '$0 ~my_ip {print $2}' /etc/hosts
+    - setGlobals:
+        galeraNodeNameIndex: "${response.out}"

@@ -60,3 +60,8 @@ actions:
   refreshProxysqlInstancesList:
     - setProxysqlGlobals
     - setupProxysqlCluster
+
+  proxysqlSetMariadbBackendStatus:
+    - setProxysqlGlobals
+    - cmd[cp, proc]: |-
+        ${globals.sql_cli} -e "UPDATE mysql_servers SET status='${this.newStatus}' WHERE hostname='${this.targetHost}';"

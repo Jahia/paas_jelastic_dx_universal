@@ -234,16 +234,18 @@ onBeforeRedeployContainer:
 onAfterRedeployContainer:
   - if ('${event.params.nodeGroup:}'):
       # Handle RedeployContainersByGroup
-      logEvent:
-        target: ${event.params.nodeGroup}
-        title: "${event.params.nodeGroup} nodes have been redeployed to ${event.params.tag} version"
-        text: "${event.params.nodeGroup} nodes have been redeployed to ${event.params.tag} version"
+      - getLogEventScript: ${event.params.nodeGroup}
+      - logEvent:
+          target: ${event.params.nodeGroup}
+          title: "${event.params.nodeGroup} nodes have been redeployed to ${event.params.tag} version"
+          text: "${event.params.nodeGroup} nodes have been redeployed to ${event.params.tag} version"
   - elif ('${event.params.nodeId:}'):
       # Handle RedeployContainerById
-      logEvent:
-        target: ${event.params.nodeId}
-        title: "Node ${event.params.nodeId} redeployed to ${event.params.tag} version"
-        text: "Node ${event.params.nodeId} has been redeploy to ${event.params.tag} version"
+      - getLogEventScript: ${event.params.nodeId}
+      - logEvent:
+          target: ${event.params.nodeId}
+          title: "Node ${event.params.nodeId} redeployed to ${event.params.tag} version"
+          text: "Node ${event.params.nodeId} has been redeploy to ${event.params.tag} version"
 
 onBeforeScaleIn:
   forEach(event.response.nodes):
