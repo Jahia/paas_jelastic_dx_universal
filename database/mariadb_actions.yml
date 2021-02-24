@@ -131,3 +131,14 @@ actions:
         awk -v my_ip="$my_ip galera" '$0 ~my_ip {print $2}' /etc/hosts
     - setGlobals:
         galeraNodeNameIndex: "${response.out}"
+
+  mysqlService:
+    - if ("${this.action}" == "enable"):
+        - cmd [${this.target}]: |-
+            sed -i '/^\/var\/lib\/jelastic\/overrides\/envinfo.lib/d' /etc/jelastic/redeploy.conf
+            rm /var/lib/jelastic/overrides/envinfo.lib || exit 0
+          user: root
+    - if ("${this.action}" == "disable"):
+        - cmd [${this.target}]: |-
+            echo "SERVICE=''" > /var/lib/jelastic/overrides/envinfo.lib
+            echo "/var/lib/jelastic/overrides/envinfo.lib" >> /etc/jelastic/redeploy.conf
