@@ -125,7 +125,7 @@ actions:
   setVersionPropertiesValue:
     - isVersionLower:
         a : "${globals.targetDockerTag}"
-        b : "7.3.7.0"
+        b : "7.3.8.0"
         res : isTargetVersionLowerThan7370
 
     - if ( ! ${globals.isTargetVersionLowerThan7370} ):
