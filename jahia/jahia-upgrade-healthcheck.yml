@@ -65,18 +65,17 @@ actions:
 
   forceHealthcheckSuccess:
     cmd[bl]: |-
-      exit_line=$(sed '2q;d' /etc/haproxy/haproxy.cfg.d/healthcheck.sh)
-      if [ "$exit_line" != "exit 0" ]; then
-        sed -i '1 a exit 0' /etc/haproxy/haproxy.cfg.d/healthcheck.sh
-      fi
+      sed -i 's/ option httpchk/ #option httpchk/' /etc/haproxy/haproxy.cfg.d/1*
+      sed -i 's/ http-check expect/ #http-check expect/' /etc/haproxy/haproxy.cfg.d/1*
+      service haproxy reload
+    user: root
 
   restoreHealthCheck:
     cmd[bl]: |-
-      exit_line=$(sed '2q;d' /etc/haproxy/haproxy.cfg.d/healthcheck.sh)
-      if [ "$exit_line" = "exit 0" ]; then
-        sed -i '2 d' /etc/haproxy/haproxy.cfg.d/healthcheck.sh
-      fi
-
+      sed -i 's/ #option httpchk/ option httpchk/' /etc/haproxy/haproxy.cfg.d/1*
+      sed -i 's/ #http-check expect/ http-check expect/' /etc/haproxy/haproxy.cfg.d/1*
+      service haproxy reload
+    user: root
 
   enable_karaf_login:
     - log: "Activate karaf's ssh login on ${this}'s nodegroup"
