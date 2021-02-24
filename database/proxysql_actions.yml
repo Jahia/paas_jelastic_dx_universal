@@ -27,11 +27,11 @@ actions:
 
   setupMysqlServers:
     - cmd[proc]: |-
-        ${globals.sql_cli} -e "REPLACE INTO mysql_servers(hostgroup_id,hostname,port, max_connections) VALUES (2,'galera_1',3306, 30)"
+        ${globals.sql_cli} -e "REPLACE INTO mysql_servers(hostgroup_id,hostname,port, max_connections) VALUES (2,'galera_1',3306, 50)"
     - if (nodes.sqldb.length > 1):
         - cmd[proc]: |-
-            ${globals.sql_cli} -e "REPLACE INTO mysql_servers(hostgroup_id,hostname,port, max_connections) VALUES (2,'galera_2',3306, 30)"
-            ${globals.sql_cli} -e "REPLACE INTO mysql_servers(hostgroup_id,hostname,port, max_connections) VALUES (2,'galera_3',3306, 30)"
+            ${globals.sql_cli} -e "REPLACE INTO mysql_servers(hostgroup_id,hostname,port, max_connections) VALUES (2,'galera_2',3306, 50)"
+            ${globals.sql_cli} -e "REPLACE INTO mysql_servers(hostgroup_id,hostname,port, max_connections) VALUES (2,'galera_3',3306, 50)"
     - cmd[proc]: |-
         ${globals.sql_cli} -e "LOAD MYSQL SERVERS TO RUNTIME"
         ${globals.sql_cli} -e "SAVE MYSQL SERVERS TO DISK"
