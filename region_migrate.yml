@@ -80,7 +80,7 @@ actions:
   enableGalera:
     - cmd[sqldb]: |-
         service mysql start &&\
-        chkconfig mysql on
+        chkconfig --level 3 mysql on
       user: root
 
   disableTomcat:

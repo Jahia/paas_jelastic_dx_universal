@@ -324,15 +324,32 @@ onAfterRedeployContainer[bl]:
             productName: haproxy
             productVersion: ${nodes.bl.first.version}
 
+onBeforeRedeployContainer[sqldb]:
+  # disable mysql autostart because JEM will do it
+  - if ('${event.params.nodeGroup:}'):
+      - mysqlService:
+          target: ${event.params.nodeGroup}
+          action: disable
+  - elif ('${event.params.nodeId:}'):
+      - mysqlService:
+          target: ${event.params.nodeId}
+          action: disable
+
 onAfterRedeployContainer[sqldb]:
   - if ('${event.params.nodeGroup:}'):
       # Handle RedeployContainersByGroup
       - setSudoer: ${event.params.nodeGroup}
       - setupDatadogAgentSql: ${event.params.nodeGroup}
+      - mysqlService:
+          target: ${event.params.nodeGroup}
+          action: enable
   - elif ('${event.params.nodeId:}'):
       # Handle RedeployContainerById
       - setSudoer: ${event.params.nodeId}
       - setupDatadogAgentSql: ${event.params.nodeId}
+      - mysqlService:
+          target: ${event.params.nodeId}
+          action: enable
 
 onBeforeStop:
   - stopJahia: cp, proc
