@@ -127,9 +127,9 @@ actions:
     - isVersionLower:
         a : "${globals.targetDockerTag}"
         b : "7.3.8.0"
-        res : isTargetVersionLowerThan7370
+        res : isTargetVersionLowerThan7380
 
-    - if ( ! ${globals.isTargetVersionLowerThan7370} ):
+    - if ( ! ${globals.isTargetVersionLowerThan7380} ):
         - isVersionLower:
             a : "${globals.targetDockerTag}"
             b : "8.0.0.0"
