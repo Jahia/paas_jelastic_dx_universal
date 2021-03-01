@@ -26,7 +26,8 @@ onInstall:
   - checkGaleraClusterHealth: sqldb
   - eventsUpdate
   ### End Pre-checks
-
+  - keepTomcatEnvConfOnRedeploy: "cp, proc"
+  - keepJCRIndicesOnRedeploy: "cp, proc"
   - addHealthcheckEnvVar # PAAS-1369
   - upgradeHealthcheckModule # PAAS-1317
   - redeployTomcat
@@ -52,6 +53,27 @@ onInstall:
   ### End Post-actions
 
 actions:
+  # Make sure that the /opt/tomcat/conf/tomcatenv.sh is persisted when redeploying a cp/proc node
+  keepTomcatEnvConfOnRedeploy:
+    - log: "## Checking Jelastic redeploy.conf"
+    - cmd [${this}]: |-
+        if grep -q "tomcat-env.sh" /etc/jelastic/redeploy.conf; then
+          exit 0;
+        fi
+        echo "/opt/tomcat/conf/tomcat-env.sh" >> /etc/jelastic/redeploy.conf
+      user: root
+
+  # Make sure that the JCR indices are persisted when redeploying a cp/proc node
+  keepJCRIndicesOnRedeploy:
+    - log: "## Checking Jelastic redeploy.conf"
+    - cmd [${this}]: |-
+        if grep -q "/repository/" /etc/jelastic/redeploy.conf; then
+          exit 0;
+        fi
+        echo "/data/digital-factory-data/repository/index" >> /etc/jelastic/redeploy.conf
+        echo "/data/digital-factory-data/repository/workspaces" >> /etc/jelastic/redeploy.conf
+      user: root
+
   # The upgrade Healtcheck module is cluster-wide so we can't rely on Tomcat nodes
   # redeploy to upgrade the healthcheck, otherwise the healthcheck will fail on all nodes
   # as soon as the proc node will be redeployed
