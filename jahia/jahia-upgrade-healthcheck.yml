@@ -21,7 +21,7 @@ actions:
     - installNewHealthcheckIfNotPresent: ${this}
     - removeOldHealthCheckVersions: ${this}
     - disable_karaf_login: ${this}
-    - startupJahiaHealthCheck: ${this}
+    - checkJahiaHealth: ${this}
 
   installNewHealthcheckIfNotPresent:
     - cmd[${this}]: |-
