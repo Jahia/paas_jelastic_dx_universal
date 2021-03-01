@@ -31,6 +31,8 @@ onInstall:
   - upgradeHealthcheckModule # PAAS-1317
   - redeployTomcat
   - finishProxysqlInstall
+  - if (nodes.sqldb.length > 1):
+      jahiaRollingRestart
   - fetchLogEventScript # PAAS-1323
   - vaultTomcatSetup  # PAAS-1208
   - checkProductVersion # PAAS-1342
@@ -166,3 +168,7 @@ actions:
   redeployTomcat:
     - redeployProcessing
     - redeployBrowsing
+
+  jahiaRollingRestart:
+    install:
+      jps: "${baseUrl}/../../jahia/jahia-rolling-restart.yml"
