@@ -19,7 +19,7 @@ globals:
 
 onInstall:
   - eventsUpdate
-  - if (nodes.sqldb.length > 1):
+  - if (nodes.sqldb.length == 1):
       disableDatadogCustomChecks
   - fixHaproxyConf # PAAS-1357
   - increaseHaproxyTimeout # PAAS-1433
