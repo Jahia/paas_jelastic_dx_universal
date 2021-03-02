@@ -1,0 +1,69 @@
+---
+type: update
+version: 1.5.2
+name: Migrate Jahia env to v3
+id: migrate-jahia-env-v3
+
+# Required for healthchecks
+mixins:
+  - "../../common/common_actions.yml"
+  - "../../jahia/jahia_actions.yml"
+  - "../../jahia/jahia-upgrade-healthcheck.yml"
+  - "../../database/mariadb_actions.yml"
+  - "../../database/galera_actions.yml"
+  - "../../database/proxysql_actions.yml"
+  - "../../haproxy/haproxy_actions.yml"
+
+globals:
+  version: 3
+
+onInstall:
+  - eventsUpdate
+  - if (nodes.sqldb.length > 1):
+      disableDatadogCustomChecks
+  - fixHaproxyConf # PAAS-1357
+  - increaseHaproxyTimeout # PAAS-1433
+
+  ### Post-actions
+  - setEnvVersion: ${globals.version}
+  - logEvent:
+      target: ${nodes.proc.first.id}
+      title: "Environment $envName migrated"
+      text: "Environment $envName migrated to v${globals.version}"
+  - checkJahiaHealth: "cp, proc"
+  - checkHaproxyHealth: bl
+  - checkMariadbHealth: sqldb
+  - checkGaleraClusterHealth: sqldb
+  ### End Post-actions
+
+actions:
+
+  fixHaproxyConf:
+    - cmd [bl]: |-
+        haproxy_conf_path='/etc/haproxy/haproxy.cfg.d/00-global.cfg'
+        if [ "$(grep haproxy_adm_panel_path_beg /etc/haproxy/haproxy.cfg.d/00-global.cfg)" ]; then
+          echo "Update haproxy conf already done"
+          exit 0
+        fi
+        sed -i '/acl haproxy_adm_panel/d' $haproxy_conf_path
+        sed -i 's/\!tools.*#HTTP_AUTH_BASIC/!tools !haproxy_adm_panel_path_beg #HTTP_AUTH_BASIC/' $haproxy_conf_path
+        sed -i '/^.*haproxy_adm_panel_path_beg.*/i \    #acl haproxy_adm_panel_path_beg  path_beg -i /haproxy_adm_panel #HTTP_AUTH_BASIC' $haproxy_conf_path
+        echo "[INFO] Haproxy basic authentication rules updated"
+        sed -i 's/\(.*acl healthcheck path\)\( \/modules\/healthcheck\)/\1 \/healthcheck\2/g' $haproxy_conf_path
+        sed -i 's/\(.*http-request allow if healthcheck\)$/\1 or haproxy_adm_panel/g' $haproxy_conf_path
+        sed -i '/^.*or haproxy_adm_panel/i \    acl haproxy_adm_panel path /haproxy_adm_panel' $haproxy_conf_path
+        sed -i 's/\(.*acl healthcheck path \/healthcheck\)$/\1 \/modules\/healthcheck/g' $haproxy_conf_path
+        echo "[INFO] Haproxy healthcheck rules updated"
+        sudo service haproxy reload
+      user: haproxy
+
+  increaseHaproxyTimeout:
+    cmd[bl]: |-
+      sed 's/timeout \(client\|server\)\( *\) 1m$/timeout \1\2 5m/g' -i /etc/haproxy/haproxy.cfg.d/00-global.cfg
+      sudo service haproxy reload
+    user: haproxy
+
+
+  eventsUpdate:
+    install:
+      jps: "${baseUrl}/../../update.yml"
