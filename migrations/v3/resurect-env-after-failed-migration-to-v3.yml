@@ -17,6 +17,8 @@ mixins:
 globals:
   version: 3
 
+# This package is meant to fix internal environments that failed to migrate to v3
+# More details in https://jira.jahia.org/browse/PAAS-1469
 onInstall:
   - eventsUpdate
   - if (nodes.sqldb.length == 1):
