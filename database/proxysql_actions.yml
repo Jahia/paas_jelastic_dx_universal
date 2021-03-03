@@ -55,6 +55,8 @@ actions:
     - enableBackendMonitor
     - if (nodes.sqldb.length > 1):
         - setupMysqlServers
+    - else:
+        - disableDatadogCustomChecks
     - setupProxysqlCluster
 
   refreshProxysqlInstancesList:
@@ -65,3 +67,14 @@ actions:
     - setProxysqlGlobals
     - cmd[cp, proc]: |-
         ${globals.sql_cli} -e "UPDATE mysql_servers SET status='${this.newStatus}' WHERE hostname='${this.targetHost}';"
+
+  disableDatadogCustomChecks:
+    - cmd[cp, proc]: |-
+        p="/etc/datadog-agent/conf.d"
+        for check in proxysql_backend_missing proxysql_connections_discrepancies; do
+          [ -h $p/${check}.yaml ] && mv $p/${check}.yaml $p/${check}.yaml_disabled
+        done
+        if systemctl -q is-active datadog-agent; then
+          systemctl restart datadog-agent
+        fi
+      user: root

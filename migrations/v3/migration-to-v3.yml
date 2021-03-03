@@ -26,11 +26,14 @@ onInstall:
   - checkGaleraClusterHealth: sqldb
   - eventsUpdate
   ### End Pre-checks
-
+  - keepTomcatEnvConfOnRedeploy: "cp, proc"
+  - keepJCRIndicesOnRedeploy: "cp, proc"
   - addHealthcheckEnvVar # PAAS-1369
   - upgradeHealthcheckModule # PAAS-1317
   - redeployTomcat
   - finishProxysqlInstall
+  - if (nodes.sqldb.length > 1):
+      jahiaRollingRestart
   - fetchLogEventScript # PAAS-1323
   - vaultTomcatSetup  # PAAS-1208
   - checkProductVersion # PAAS-1342
@@ -50,6 +53,27 @@ onInstall:
   ### End Post-actions
 
 actions:
+  # Make sure that the /opt/tomcat/conf/tomcatenv.sh is persisted when redeploying a cp/proc node
+  keepTomcatEnvConfOnRedeploy:
+    - log: "## Checking Jelastic redeploy.conf"
+    - cmd [${this}]: |-
+        if grep -q "tomcat-env.sh" /etc/jelastic/redeploy.conf; then
+          exit 0;
+        fi
+        echo "/opt/tomcat/conf/tomcat-env.sh" >> /etc/jelastic/redeploy.conf
+      user: root
+
+  # Make sure that the JCR indices are persisted when redeploying a cp/proc node
+  keepJCRIndicesOnRedeploy:
+    - log: "## Checking Jelastic redeploy.conf"
+    - cmd [${this}]: |-
+        if grep -q "/repository/" /etc/jelastic/redeploy.conf; then
+          exit 0;
+        fi
+        echo "/data/digital-factory-data/repository/index" >> /etc/jelastic/redeploy.conf
+        echo "/data/digital-factory-data/repository/workspaces" >> /etc/jelastic/redeploy.conf
+      user: root
+
   # The upgrade Healtcheck module is cluster-wide so we can't rely on Tomcat nodes
   # redeploy to upgrade the healthcheck, otherwise the healthcheck will fail on all nodes
   # as soon as the proc node will be redeployed
@@ -94,39 +118,18 @@ actions:
 
   updateHaproxyConf:
     - cmd [bl]: |-
-        path_haproxy_conf='/etc/haproxy/haproxy.cfg.d/00-global.cfg'
-        is_exist='acl haproxy_adm_panel path'
-        idempotent=$(awk "/^ *$is_exist/" $path_haproxy_conf)
-
-        if [ "$idempotent" != "" ]; then
+        haproxy_conf_path='/etc/haproxy/haproxy.cfg.d/00-global.cfg'
+        if [ "$(grep haproxy_adm_panel_path_beg /etc/haproxy/haproxy.cfg.d/00-global.cfg)" ]; then
           echo "Update haproxy conf already done"
           exit 0
         fi
-
-        insert_line_1='acl auth_ok http_auth(trusted_users) #HTTP_AUTH_BASIC'
-        insert_line_2='acl tools  path_beg -i /tools #HTTP_AUTH_BASIC'
-        insert_line_3='acl haproxy_adm_panel  path_beg -i /haproxy_adm_panel #HTTP_AUTH_BASIC'
-        insert_line_4='http-request auth realm env-access-restricted if !auth_ok !tools !haproxy_adm_panel #HTTP_AUTH_BASIC'
-        spaces='    '
-        looking_for='acl auth_ok http_auth'
-        res=$(awk "/^ *$looking_for/" $path_haproxy_conf)
-        sed -i "/#HTTP_AUTH_BASIC/d" $path_haproxy_conf
-        line=$(awk '/http-response set-header X-XSS-Protection/ {print NR; exit}' $path_haproxy_conf)
-        sed -i "$(($line+1))i\\\n$insert_line_1\n$insert_line_2\n$insert_line_3\n$insert_line_4" $path_haproxy_conf
-        if [ "$res" != "" ]; then
-          sed -i "/#HTTP_AUTH_BASIC/s/^/${spaces}/" $path_haproxy_conf
-        else
-          sed -i "/#HTTP_AUTH_BASIC/s/^/${spaces}#/" $path_haproxy_conf
-        fi
+        sed -i 's/\!tools #HTTP_AUTH_BASIC/!tools !haproxy_adm_panel_path_beg #HTTP_AUTH_BASIC/' $haproxy_conf_path
+        sed -i '/^.*haproxy_adm_panel_path_beg.*/i \    #acl haproxy_adm_panel_path_beg  path_beg -i /haproxy_adm_panel #HTTP_AUTH_BASIC' $haproxy_conf_path
         echo "[INFO] Haproxy basic authentication rules updated"
-
-        insert_line_5='acl healthcheck path /healthcheck /modules/healthcheck'
-        insert_line_6='acl haproxy_adm_panel path /haproxy_adm_panel'
-        insert_line_7='http-request allow if healthcheck or haproxy_adm_panel'
-        sed -i "s|acl healthcheck path /modules/healthcheck|$insert_line_5\n${spaces}${insert_line_6}|" $path_haproxy_conf
-        sed -i "s|http-request allow if healthcheck|$insert_line_7|" $path_haproxy_conf
+        sed -i 's/\(.*acl healthcheck path\)\( \/modules\/healthcheck\)/\1 \/healthcheck\2/g' $haproxy_conf_path
+        sed -i 's/\(.*http-request allow if healthcheck\)/\1 or haproxy_adm_panel/g' $haproxy_conf_path
+        sed -i '/^.*or haproxy_adm_panel/i \    acl haproxy_adm_panel path /haproxy_adm_panel' $haproxy_conf_path
         echo "[INFO] Haproxy healthcheck rules updated"
-
         sudo service haproxy reload
       user: haproxy
 
@@ -166,3 +169,7 @@ actions:
   redeployTomcat:
     - redeployProcessing
     - redeployBrowsing
+
+  jahiaRollingRestart:
+    install:
+      jps: "${baseUrl}/../../jahia/jahia-rolling-restart.yml"

@@ -21,6 +21,8 @@ actions:
       user: root
     - setSudoer: ${this}
     - getLogEventScript: ${this}
+    - if (nodes.sqldb.length == 1):
+        - disableDatadogCustomChecks
     - copyApp: ${this}
     - setToolsPwd: ${this}
     - if ("${this}" == "cp"):
