@@ -65,11 +65,11 @@ actions:
   updateDatadogProcessCheck:
     - cmd [bl]: |-
         conf_file='/etc/datadog-agent/conf.d/process.d/conf.yaml'
-        dist_conf_file='${baseUrl}/../../configs/dd_agent_process_conf.yml'
+        dist_conf_file="${baseUrl}../../configs/dd_agent_process_conf.yml"
         grep_str='pid_cache_duration|shared_process_list_cache_duration|min_collection_interval'
         if [ $(grep -E $grep_str $conf_file | wc -l) -eq 3 ]; then
           echo "Process check conf already up-to-date, nothing to do."
           exit 0
         fi
-        curl -fSso $conf_file $dist_conf_file
+        curl -fLSso $conf_file $dist_conf_file
       user: root
