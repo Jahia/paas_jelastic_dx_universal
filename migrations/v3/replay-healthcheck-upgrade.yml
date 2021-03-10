@@ -5,6 +5,7 @@ name: Replay healthcheck module upgrade
 id: replay-healthcheck-upgrade
 
 mixins:
+  - "../../jahia/jahia_actions.yml"
   - "../../jahia/jahia-upgrade-healthcheck.yml"
 
 # When applying migration-to-v3 package, we had issues with the redeploy causing
