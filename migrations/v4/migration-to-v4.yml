@@ -13,6 +13,7 @@ mixins:
   - "../../database/galera_actions.yml"
   - "../../database/proxysql_actions.yml"
   - "../../haproxy/haproxy_actions.yml"
+  - "../../utils/compare-versions.yml"
 
 globals:
   version: 4
@@ -29,6 +30,13 @@ onInstall:
 
   - updatHaproxyHealthcheck # PAAS-1345
   - updateDatadogProcessCheck # PAAS-1465
+  - gotJexperience                                     # PAAS-1458 test if jexperience module is present
+  - if("${globals.bfile}" != ""):                      # if present then
+      - gotJexperienceVersion                          #     get is version
+      - if("${globals.gotJexperienceVersion}" != ""):  #     if we got a version then
+          - isJexperienceUpdateNeeded                  #         test if needed to be updated to 1.11.4, 1.12.2 or 1.12.3
+          - if(${globals.needJexperienceUpdate}):      #         if needed then
+              - updateJexperienceVersion               #             download the jar in the module folder
 
   ### Post-actions
   - setEnvVersion: ${globals.version}
@@ -73,3 +81,59 @@ actions:
         fi
         curl -fLSso $conf_file $dist_conf_file
       user: root
+
+  gotJexperience:
+    - cmd[proc]: |-
+        find /data/digital-factory-data/bundles-deployed -type f -name 'bundle.info' -exec grep -l '/jexperience/' {} \+
+        exit 0
+    - setGlobals:
+        bfile: ${response.out}
+
+  gotJexperienceVersion:
+    - cmd[proc]: |-
+        if [ -n "${globals.bfile}" ]; then
+          awk -F'[/:]' '$1=="dx" {print $NF}' ${globals.bfile}
+        fi
+    - setGlobals:
+        gotJexperienceVersion: ${response.out}
+
+  isJexperienceUpdateNeeded:
+    - getJahiaVersion
+    - isVersionBetween:
+        lower: 8.0.2.0
+        lower_may_equal: true
+        higher: 666.666.666.666
+        higher_may_equal: false
+        version: ${globals.jahiaVersion}
+        res: require_last_jexperience
+    - isVersionBetween:
+        lower: 8.0.0.0
+        lower_may_equal: true
+        higher: 8.0.2.0
+        higher_may_equal: false
+        version: ${globals.jahiaVersion}
+        res: require_second_last_jexperience
+    - isVersionLower:
+        a: ${globals.jahiaVersion}
+        b: 8.0.0.0
+        res: require_last_jahia7_jexperience
+    - if(${globals.require_last_jexperience}):
+        - setGlobals:
+            jexperience_version: 1.12.3
+    - elif(${globals.require_second_last_jexperience}):
+        - setGlobals:
+            jexperience_version: 1.12.2
+    - elif(${globals.require_last_jahia7_jexperience}):
+        - setGlobals:
+            jexperience_version: 1.11.4
+    - isVersionLower:
+        a: ${globals.gotJexperienceVersion}
+        b: ${globals.jexperience_version}
+        res: needJexperienceUpdate
+
+  updateJexperienceVersion:
+    - cmd[proc]: |-
+        MODULE_FILENAME=jexperience-${globals.jexperience_version}.jar
+        MODULE_PATH="/data/digital-factory-data/modules/$MODULE_FILENAME"
+        MODULE_URL="https://store.jahia.com/cms/mavenproxy/private-app-store/org/jahia/modules/jexperience/${globals.jexperience_version}/jexperience-${globals.jexperience_version}.jar"
+        wget -qO "$MODULE_PATH" "$MODULE_URL"
