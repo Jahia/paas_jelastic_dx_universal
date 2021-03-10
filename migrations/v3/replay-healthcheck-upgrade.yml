@@ -1,0 +1,20 @@
+---
+type: update
+version: 1.5.2
+name: Replay healthcheck module upgrade
+id: replay-healthcheck-upgrade
+
+mixins:
+  - "../../jahia/jahia-upgrade-healthcheck.yml"
+
+# When applying migration-to-v3 package, we had issues with the redeploy causing
+# reinstallation of old versions of the module. The goal of this package is to force
+# once again the upgrade of the healthcheck module to the latest version.
+onInstall:
+  - api [${nodes.cp.first.id}]: environment.control.GetNodeInfo
+  - if ("${response.node.version}" > "8.0.0.0"):
+      upgradeJahiaHealthcheckModule:
+        version: "2.3.1"
+  - else:
+      upgradeJahiaHealthcheckModule:
+        version: "1.2.1"
