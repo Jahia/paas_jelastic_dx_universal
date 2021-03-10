@@ -28,8 +28,8 @@ onInstall:
   - eventsUpdate
   ### End Pre-checks
 
-  - updatHaproxyHealthcheck # PAAS-1345
-  - updateDatadogProcessCheck # PAAS-1465
+  - updatHaproxyHealthcheck                            # PAAS-1345
+  - updateDatadogProcessCheck                          # PAAS-1465
   - gotJexperience                                     # PAAS-1458 test if jexperience module is present
   - if("${globals.bfile}" != ""):                      # if present then
       - gotJexperienceVersion                          #     get is version
