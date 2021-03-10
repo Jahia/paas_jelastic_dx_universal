@@ -34,6 +34,7 @@ globals:
   expandImportedFilesOnDisk: "true"
   jahiaFileUploadMaxSize: 268435456
   imageService: ImageMagickImageService
+  jahiaImageMagickPath: /opt/magick/bin
   org_jahia_ehcachemanager_maxBytesLocalHeap_dev: 700M
   org_jahia_ehcachemanager_big_maxBytesLocalHeap_dev: 700M
   org_jahia_ehcachemanager_maxBytesLocalHeap_prod: 800M

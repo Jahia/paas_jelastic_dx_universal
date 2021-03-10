@@ -94,9 +94,6 @@ actions:
 
   setJahiaPropertiesEnvvars:
     - log: "## Setting jahia.properties envvars"
-    - cmd [${nodes.proc.first.id}]: '[ -d /opt/magick ] && echo "/opt/magick/bin" || echo "/usr/bin"'
-    - setGlobals:
-        jahia_cfg_imageMagickPath: ${response.out}
     - cmd [${nodes.proc.first.id}]: echo $(ls -d /opt/*maven*/bin/mvn)
     - setGlobals:
         jahia_cfg_mvnPath: ${response.out}
@@ -115,7 +112,7 @@ actions:
         jahia_cfg_expandImportedFilesOnDisk: ${globals.expandImportedFilesOnDisk}
         jahia_cfg_jahiaFileUploadMaxSize: ${globals.jahiaFileUploadMaxSize}
         jahia_cfg_imageService: ${globals.imageService}
-        jahia_cfg_imageMagickPath: ${globals.jahia_cfg_imageMagickPath}
+        jahia_cfg_imageMagickPath: ${globals.jahiaImageMagickPath}
         jahia_cfg_mvnPath: ${globals.jahia_cfg_mvnPath}
         jahia_cfg_org_jahia_ehcachemanager_maxBytesLocalHeap: ${globals.jahia_cfg_org_jahia_ehcachemanager_maxBytesLocalHeap}
     - env.control.AddContainerEnvVars [cp]:
