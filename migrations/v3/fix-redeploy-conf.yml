@@ -1,0 +1,12 @@
+---
+type: update
+version: 1.5.2
+name: Fix redeploy.conf after v3
+id: fix-redeploy-confg-after-v3
+
+# This package is meant to add /var/lib/proxysql/ in /etc/jelastic/redeploy.conf if missing
+onInstall:
+  - cmd[cp, prod]: |-
+      if [ "$(grep /var/lib/proxysql /etc/jelastic/redeploy.conf)" = "" ]; then
+        echo "/var/lib/proxysql/" >> /etc/jelastic/redeploy.conf
+      fi
