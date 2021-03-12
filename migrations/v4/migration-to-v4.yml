@@ -99,32 +99,28 @@ actions:
 
   isJexperienceUpdateNeeded:
     - getJahiaVersion
-    - isVersionHigher:
+    # Get jExperience version to install according to Jahia env version:
+    # - Jahia 7.3.x ==> jExperience 1.11.4
+    # - Jahia 8 < 8.0.2 ==> jExperience 1.12.2
+    # - Jahia 8.0.2+ ==> jExperience 1.12.3
+    - isVersionLower:
         a: ${globals.jahiaVersion}
-        b: 8.0.2.0
-        res: require_last_jexperience
-    - if(! ${globals.require_last_jexperience}):
-        - isVersionEqual:
+        b: 8.0.0.0
+        res: isLowerThan8000
+    - if( ${globals.isLowerThan8000} ):
+        - setGlobals:
+            jexperience_version: 1.11.4
+    - else:
+        - isVersionLower:
             a: ${globals.jahiaVersion}
             b: 8.0.2.0
-            res: require_last_jexperience
-    - if(${globals.require_last_jexperience}):             # globals.jahiaVersion ≥ 8.0.2.0
-        - setGlobals:
-            jexperience_version: 1.12.3
-    - else:
-        - isVersionBetween:
-            lower: 8.0.0.0
-            lower_may_equal: true
-            higher: 8.0.2.0
-            higher_may_equal: false
-            version: ${globals.jahiaVersion}
-            res: require_second_last_jexperience
-        - if(${globals.require_second_last_jexperience}):  # 8.0.0.0 ≤ globals.jahiaVersion < 8.0.2.0
+            res: isLowerThan8020
+        - if( ${globals.isLowerThan8020} ):
             - setGlobals:
                 jexperience_version: 1.12.2
-        - else:                                            # globals.jahiaVersion < 8.0.0.0
+        - else:
             - setGlobals:
-                jexperience_version: 1.11.4
+                jexperience_version: 1.12.3
     - isVersionLower:
         a: ${globals.gotJexperienceVersion}
         b: ${globals.jexperience_version}
