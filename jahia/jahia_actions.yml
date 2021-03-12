@@ -346,7 +346,7 @@ actions:
     - if("${globals.isKarafLoginEnabled}" == "true"):
         - log: "karaf login is already enabled, nothing to do"
     - else:
-        - log: "Activate karaf's ssh login on ${this}'s nodegroup"
+        - log: "Activate karaf's ssh login on ${this}"
         - cmd[${this}]: |-
             # Clear everything and enable karaf login
             [ -f /tmp/abricot ] && rm /tmp/abricot
@@ -373,7 +373,7 @@ actions:
     - if("${globals.isKarafLoginEnabled}" == "false"):
         - log: "karaf login is already disabled, nothing to do"
     - else:
-        - log: "Disable karaf's ssh login on ${this}'s nodegroup"
+        - log: "Disable karaf's ssh login on ${this}"
         - cmd[${this}]: |-
             [ -f /tmp/abricot  ] && rm /tmp/abricot
             [ -f /tmp/abricot.pub  ] && rm /tmp/abricot.pub

@@ -20,11 +20,11 @@ actions:
 
   performModuleUpgradeOnNode:
     - enableKarafLogin: ${this}
-    - installNewModuleIfNotPresent: ${this}
+    - installModuleIfNotPresent: ${this}
     - removeOldModuleVersions: ${this}
     - disableKarafLogin: ${this}
 
-  installNewModuleIfNotPresent:
+  installModuleIfNotPresent:
     - set:
         modulesUrl: https://store.jahia.com/cms/mavenproxy/private-app-store/org/jahia/modules
     - cmd[${this}]: |-
