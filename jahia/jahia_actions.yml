@@ -343,32 +343,43 @@ actions:
           ssh abricot@localhost -p 8101 -i /tmp/abricot -o StrictHostKeyChecking=no full-read-only ${this.fullreadmode}
 
   enableKarafLogin:
-    - log: "Activate karaf's ssh login on ${this}'s nodegroup"
-    - cmd[${this}]: |-
-        [ -f /tmp/abricot ] && rm /tmp/abricot
-        [ -f /tmp/abricot.pub  ] && rm /tmp/abricot.pub
-        ssh-keygen -t rsa -f /tmp/abricot -P ""
-        awk '{printf "abricot:%s,_g_:admingroup\n",$2}' /tmp/abricot.pub >> /data/digital-factory-data/karaf/etc/keys.properties
-        sed 's,\(sshRealm\s*=\s*\)jahia,\1karaf,' -i /data/digital-factory-data/karaf/etc/org.apache.karaf.shell.cfg
-        i=1
-        it=66
-        until (ssh abricot@localhost -p 8101 -i /tmp/abricot -o StrictHostKeyChecking=no full-read-only); do
-          echo "karaf ssh login not updated yet (iteration $i/$it)"
-          if [ $i -ge $it ]; then
-            echo "Too long to start, something is wrong here... EXITING"
-            exit 1
-          fi
-          ((i++))
-          sleep 1
-        done
+    - if("${globals.isKarafLoginEnabled}" == "true"):
+        - log: "karaf login is already enabled, nothing to do"
+    - else:
+        - log: "Activate karaf's ssh login on ${this}'s nodegroup"
+        - cmd[${this}]: |-
+            # Clear everything and enable karaf login
+            [ -f /tmp/abricot ] && rm /tmp/abricot
+            [ -f /tmp/abricot.pub  ] && rm /tmp/abricot.pub
+            ssh-keygen -t rsa -f /tmp/abricot -P ""
+            awk '{printf "abricot:%s,_g_:admingroup\n",$2}' /tmp/abricot.pub >> /data/digital-factory-data/karaf/etc/keys.properties
+            sed 's,\(sshRealm\s*=\s*\)jahia,\1karaf,' -i /data/digital-factory-data/karaf/etc/org.apache.karaf.shell.cfg
+            i=1
+            it=66
+            until (ssh abricot@localhost -p 8101 -i /tmp/abricot -o StrictHostKeyChecking=no full-read-only); do
+              echo "karaf ssh login not updated yet (iteration $i/$it)"
+              if [ $i -ge $it ]; then
+                echo "Too long to start, something is wrong here... EXITING"
+                exit 1
+              fi
+              ((i++))
+              sleep 1
+            done
+        - setGlobals:
+            isKarafLoginEnabled: true
 
   disableKarafLogin:
-    - log: "Disable karaf's ssh login on ${this}'s nodegroup"
-    - cmd[${this}]: |-
-        [ -f /tmp/abricot  ] && rm /tmp/abricot
-        [ -f /tmp/abricot.pub  ] && rm /tmp/abricot.pub
-        sed '/^abricot:/d' -i /data/digital-factory-data/karaf/etc/keys.properties
-        sed 's,\(sshRealm\s*=\s*\)karaf,\1jahia,' -i /data/digital-factory-data/karaf/etc/org.apache.karaf.shell.cfg
+    - if("${globals.isKarafLoginEnabled}" == "false"):
+        - log: "karaf login is already disabled, nothing to do"
+    - else:
+        - log: "Disable karaf's ssh login on ${this}'s nodegroup"
+        - cmd[${this}]: |-
+            [ -f /tmp/abricot  ] && rm /tmp/abricot
+            [ -f /tmp/abricot.pub  ] && rm /tmp/abricot.pub
+            sed '/^abricot:/d' -i /data/digital-factory-data/karaf/etc/keys.properties
+            sed 's,\(sshRealm\s*=\s*\)karaf,\1jahia,' -i /data/digital-factory-data/karaf/etc/org.apache.karaf.shell.cfg
+        - setGlobals:
+            isKarafLoginEnabled: false
 
   enableFullReadOnlyOnCluster:
     - getJahiaVersion
