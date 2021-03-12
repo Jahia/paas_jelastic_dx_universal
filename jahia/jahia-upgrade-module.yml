@@ -1,0 +1,65 @@
+---
+# DEPENDS ON: ./jahia_actions.yml
+
+actions:
+  upgradeJahiaModule:
+    # expect the parameter version to be defined
+    - if ("${this.module}" == "" || "${this.version}" == ""):
+        return:
+          type: error
+          message: upgradeJahiaModule have to be called with module and version settings
+    - setGlobals:
+        moduleName: "${this.module}"
+        moduleVersion: "${this.version}"
+        awkFS: "-F '[[:blank:]]+[|][[:blank:]]+'"
+        awkIC: "-v IGNORECASE=1"
+
+    - performModuleUpgradeOnNode: proc
+    - foreach (nodes.cp):
+        - performModuleUpgradeOnNode: ${@i.id}
+
+  performModuleUpgradeOnNode:
+    - enableKarafLogin: ${this}
+    - installNewModuleIfNotPresent: ${this}
+    - removeOldModuleVersions: ${this}
+    - disableKarafLogin: ${this}
+
+  installNewModuleIfNotPresent:
+    - set:
+        modulesUrl: https://store.jahia.com/cms/mavenproxy/private-app-store/org/jahia/modules
+    - cmd[${this}]: |-
+        ${globals.karafConsole} bundle:list | awk ${globals.awkIC} ${globals.awkFS} \
+          'NF==5 && $1>0 && $4=="${globals.moduleVersion}" && $NF~/^${globals.moduleName}$/ \
+           {print $1}'
+    - if ("${response.out}" == ""):
+        - log: Installing new ${globals.moduleName} v${globals.moduleVersion} on ${this}
+        - cmd[${this}]: |-
+            dashed_name=$(echo "${globals.moduleName}" | awk '{gsub("[[:blank:]]+", "-", $0); print tolower($0)}')
+            url="${this.modulesUrl}/${dashed_name}/${globals.moduleVersion}/${dashed_name}-${globals.moduleVersion}.jar"
+            if (curl -fIs $url > /dev/null); then
+              cd /data/digital-factory-data/modules
+              wget -nv -O ${globals.moduleName}-${globals.moduleVersion}.jar $url
+            sleep 20
+            fi
+    - else:
+        log: Module ${globals.moduleName} v${globals.moduleVersion} is already on ${this}
+
+    - cmd[${this}]: |-
+        # starts the module if not
+        bundle_id=$(${globals.karafConsole} bundle:list | awk ${globals.awkIC} ${globals.awkFS} \
+            'NF==5 && $1>0 && $2!="Active" && $4=="${globals.moduleVersion}" && $NF~/^${globals.moduleName}$/ \
+            {print $1}')
+        if [ "$bundle_id" != "" ]; then
+          ${globals.karafConsole} bundle:start $bundle_id
+          echo "module started"
+        fi
+    - if ("${response.out}" != ""):
+        log: Module ${globals.moduleName} v${globals.moduleVersion} started on ${this}
+
+  removeOldModuleVersions:
+    - cmd[${this}]: |-
+        ${globals.karafConsole} bundle:list | awk ${globals.awkIC} ${globals.awkFS} \
+            'NF==5 && $1>0 && $4!="${globals.moduleVersion}" && $NF~/^${globals.moduleName}$/ \
+            {system("${globals.karafConsole} bundle:uninstall "$1"; echo deleted")}'
+    - if ("${response.out}" != ""):
+        log: Old healthcheck module deleted on ${this}
