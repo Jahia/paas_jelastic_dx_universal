@@ -11,7 +11,7 @@ actions:
     - setGlobals:
         moduleName: "${this.module}"
         moduleVersion: "${this.version}"
-        awkFS: "-F '[[:blank:]]+[|][[:blank:]]+'"
+        awkFS: "-F ' ?*\t ?'"
         awkIC: "-v IGNORECASE=1"
 
     - performModuleUpgradeOnNode: proc
@@ -28,9 +28,9 @@ actions:
     - set:
         modulesUrl: https://store.jahia.com/cms/mavenproxy/private-app-store/org/jahia/modules
     - cmd[${this}]: |-
-        ${globals.karafConsole} bundle:list | awk ${globals.awkIC} ${globals.awkFS} \
-          'NF==5 && $1>0 && $4=="${globals.moduleVersion}" && $NF~/^${globals.moduleName}$/ \
-           {print $1}'
+        ${globals.karafConsole} bundle:list --no-format 2> /dev/null | awk ${globals.awkIC} ${globals.awkFS} \
+              'NF==5 && $1>0 && $4=="${globals.moduleVersion}" && $NF~/^${globals.moduleName}$/ \
+               {print $1}'
     - if ("${response.out}" == ""):
         - log: Installing new ${globals.moduleName} v${globals.moduleVersion} on ${this}
         - cmd[${this}]: |-
@@ -46,20 +46,50 @@ actions:
 
     - cmd[${this}]: |-
         # starts the module if not
-        bundle_id=$(${globals.karafConsole} bundle:list | awk ${globals.awkIC} ${globals.awkFS} \
-            'NF==5 && $1>0 && $2!="Active" && $4=="${globals.moduleVersion}" && $NF~/^${globals.moduleName}$/ \
-            {print $1}')
-        if [ "$bundle_id" != "" ]; then
-          ${globals.karafConsole} bundle:start $bundle_id
+        bundle_id="$(${globals.karafConsole} bundle:list --no-format 2> /dev/null | awk ${globals.awkIC} ${globals.awkFS} \
+                  'NF==5 && $1>0 && $2!="Active" && $4=="${globals.moduleVersion}" && $NF~/^${globals.moduleName}$/ \
+                  {print $1}')"
+        if [ -n "$bundle_id" ]; then
+          i=1
+          until (${globals.karafConsole} bundle:start $bundle_id 2> /dev/null) || [ $i -gt $imax ]; do
+            sleep 1
+            ((i++))
+          done
           echo "module started"
+        else
+          echo "module already started"
         fi
-    - if ("${response.out}" != ""):
+    - if ("${response.out}" == "module started"):
         log: Module ${globals.moduleName} v${globals.moduleVersion} started on ${this}
+    - elif ("${response.out}" == "module already started"):
+        log: Module ${globals.moduleName} v${globals.moduleVersion} start without intervention on ${this}
 
   removeOldModuleVersions:
     - cmd[${this}]: |-
-        ${globals.karafConsole} bundle:list | awk ${globals.awkIC} ${globals.awkFS} \
-            'NF==5 && $1>0 && $4!="${globals.moduleVersion}" && $NF~/^${globals.moduleName}$/ \
-            {system("${globals.karafConsole} bundle:uninstall "$1"; echo deleted")}'
-    - if ("${response.out}" != ""):
-        log: Old healthcheck module deleted on ${this}
+        i=1
+        imax=66
+        id_to_rm="blablabla"
+        while [ -n "$id_to_rm" ] || [ $i -gt $imax ]; do
+          id_to_rm="$( \
+              ${globals.karafConsole} bundle:list --no-format 2> /dev/null | awk ${globals.awkIC} ${globals.awkFS} \
+              'NF==5 && $1>0 && $4!="${globals.moduleVersion}" && $NF~/^${globals.moduleName}$/ \
+              {printf "%s ",$1}')"
+          if [ -n "$id_to_rm" ]; then
+            ${globals.karafConsole} bundle:uninstall $id_to_rm 2> /dev/null
+          else
+            if [ $i -gt 1 ]; then
+              echo "removed"
+            else
+              echo "no other"
+            fi
+            exit 0
+          fi
+          ((i++))
+        done
+        echo "still previous"
+    - if ("${response.out}" == "removed"):
+        log: Other ${globals.moduleName} module version now deleted on ${this}
+    - elif ("${response.out}" == "no other"):
+        log: No other ${globals.moduleName} module version on ${this}
+    - elif ("${response.out}" == "still previous"):
+        log: Other ${globals.moduleName} module version still present on ${this}

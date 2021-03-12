@@ -8,7 +8,7 @@ id: migrate-jahia-env-v4
 mixins:
   - "../../common/common_actions.yml"
   - "../../jahia/jahia_actions.yml"
-  - "../../jahia/jahia-upgrade-healthcheck.yml"
+  - "../../jahia/jahia-module-management.yml"
   - "../../database/mariadb_actions.yml"
   - "../../database/galera_actions.yml"
   - "../../database/proxysql_actions.yml"
@@ -127,8 +127,6 @@ actions:
         res: needJexperienceUpdate
 
   updateJexperienceVersion:
-    - cmd[proc]: |-
-        MODULE_FILENAME=jexperience-${globals.jexperience_version}.jar
-        MODULE_PATH="/data/digital-factory-data/modules/$MODULE_FILENAME"
-        MODULE_URL="https://store.jahia.com/cms/mavenproxy/private-app-store/org/jahia/modules/jexperience/${globals.jexperience_version}/jexperience-${globals.jexperience_version}.jar"
-        wget -qO "$MODULE_PATH" "$MODULE_URL"
+    - upgradeJahiaModule:
+        module: jExperience
+        version: ${globals.jexperience_version}
