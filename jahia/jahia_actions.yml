@@ -367,6 +367,7 @@ actions:
             done
         - setGlobals:
             isKarafLoginEnabled: true
+            karafConsole: "ssh abricot@localhost -p 8101 -i /tmp/abricot -o StrictHostKeyChecking=no"
 
   disableKarafLogin:
     - if("${globals.isKarafLoginEnabled}" == "false"):
