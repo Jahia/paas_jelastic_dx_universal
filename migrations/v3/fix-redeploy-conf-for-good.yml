@@ -1,0 +1,29 @@
+---
+type: update
+version: 1.5.2
+name: Fix all in redeploy.conf after v3
+id: fix-redeploy-conf-for-good-after-v3
+
+# This package is meant to add all missig paths to /etc/jelastic/redeploy.conf
+# (this should have been done as part of migration-to-v3)
+
+onInstall:
+  - addPathToRedeployConfIfMissing:
+      path: /etc/strongswan/
+  - addPathToRedeployConfIfMissing:
+      path: /etc/systemd/system/multi-user.target.wants/strongswan.service
+  - addPathToRedeployConfIfMissing:
+      path: /opt/tomcat/conf/tomcat-env.sh
+  - addPathToRedeployConfIfMissing:
+      path: /data/digital-factory-data/info
+  - addPathToRedeployConfIfMissing:
+      path: /data/digital-factory-data/repository/index
+  - addPathToRedeployConfIfMissing:
+      path: /data/digital-factory-data/repository/workspaces
+
+actions:
+  addPathToRedeployConfIfMissing:
+    cmd[cp, proc]: |-
+      if [ "$(grep ${this.path} /etc/jelastic/redeploy.conf)" = "" ]; then
+        echo "${this.path}" >> /etc/jelastic/redeploy.conf
+      fi
