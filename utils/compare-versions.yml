@@ -117,15 +117,15 @@ actions:
         a: "${this.lower}"
         b: "${this.higher}"
         res: areBoundsOK
-    - compareVersions:
-        a: "${this.lower}"
-        b: "${this.version}"
-        res: isLowerLower
-    - compareVersions:
-        a: "${this.version}"
-        b: "${this.higher}"
-        res: isHigherHigher
     - if ( ${globals.areBoundsOK} <= 0):
+        - compareVersions:
+            a: "${this.lower}"
+            b: "${this.version}"
+            res: isLowerLower
+        - compareVersions:
+            a: "${this.version}"
+            b: "${this.higher}"
+            res: isHigherHigher
         - if (! ${this.lower_may_equal} && ! ${this.higher_may_equal}):
             - if (${globals.isLowerLower} == -1 && ${globals.isHigherHigher} == -1):
                 - set:
