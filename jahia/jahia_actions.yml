@@ -343,7 +343,15 @@ actions:
           ssh abricot@localhost -p 8101 -i /tmp/abricot -o StrictHostKeyChecking=no full-read-only ${this.fullreadmode}
 
   enableKarafLogin:
-    - if("${globals.isKarafLoginEnabled}" == "true"):
+    - isKarafLoginEnabled: ${globals.isKarafLoginEnabled}
+      script: |-
+          try {
+            var resp = JSON.parse(isKarafLoginEnabled)["${this}"]
+          } catch(error) {
+            var resp = false
+          }
+          return {"result": 0, "resp": resp}
+    - if(${response.resp}):
         - log: "karaf login is already enabled, nothing to do"
     - else:
         - log: "Activate karaf's ssh login on ${this}"
@@ -365,12 +373,30 @@ actions:
               ((i++))
               sleep 1
             done
+        - isKarafLoginEnabled: ${globals.isEnable}
+          script: |-
+            try {
+              var isEnable = JSON.parse(isKarafLoginEnabled)
+            } catch(error) {
+              var isEnable = {}
+            } finally {
+              isEnable["${this}"] = true
+            }
+            return {"result": 0, "isEnable": isEnable}
         - setGlobals:
-            isKarafLoginEnabled: true
+            isKarafLoginEnabled: ${response.isEnable}
             karafConsole: "ssh abricot@localhost -p 8101 -i /tmp/abricot -o StrictHostKeyChecking=no"
 
   disableKarafLogin:
-    - if("${globals.isKarafLoginEnabled}" == "false"):
+    - isKarafLoginEnabled: ${globals.isKarafLoginEnabled}
+      script: |-
+          try {
+            var resp = JSON.parse(isKarafLoginEnabled)["${this}"]
+          } catch(error) {
+            var resp = false
+          }
+          return {"result": 0, "resp": resp}
+    - if(! ${response.resp}):
         - log: "karaf login is already disabled, nothing to do"
     - else:
         - log: "Disable karaf's ssh login on ${this}"
@@ -379,8 +405,18 @@ actions:
             [ -f /tmp/abricot.pub  ] && rm /tmp/abricot.pub
             sed '/^abricot:/d' -i /data/digital-factory-data/karaf/etc/keys.properties
             sed 's,\(sshRealm\s*=\s*\)karaf,\1jahia,' -i /data/digital-factory-data/karaf/etc/org.apache.karaf.shell.cfg
+      - isKarafLoginEnabled: ${globals.isKarafLoginEnabled}
+        script: |-
+          try {
+            var isEnable = JSON.parse(isKarafLoginEnabled)
+          } catch(error) {
+            var isEnable = {}
+          } finally {
+            isEnable["${this}"] = false
+          }
+          return {"result": 0, "isEnable": isEnable}
         - setGlobals:
-            isKarafLoginEnabled: false
+            isKarafLoginEnabled: ${response.isEnable}
 
   enableFullReadOnlyOnCluster:
     - getJahiaVersion
