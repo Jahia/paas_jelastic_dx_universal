@@ -37,6 +37,7 @@ onInstall:
           - isJexperienceUpdateNeeded                  #         test if needed to be updated to 1.11.4, 1.12.2 or 1.12.3
           - if(${globals.needJexperienceUpdate}):      #         if needed then
               - updateJexperienceVersion               #             download the jar in the module folder
+  - fixJvmMetrics # PAAS-1478
 
   ### Post-actions
   - setEnvVersion: ${globals.version}
@@ -130,3 +131,11 @@ actions:
     - upgradeJahiaModule:
         module: jExperience
         version: ${globals.jexperience_version}
+
+  fixJvmMetrics:
+    - cmd [cp, proc]: |-
+        [ -f /etc/systemd/system/datadog-agent.service.d/override.conf ] && exit 0
+        mkdir -p /etc/systemd/system/datadog-agent.service.d
+        curl -fLSso /etc/systemd/system/datadog-agent.service.d/override.conf ${baseUrl}/dd_agent_service_override.conf || exit 1
+        systemctl daemon-reload && systemctl restart datadog-agent
+      user: root
