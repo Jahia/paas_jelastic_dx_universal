@@ -405,16 +405,16 @@ actions:
             [ -f /tmp/abricot.pub  ] && rm /tmp/abricot.pub
             sed '/^abricot:/d' -i /data/digital-factory-data/karaf/etc/keys.properties
             sed 's,\(sshRealm\s*=\s*\)karaf,\1jahia,' -i /data/digital-factory-data/karaf/etc/org.apache.karaf.shell.cfg
-      - isKarafLoginEnabled: ${globals.isKarafLoginEnabled}
-        script: |-
-          try {
-            var isEnable = JSON.parse(isKarafLoginEnabled)
-          } catch(error) {
-            var isEnable = {}
-          } finally {
-            isEnable["${this}"] = false
-          }
-          return {"result": 0, "isEnable": isEnable}
+        - isKarafLoginEnabled: ${globals.isKarafLoginEnabled}
+          script: |-
+            try {
+              var isEnable = JSON.parse(isKarafLoginEnabled)
+            } catch(error) {
+              var isEnable = {}
+            } finally {
+              isEnable["${this}"] = false
+            }
+            return {"result": 0, "isEnable": isEnable}
         - setGlobals:
             isKarafLoginEnabled: ${response.isEnable}
 
