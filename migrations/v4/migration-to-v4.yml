@@ -8,11 +8,12 @@ id: migrate-jahia-env-v4
 mixins:
   - "../../common/common_actions.yml"
   - "../../jahia/jahia_actions.yml"
-  - "../../jahia/jahia-upgrade-healthcheck.yml"
+  - "../../jahia/jahia-module-management.yml"
   - "../../database/mariadb_actions.yml"
   - "../../database/galera_actions.yml"
   - "../../database/proxysql_actions.yml"
   - "../../haproxy/haproxy_actions.yml"
+  - "../../utils/compare-versions.yml"
 
 globals:
   version: 4
@@ -27,8 +28,15 @@ onInstall:
   - eventsUpdate
   ### End Pre-checks
 
-  - updatHaproxyHealthcheck # PAAS-1345
-  - updateDatadogProcessCheck # PAAS-1465
+  - updatHaproxyHealthcheck                            # PAAS-1345
+  - updateDatadogProcessCheck                          # PAAS-1465
+  - gotJexperience                                     # PAAS-1458 test if jexperience module is present
+  - if("${globals.gotJexperienceBundleInfo}" != ""):   # if present then
+      - gotJexperienceVersion                          #     get is version
+      - if("${globals.gotJexperienceVersion}" != ""):  #     if we got a version then
+          - isJexperienceUpdateNeeded                  #         test if needed to be updated to 1.11.4, 1.12.2 or 1.12.3
+          - if(${globals.needJexperienceUpdate}):      #         if needed then
+              - updateJexperienceVersion               #             download the jar in the module folder
 
   ### Post-actions
   - setEnvVersion: ${globals.version}
@@ -73,3 +81,52 @@ actions:
         fi
         curl -fLSso $conf_file $dist_conf_file
       user: root
+
+  gotJexperience:
+    - cmd[proc]: |-
+        find /data/digital-factory-data/bundles-deployed -type f -name 'bundle.info' -exec grep -l '/jexperience/' {} \+
+        exit 0
+    - setGlobals:
+        gotJexperienceBundleInfo: ${response.out}
+
+  gotJexperienceVersion:
+    - cmd[proc]: |-
+        if [ -n "${globals.gotJexperienceBundleInfo}" ]; then
+          awk -F'[/:]' '$1=="dx" {print $NF}' ${globals.gotJexperienceBundleInfo}
+        fi
+    - setGlobals:
+        gotJexperienceVersion: ${response.out}
+
+  isJexperienceUpdateNeeded:
+    - getJahiaVersion
+    # Get jExperience version to install according to Jahia env version:
+    # - Jahia 7.3.x ==> jExperience 1.11.4
+    # - Jahia 8 < 8.0.2 ==> jExperience 1.12.2
+    # - Jahia 8.0.2+ ==> jExperience 1.12.3
+    - isVersionLower:
+        a: ${globals.jahiaVersion}
+        b: 8.0.0.0
+        res: isLowerThan8000
+    - if( ${globals.isLowerThan8000} ):
+        - setGlobals:
+            jexperience_version: 1.11.4
+    - else:
+        - isVersionLower:
+            a: ${globals.jahiaVersion}
+            b: 8.0.2.0
+            res: isLowerThan8020
+        - if( ${globals.isLowerThan8020} ):
+            - setGlobals:
+                jexperience_version: 1.12.2
+        - else:
+            - setGlobals:
+                jexperience_version: 1.12.3
+    - isVersionLower:
+        a: ${globals.gotJexperienceVersion}
+        b: ${globals.jexperience_version}
+        res: needJexperienceUpdate
+
+  updateJexperienceVersion:
+    - upgradeJahiaModule:
+        module: jExperience
+        version: ${globals.jexperience_version}
