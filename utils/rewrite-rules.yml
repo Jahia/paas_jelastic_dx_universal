@@ -26,10 +26,16 @@ actions:
         VAULT_TOKEN=$(curl -s -XPOST $VAULT_CLUSTER_URL/v1/auth/approle/login --data '{"role_id": "'$VAULT_ROLE_ID'", "secret_id": "'$VAULT_SECRET_ID'"}' | jq -r .auth.client_token)
         VAULT_SECRET_PATH="${settings.vault_secret_path}"
         curl -s -H "X-Vault-Token: $VAULT_TOKEN" $VAULT_CLUSTER_URL/v1/kv/data/$VAULT_SECRET_PATH | jq -r .data.data[] > "${globals.rewrite_rules_file}"
+
         if [ $(( PIPESTATUS[0] + PIPESTATUS[1] )) -gt 0 ]; then
           echo "Failed to fetch secret" >&2
-        else
+          exit 0
+        fi
+
+        if [ "$(md5sum ${globals.rewrite_rules_file} | awk '{ print $1 }')" = "${settings.md5sum}" ]; then
           sed -i -ne '/## START_REWRITES ##/{p;r ${globals.rewrite_rules_file}' -e ':a;n;/## END_REWRITES ##/{p;b};ba};p' "${globals.haproxy_frontend_file}"
+        else
+          echo "MD5 sum mismatch. Aborting" >&2
         fi
         rm "${globals.rewrite_rules_file}"
     - if ("${response.errOut}" != ""):
@@ -65,4 +71,9 @@ settings:
     - name: vault_secret_path
       type: string
       caption: Vault Secret Path
+      required: true
+  fields:
+    - name: md5sum
+      type: string
+      caption: The md5 sum of the rewrite rules
       required: true
