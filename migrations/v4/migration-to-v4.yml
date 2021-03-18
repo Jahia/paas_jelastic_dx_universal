@@ -30,6 +30,7 @@ onInstall:
 
   - updatHaproxyHealthcheck                            # PAAS-1345
   - updateDatadogProcessCheck                          # PAAS-1465
+  - fixHaproxyBackendMonitors                          # PAAS-1492
   - gotJexperience                                     # PAAS-1458 test if jexperience module is present
   - if("${globals.gotJexperienceBundleInfo}" != ""):   # if present then
       - gotJexperienceVersion                          #     get is version
@@ -88,6 +89,18 @@ actions:
         exit 0
     - setGlobals:
         gotJexperienceBundleInfo: ${response.out}
+
+  fixHaproxyBackendMonitors:
+    cmd[bl]: |-
+      if ! grep -qE "enable_service_check" /etc/datadog-agent/conf.d/haproxy.d/conf.yaml; then
+        wget -qO /etc/datadog-agent/checks.d/haproxy_one_remaining_browsing.py ${baseUrl}/../../scripts/haproxy_one_remaining_browsing.py
+        chown dd-agent:dd-agent /etc/datadog-agent/checks.d/haproxy_one_remaining_browsing.py
+        ln -s /etc/datadog-agent/conf.d/haproxy.d/conf.yaml /etc/datadog-agent/conf.d/haproxy_one_remaining_browsing.yaml
+        echo "    enable_service_check: true" >> /etc/datadog-agent/conf.d/haproxy.d/conf.yaml
+        echo "    status_check: true" >> /etc/datadog-agent/conf.d/haproxy.d/conf.yaml
+        systemctl restart datadog-agent
+      fi
+    user: root
 
   gotJexperienceVersion:
     - cmd[proc]: |-
