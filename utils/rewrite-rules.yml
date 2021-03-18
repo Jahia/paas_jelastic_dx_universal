@@ -32,7 +32,7 @@ actions:
           exit 0
         fi
 
-        if [ "$(md5sum ${globals.rewrite_rules_file} | awk '{ print $1 }')" = "${settings.md5sum}" ]; then
+        if echo "${settings.md5sum} ${globals.rewrite_rules_file}" | md5sum --check --status ; then
           sed -i -ne '/## START_REWRITES ##/{p;r ${globals.rewrite_rules_file}' -e ':a;n;/## END_REWRITES ##/{p;b};ba};p' "${globals.haproxy_frontend_file}"
         else
           echo "MD5 sum mismatch. Aborting" >&2
@@ -72,7 +72,6 @@ settings:
       type: string
       caption: Vault Secret Path
       required: true
-  fields:
     - name: md5sum
       type: string
       caption: The md5 sum of the rewrite rules
