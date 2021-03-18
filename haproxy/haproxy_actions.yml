@@ -98,6 +98,9 @@ actions:
         echo " - provide:${_PROVIDE}" >> /etc/datadog-agent/datadog.yaml
         echo " - role:${_ROLE}" >> /etc/datadog-agent/datadog.yaml
         echo " - envmode:${jahia_cfg_operatingMode}" >> /etc/datadog-agent/datadog.yaml
+        wget -qO /etc/datadog-agent/checks.d/haproxy_one_remaining_browsing.py ${baseUrl}/scripts/haproxy_one_remaining_browsing.py
+        chown dd-agent:dd-agent /etc/datadog-agent/checks.d/haproxy_one_remaining_browsing.py
+        ln -s /etc/datadog-agent/conf.d/haproxy.d/conf.yaml /etc/datadog-agent/conf.d/haproxy_one_remaining_browsing.yaml
         wget -qO /etc/datadog-agent/conf.d/haproxy.d/conf.yaml ${baseUrl}/configs/dd_agent_haproxy_conf.yml
         mkdir /etc/datadog-agent/conf.d/jelastic.d /var/log/jelastic-packages
         chown haproxy:root /var/log/jelastic-packages
