@@ -23,7 +23,6 @@ globals:
   operating_mode: ${settings.mode}
   datadog_key: ${settings.ddogApikey}
   shortdomain: ${settings.shortdomain}
-  displayName: ${settings.displayName}
   jahia_docker_image: ${settings.jahiaDockerImage}
   vault_role_id: ${settings.vaultRoleId}
   vault_secret_id: ${settings.vaultSecretId}
@@ -468,6 +467,10 @@ settings:
       required: true
       default: 2
 
+    - name: shortdomain
+      type: envname
+      caption: Environment
+      required: true
     - name: mode
       type: radio-fieldset
       caption: Operating Mode
