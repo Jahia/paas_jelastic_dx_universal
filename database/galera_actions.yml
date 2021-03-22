@@ -1,6 +1,9 @@
 ---
 actions:
   installGaleraCluster:
+    - cmd[sqldb]: |-
+        wget -q ${baseUrl}/configs/mysql-init.d -O /etc/init.d/mysql
+      user: root
     - resetCluster
     - initialSetup
     - setupSeeds
@@ -28,7 +31,6 @@ actions:
   initialSetup:
     - setNodeDisplayName[sqldb]: Galera
     - cmd[sqldb]: |-
-        wget -q ${baseUrl}/configs/mysql-init.d -O /etc/init.d/mysql
         wget -q ${baseUrl}/configs/galera.cnf -O /etc/mysql/conf.d/galera.cnf &>> /var/log/run.log
       user: root
     - if ("${response.errOut}" != ""):
