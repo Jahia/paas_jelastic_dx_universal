@@ -469,7 +469,10 @@ settings:
       vtype: string
       required: true
       default: 2
-
+    - name: shortdomain
+      type: envname
+      caption: Environment
+      required: true
     - name: mode
       type: radio-fieldset
       caption: Operating Mode
