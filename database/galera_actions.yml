@@ -12,6 +12,11 @@ actions:
     - forEach(n:nodes.sqldb):
         if (!${@n.ismaster}):
           cmd[${@n.id}]: "jem service restart"
+    - cmd[sqldb]: |-
+        printf "\nwsrep_sst_auth = mysql:\nwsrep_sst_method = mariabackup" >> /etc/mysql/conf.d/mysql.cnf
+        mysql -e "set global wsrep_sst_auth = 'mysql:'; set global wsrep_sst_method = 'mariabackup';"
+      user: root
+
 
   setupInstance:
     - cmd[${this.id}]: |-
