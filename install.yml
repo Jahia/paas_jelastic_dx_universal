@@ -341,6 +341,7 @@ onAfterRedeployContainer[sqldb]:
       # Handle RedeployContainersByGroup
       - setSudoer: ${event.params.nodeGroup}
       - setupDatadogAgentSql: ${event.params.nodeGroup}
+      - installMariaDBBackup: ${event.params.nodeGroup}
       - mysqlService:
           target: ${event.params.nodeGroup}
           action: enable
@@ -348,6 +349,7 @@ onAfterRedeployContainer[sqldb]:
       # Handle RedeployContainerById
       - setSudoer: ${event.params.nodeId}
       - setupDatadogAgentSql: ${event.params.nodeId}
+      - installMariaDBBackup: ${event.params.nodeId}
       - mysqlService:
           target: ${event.params.nodeId}
           action: enable
