@@ -147,6 +147,6 @@ actions:
   installMariaDBBackup:
     - cmd[${this}]: |-
         if [[ ! -x /usr/bin/mariabackup ]]; then
-          yum install -y MariaDB-backup qpress
+          yum install -y MariaDB-backup qpress socat
         fi
       user: root
