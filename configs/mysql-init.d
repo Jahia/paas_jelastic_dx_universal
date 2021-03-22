@@ -388,7 +388,11 @@ regenerate_config(){
 
 case "$mode" in
   'start')
-    # Start daemon
+  # install mariabackup if not present
+  if [[ ! -x /usr/bin/mariabackup ]]; then
+    yum install -y MariaDB-backup qpress socat
+  fi
+  # Start daemon
   PHPMYADMIN_ENABLED=${PHPMYADMIN_ENABLED^^}
   if [ "x$PHPMYADMIN_ENABLED" == "x1" ] ||  [ "x$PHPMYADMIN_ENABLED" == "xENABLED" ] || [ "x$PHPMYADMIN_ENABLED" == "xTRUE" ]
   then

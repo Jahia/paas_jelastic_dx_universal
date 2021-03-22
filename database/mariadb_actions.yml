@@ -2,7 +2,6 @@
 actions:
   installDatabase:
     - setSudoer: sqldb
-    - installMariaDBBackup: sqldb
     - log: "## Setup MariaDB logrotate on ${this}"
     - cmd[sqldb]: |-
         mkdir /etc/systemd/system/{mysql,mariadb}.service.d
@@ -13,6 +12,7 @@ actions:
         [ -f /etc/mysql/conf.d/slave.cnf ] && rm -f /etc/mysql/conf.d/slave.cnf
         printf "[mysqld]\nkey_buffer_size = 128M\nmyisam_sort_buffer_size = 128M\nwsrep_sst_auth = mysql:\nwsrep_sst_method = mariabackup" > /etc/mysql/conf.d/mysql.cnf
         mysql -e "set global key_buffer_size = 128*1024*1024; set global myisam_sort_buffer_size = 128*1024*1024; set global wsrep_sst_auth = 'mysql:'; set global wsrep_sst_method = 'mariabackup';"
+        echo "/etc/init.d/mysql" >> /etc/jelastic/redeploy.conf
         wget -qO /etc/logrotate.d/mysql ${baseUrl}/configs/logrotate_mysql
         logrotate -f /etc/logrotate.d/mysql
       user: root
@@ -143,10 +143,3 @@ actions:
         - cmd [${this.target}]: |-
             echo "SERVICE=''" > /var/lib/jelastic/overrides/envinfo.lib
             echo "/var/lib/jelastic/overrides/envinfo.lib" >> /etc/jelastic/redeploy.conf
-
-  installMariaDBBackup:
-    - cmd[${this}]: |-
-        if [[ ! -x /usr/bin/mariabackup ]]; then
-          yum install -y MariaDB-backup qpress socat
-        fi
-      user: root
