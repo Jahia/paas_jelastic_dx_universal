@@ -139,11 +139,13 @@ actions:
         else
           systemctl start strongswan
         fi
+        # We force the link to be brought up in case an option like "auto = route" is set
+        conn_name=$(awk '$1=="conn" {print $2; exit}' $confdir/$confname.conf)
+        strongswan up $conn_name
 
         # check connection is alive, rollback if needed
-        conn_name=$(awk '$1=="conn" {print $2; exit}' $confdir/$confname.conf)
         sleep 5  # little wait to be sure
-        conn_status=$(strongswan status $conn_name | awk 'NR==2 {if($2=="ESTABLISHED") {print "true"}else{print "false"}}')
+        conn_status=$(strongswan status $conn_name | grep -A1 "Security Associations" | awk 'NR==2 {if($2=="ESTABLISHED") {print "true"}else{print "false"}}')
         if ! $conn_status; then
           echo "[ERROR] Connection $conn_name is not established" >&2
           for f in $confdir/$confname.conf ${secretsfile}; do
