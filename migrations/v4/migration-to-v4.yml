@@ -39,6 +39,7 @@ onInstall:
           - isJexperienceUpdateNeeded                  #         test if needed to be updated to 1.11.4, 1.12.2 or 1.12.3
           - if(${globals.needJexperienceUpdate}):      #         if needed then
               - updateJexperienceVersion               #             download the jar in the module folder
+  - fixDatadogServiceTag                               # PAAS-1479
 
   ### Post-actions
   - setEnvVersion: ${globals.version}
@@ -148,3 +149,38 @@ actions:
   addJelasticExposeEnvVar:
     - env.control.AddContainerEnvVars[cp, proc]:
         vars: {"JELASTIC_EXPOSE": "0"}
+
+  fixDatadogServiceTag:
+    - addDatadogServiceTagIpsec: cp, proc
+    - addDatadogServiceTagProxySql: cp, proc
+    - fixDatadogServiceTagHAProxy: bl
+
+  addDatadogServiceTagIpsec:
+    - cmd[${this}]: |-
+        insert_line='    service: ${env.shortdomain}'
+        if (grep -qPzo "$insert_line" /etc/datadog-agent/conf.d/strongswan_connections_status.yaml); then
+          echo "Correct Service tag already there"
+          exit 0
+        fi
+        sed -i "/source: ipsec/a\\$insert_line" /etc/datadog-agent/conf.d/strongswan_connections_status.yaml
+      user: root
+
+  addDatadogServiceTagProxySql:
+    - cmd[${this}]: |-
+        insert_line='    service: ${env.shortdomain}'
+        if (grep -qPzo "$insert_line" /etc/datadog-agent/conf.d/proxysql.d/conf.yaml); then
+          echo "Correct Service tag already there"
+          exit 0
+        fi
+        sed -i "/source: proxysql/a\\$insert_line\n" /etc/datadog-agent/conf.d/proxysql.d/conf.yaml
+      user: root
+
+  fixDatadogServiceTagHAProxy:
+    - cmd[${this}]: |-
+        insert_line='service: ${env.shortdomain}
+        if (grep -qPzo "$insert_line" /etc/datadog-agent/conf.d/haproxy.d/conf.yaml); then
+          echo "Correct Service tag already there"
+          exit 0
+        fi
+        sed -i "s/service: haproxy/\\$insert_line/' /etc/datadog-agent/conf.d/haproxy.d/conf.yaml
+      user: root
