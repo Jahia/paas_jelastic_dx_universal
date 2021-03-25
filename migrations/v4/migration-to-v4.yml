@@ -31,6 +31,7 @@ onInstall:
   - updatHaproxyHealthcheck                            # PAAS-1345
   - updateDatadogProcessCheck                          # PAAS-1465
   - fixHaproxyBackendMonitors                          # PAAS-1492
+  - addJelasticExposeEnvVar                            # PAAS-1453
   - gotJexperience                                     # PAAS-1458 test if jexperience module is present
   - if("${globals.gotJexperienceBundleInfo}" != ""):   # if present then
       - gotJexperienceVersion                          #     get is version
@@ -143,3 +144,7 @@ actions:
     - upgradeJahiaModule:
         module: jExperience
         version: ${globals.jexperience_version}
+
+  addJelasticExposeEnvVar:
+    - env.control.AddContainerEnvVars[cp, proc]:
+        vars: {"JELASTIC_EXPOSE": "0"}
