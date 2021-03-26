@@ -164,6 +164,7 @@ actions:
           exit 0
         fi
         sed -i "/source: ipsec/a\\$insert_line" /etc/datadog-agent/conf.d/strongswan_connections_status.yaml
+        systemctl restart datadog-agent
       user: root
 
   addDatadogServiceTagProxySql:
@@ -173,17 +174,19 @@ actions:
           echo "Correct Service tag already there"
           exit 0
         fi
-        sed -i "/source: proxysql/a\\$insert_line\n" /etc/datadog-agent/conf.d/proxysql.d/conf.yaml
+        sed -i "/source: proxysql/a\\$insert_line" /etc/datadog-agent/conf.d/proxysql.d/conf.yaml
+        systemctl restart datadog-agent
       user: root
 
   fixDatadogServiceTagHAProxy:
     - cmd[${this}]: |-
-        insert_line='service: ${env.shortdomain}
+        insert_line='service: ${env.shortdomain}'
         if (grep -qPzo "$insert_line" /etc/datadog-agent/conf.d/haproxy.d/conf.yaml); then
           echo "Correct Service tag already there"
           exit 0
         fi
-        sed -i "s/service: haproxy/\\$insert_line/' /etc/datadog-agent/conf.d/haproxy.d/conf.yaml
+        sed -i "s/service: haproxy/\\$insert_line/" /etc/datadog-agent/conf.d/haproxy.d/conf.yaml
+        systemctl restart datadog-agent
       user: root
 
   fixDatadogMariaDBUser:
