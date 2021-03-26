@@ -40,6 +40,7 @@ onInstall:
           - if(${globals.needJexperienceUpdate}):      #         if needed then
               - updateJexperienceVersion               #             download the jar in the module folder
   - fixDatadogServiceTag                               # PAAS-1479
+  - fixDatadogMariaDBUser                              # COPS-308
 
   ### Post-actions
   - setEnvVersion: ${globals.version}
@@ -184,3 +185,9 @@ actions:
         fi
         sed -i "s/service: haproxy/\\$insert_line/' /etc/datadog-agent/conf.d/haproxy.d/conf.yaml
       user: root
+
+  fixDatadogMariaDBUser:
+    # Will be applied  on every environment, faster than trying to check if the environment is impacted
+    # best case the env has been restored with mariabackup and it fixes the datadog user issue
+    # worst case it's just useless and it just set the same password
+    cmd[${nodes.sqldb.first.id}]: mysql -e "set password for 'datadog'@'localhost' = PASSWORD('${DB_USER_DATADOG}')"
