@@ -95,6 +95,12 @@ onBeforeInstall: |
         "VAULT_SECRET_ID": "${globals.vault_secret_id}",
         "VAULT_CLUSTER_URL": "${globals.vault_cluster_url}",
       },
+    "distribution": {
+        "mode": "STRICT",
+        "zones": [
+            {high_iops: false}
+        ]
+      },
     "volumes": [
       "/etc/haproxy"
       ]
@@ -128,6 +134,12 @@ onBeforeInstall: |
         "VAULT_SECRET_ID": "${globals.vault_secret_id}",
         "VAULT_CLUSTER_URL": "${globals.vault_cluster_url}",
         "HEALTHCHECK_DURATION": "240",
+      },
+    "distribution": {
+        "mode": "STRICT",
+        "zones": [
+            {high_iops: false}
+        ]
       }
   }
   if (dockerImage == "undefined") {
@@ -166,6 +178,12 @@ onBeforeInstall: |
         "VAULT_SECRET_ID": "${globals.vault_secret_id}",
         "VAULT_CLUSTER_URL": "${globals.vault_cluster_url}",
         "HEALTHCHECK_DURATION": "240",
+      },
+    "distribution": {
+        "mode": "STRICT",
+        "zones": [
+            {high_iops: false}
+        ]
       }
   }
   if (dockerImage == "undefined") {
@@ -184,17 +202,23 @@ onBeforeInstall: |
     "cloudlets": db_cloudlets,
     "isSLBAccessEnabled": false,
     "env": {
-      "ADMINPANEL_ENABLED": false,
-      "DATADOGAPIKEY": "${globals.datadog_key}",
-      "DB_USER_DATADOG": "${globals.db_user_datadog}",
-      "PHPMYADMIN_ENABLED": false,
-      "DB_USER": "${globals.db_user}",
-      "DB_PASS": "${globals.db_pass}",
-      "_PROVIDE": "Database",
-      "_ROLE": db_scheme,
-      "envName": "${globals.shortdomain}",
-      "jahia_cfg_operatingMode": "${globals.operating_mode}",
-    }
+        "ADMINPANEL_ENABLED": false,
+        "DATADOGAPIKEY": "${globals.datadog_key}",
+        "DB_USER_DATADOG": "${globals.db_user_datadog}",
+        "PHPMYADMIN_ENABLED": false,
+        "DB_USER": "${globals.db_user}",
+        "DB_PASS": "${globals.db_pass}",
+        "_PROVIDE": "Database",
+        "_ROLE": db_scheme,
+        "envName": "${globals.shortdomain}",
+        "jahia_cfg_operatingMode": "${globals.operating_mode}",
+      },
+    "distribution": {
+        "mode": "STRICT",
+        "zones": [
+            {high_iops: false}
+        ]
+      }
   }
   nodes.push(node_mariadb);
   var resp = {
