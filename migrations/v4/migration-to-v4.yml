@@ -18,6 +18,12 @@ mixins:
 globals:
   version: 4
 
+####
+# Ansible has a weird behavior when receiving a variable in its parameters,
+# it replaces " with ' which leads to an invalid json. To avoid the bug pass the parameters package_settings as follow :
+# -e "package_settings=' {\"papi_hostname\":\"papi[.dev].trial.jahia.com\",\"papi_token\":\"TMP_TOKEN\", \"status\": \"{{status }}\"}'"
+####
+
 onInstall:
   ### Pre-checks
   - checkEnvVersion: ${globals.version}
@@ -41,6 +47,7 @@ onInstall:
               - updateJexperienceVersion               #             download the jar in the module folder
   - fixDatadogServiceTag                               # PAAS-1479
   - fixDatadogMariaDBUser                              # COPS-308
+  - registerWithPapi                                   # PAAS-1501
 
   ### Post-actions
   - setEnvVersion: ${globals.version}
@@ -194,3 +201,126 @@ actions:
     # best case the env has been restored with mariabackup and it fixes the datadog user issue
     # worst case it's just useless and it just set the same password
     cmd[${nodes.sqldb.first.id}]: mysql -e "set password for 'datadog'@'localhost' = PASSWORD('${DB_USER_DATADOG}')"
+
+  registerWithPapi:
+    cmd[${nodes.cp.first.id}]: |-
+      if ! rpm --quiet -q jq; then
+        echo "[INFO] Installing jq to parse responses"
+        yum install -y jq > /dev/null
+      fi
+
+      PAPI_HOSTNAME="${settings.papi_hostname}"
+      PAPI_TOKEN_HEADER="X-PAPI-KEY: ${settings.papi_token}"
+      PAPI_CONTENT_TYPE_HEADER="Content-Type: application/json"
+      PAPIER_DESCRIPTION="paas_${env.shortdomain}"
+      LOG_FILE=/var/log/jelastic-packages/migration.log
+
+      #### Checks if papier exists ###
+      PAPIER_URI="https://$PAPI_HOSTNAME/api/v1/papier"
+      papier=$(curl -s "$PAPIER_URI?description=$PAPIER_DESCRIPTION" -H "$PAPI_TOKEN_HEADER")
+
+      if [ $? -ne 0 ]; then
+          echo "Failed to check if papier exists"
+          exit 1
+      fi
+
+      ### Creates papier if doesn't exist ###
+      if [ $(echo $papier | jq length) -eq 0 ]; then
+          data="{\"kind\": \"m_to_m\", \"description\": \"$PAPIER_DESCRIPTION\"}"
+          papier=$(curl -s -XPOST "$PAPIER_URI" -H "$PAPI_TOKEN_HEADER" -H "$PAPI_CONTENT_TYPE_HEADER" -d "${data}")
+
+          if [ $? -ne 0 ]; then
+            echo "Failed to create papier : curl command failed" | tee -a $LOG_FILE
+            exit 1
+          fi
+
+          papier_id=$(echo $papier | jq .papier_id)
+          if [[ ! "$papier_id" =~ ^[0-9]+$ ]]; then
+            echo "Failed to create papier: invalid response. Got $papier" | tee -a $LOG_FILE
+            exit 1
+          fi
+          echo "Papier $papier_id created" >> $LOG_FILE
+      else
+          papier_id=$(echo $papier | jq .[0].papier_id)
+          echo "Papier already exists" >> $LOG_FILE
+      fi
+
+      #### Get organization id ####
+      PAAS_ORG_URI="https://$PAPI_HOSTNAME/api/v1/paas-organization"
+      paas_org=$(curl -s "$PAAS_ORG_URI?jelastic_login=${user.email}" -H "$PAPI_TOKEN_HEADER")
+      if [ $? -ne 0 ]; then
+        echo "Failed get organization id : curl command failed" | tee -a $LOG_FILE
+        exit 1
+      fi
+      organization_id=$(echo $paas_org | jq -r .[0].paas_organization_id)
+      if [[ ! "$organization_id" =~ ^[0-9]+$ ]]; then
+        echo "Failed to get organization id: invalid response. Got $paas_org" | tee -a $LOG_FILE
+        exit 1
+      fi
+
+      #### Check if environment already exists  ####
+      PAAS_ENV_URI="https://$PAPI_HOSTNAME/api/v1/paas-environment"
+      env=$(curl -s "$PAAS_ENV_URI?namespace=${env.shortdomain}" -H "$PAPI_TOKEN_HEADER")
+      if [ $? -ne 0 ]; then
+        echo "Failed to check if paas-environment exists" | tee -a $LOG_FILE
+        exit 1
+      fi
+
+      # Creates environment if doesn't exist
+      if [ $(echo $env | jq length) -eq 0 ]; then
+          VERSION=$(echo $DX_VERSION | sed 's/\./-/g')
+          data="{
+            \"jelastic_appid\": \"${env.appid}\",
+            \"paas_organization_id\": $organization_id,
+            \"paas_product_version_id\": \"dx_$VERSION\",
+            \"namespace\": \"${env.shortdomain}\",
+            \"papier_id\": $papier_id
+          }"
+          env=$(curl -s -XPOST "$PAAS_ENV_URI" -H "$PAPI_TOKEN_HEADER" -H "$PAPI_CONTENT_TYPE_HEADER" -d "${data}")
+
+          if [ $? -ne 0 ]; then
+              echo "Failed to create paas-environment" | tee -a $LOG_FILE
+              exit 1
+          fi
+
+          env_id=$(echo $env | jq -r .environment_id)
+          if [[ ! "$env_id" =~ ^[0-9]+$ ]]; then
+              echo "Failed to create environment: invalid response. Got $env" | tee -a $LOG_FILE
+              exit 1
+          fi
+          echo "Env $env_id created" >> $LOG_FILE
+
+          if [ "${settings.status}" = "stopped" ]; then
+              data="{\"status\":\"stopped\"}"
+              env=$(curl -s -XPUT "$PAAS_ENV_URI/$env_id" -H "$PAPI_TOKEN_HEADER" -H "$PAPI_CONTENT_TYPE_HEADER" -d "${data}")
+              if [ $? -ne 0 ]; then
+                echo "Failed to set environment status to stopped: request failed" | tee -a $LOG_FILE
+                exit 1
+              fi
+
+              env_id=$(echo $env | jq -r .environment_id)
+              if [[ ! "$env_id" =~ ^[0-9]+$ ]]; then
+                echo "Failed to set environment status to stop: invalid response. Got $env" | tee -a $LOG_FILE
+                exit 1
+              fi
+              echo "Env $env_id status set to stopped" >> $LOG_FILE
+          fi
+      else
+          echo "Environment already exists" >> $LOG_FILE
+      fi
+
+settings:
+  fields:
+    - name: papi_hostname
+      type: string
+      caption: Papi hostname
+      required: true
+    - name: papi_token
+      type: string
+      caption: Papi token
+      required: true
+    - name: status
+      type: string
+      caption: Env status (running/stopped)
+      vtype: string
+      required: true
