@@ -34,17 +34,17 @@ onInstall:
   - eventsUpdate
   ### End Pre-checks
 
-  - updatHaproxyHealthcheck                            # PAAS-1345
-  - updateDatadogProcessCheck                          # PAAS-1465
-  - fixHaproxyBackendMonitors                          # PAAS-1492
-  - addJelasticExposeEnvVar                            # PAAS-1453
-  - gotJexperience                                     # PAAS-1458 test if jexperience module is present
-  - if("${globals.gotJexperienceBundleInfo}" != ""):   # if present then
-      - gotJexperienceVersion                          #     get is version
-      - if("${globals.gotJexperienceVersion}" != ""):  #     if we got a version then
-          - isJexperienceUpdateNeeded                  #         test if needed to be updated to 1.11.4, 1.12.2 or 1.12.3
-          - if(${globals.needJexperienceUpdate}):      #         if needed then
-              - updateJexperienceVersion               #             download the jar in the module folder
+#  - updatHaproxyHealthcheck                            # PAAS-1345
+#  - updateDatadogProcessCheck                          # PAAS-1465
+#  - fixHaproxyBackendMonitors                          # PAAS-1492
+#  - addJelasticExposeEnvVar                            # PAAS-1453
+#  - gotJexperience                                     # PAAS-1458 test if jexperience module is present
+#  - if("${globals.gotJexperienceBundleInfo}" != ""):   # if present then
+#      - gotJexperienceVersion                          #     get is version
+#      - if("${globals.gotJexperienceVersion}" != ""):  #     if we got a version then
+#          - isJexperienceUpdateNeeded                  #         test if needed to be updated to 1.11.4, 1.12.2 or 1.12.3
+#          - if(${globals.needJexperienceUpdate}):      #         if needed then
+#              - updateJexperienceVersion               #             download the jar in the module folder
   - fixDatadogServiceTag                               # PAAS-1479
   - fixDatadogMariaDBUser                              # COPS-308
   - registerWithPapi                                   # PAAS-1501
