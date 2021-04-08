@@ -1,0 +1,23 @@
+---
+type: update
+version: 1.5.2
+name: Jahia - fix haproxy healthcheck
+logo: /images/jahia-logo-70x70.png
+id: fix-haproxy-healthcheck
+
+onInstall:
+  - cmd[bl]: |-
+      wget -qO /etc/datadog-agent/checks.d/haproxy_one_remaining_browsing.py ${baseUrl}../../scripts/haproxy_one_remaining_browsing.py
+      service datadog-agent restart
+    user: root
+
+  - cmd[bl]: |-
+      wget -qO /etc/haproxy/haproxy.cfg.d/10-jahia.cfg ${baseUrl}../../configs/haproxy-10-jahia.cfg
+      wget -qO /etc/haproxy/haproxy.cfg.d/11-proc.cfg ${baseUrl}../../configs/haproxy-11-proc.cfg
+      echo "    server ${env.appid}-${nodes.proc.first.id} ${nodes.proc.first.intIP}:80 check cookie s${nodes.proc.first.id}" >> /etc/haproxy/haproxy.cfg.d/11-proc.cfg
+  - forEach(nodes.cp):
+      cmd[bl]: |-
+        echo "    server ${env.appid}-${@i.id} ${@i.intIP}:80 check cookie s${@i.id}" >> /etc/haproxy/haproxy.cfg.d/10-jahia.cfg
+  - cmd[bl]: |-
+      service haproxy reload
+    user: root
